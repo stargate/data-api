@@ -29,7 +29,7 @@ public class MatchCollectionFilter extends CollectionFilter {
   }
 
   protected Optional<JsonNode> jsonNodeForNewDocument(JsonNodeFactory nodeFactory) {
-    return Optional.of(toJsonNode(nodeFactory, value));
+    return Optional.empty();
   }
 
   @Override

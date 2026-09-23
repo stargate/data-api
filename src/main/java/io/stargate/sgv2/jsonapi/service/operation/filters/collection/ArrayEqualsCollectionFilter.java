@@ -19,7 +19,10 @@ public class ArrayEqualsCollectionFilter extends MapCollectionFilter<String> {
 
   @Override
   protected Optional<JsonNode> jsonNodeForNewDocument(JsonNodeFactory nodeFactory) {
-    return Optional.of(toJsonNode(nodeFactory, arrayValue));
+    if (Operator.MAP_EQUALS.equals(operator)) {
+      return Optional.of(toJsonNode(nodeFactory, arrayValue));
+    }
+    return Optional.empty();
   }
 
   //    @Override

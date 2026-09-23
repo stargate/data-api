@@ -17,6 +17,8 @@ import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 /** Updates the document read from the database with the updates came as part of the request. */
 public record DocumentUpdater(
@@ -46,54 +48,68 @@ public record DocumentUpdater(
   }
 
   /**
+   * Some function which creates a document given a predicate to filter the fields to include.
+   *
+   * <p>Intended to be satisfied by {@link
+   * io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation#reconstructDocumentFromFilter}
+   */
+  @FunctionalInterface
+  public interface DocumentReconstructor extends Function<Predicate<String>, ObjectNode> {}
+
+  /**
    * This method is the entrance for first level update or replace. First level means it won't
    * vectorize if needed, but will warp an EmbeddingUpdateOperation in the DocumentUpdaterResponse
    * to do the following embedding update.
    *
    * @param readDocument Document to update
-   * @param docInserted True if document was just created (inserted); false if updating existing
-   *     document
+   * @param isNew True if document was just created (inserted); false if updating existing document
+   * @param reconstructor A function which creates a reconstructed document from the search filter
    */
-  public DocumentUpdaterResponse apply(JsonNode readDocument, boolean docInserted) {
-    ObjectNode docToUpdate = (ObjectNode) readDocument;
+  public DocumentUpdaterResponse apply(
+      JsonNode readDocument, boolean isNew, DocumentReconstructor reconstructor) {
+    final var docToUpdate = (ObjectNode) readDocument;
+
     if (UpdateType.UPDATE == updateType) {
-      return update(docToUpdate, docInserted);
+      return update(docToUpdate, isNew, reconstructor);
     } else {
-      return replace(docToUpdate, docInserted);
+      return replace(docToUpdate, isNew, reconstructor);
     }
   }
 
   /**
    * Will be used for update commands. This is first level replace. This method will replace the
    * document, but won't re-vectorize yet(detail in updateEmbeddingVector method)
-   *
-   * @param docToUpdate
-   * @param docInserted
-   * @return
    */
-  private DocumentUpdaterResponse update(ObjectNode docToUpdate, boolean docInserted) {
-    boolean modified = false;
+  private DocumentUpdaterResponse update(
+      ObjectNode docToUpdate, boolean isNew, DocumentReconstructor reconstructor) {
+    if (isNew) {
+      docToUpdate = reconstructor.apply(path -> true);
+    }
+
+    boolean modified = isNew;
     List<EmbeddingUpdateOperation> embeddingUpdateOperationList = new ArrayList<>();
-    for (UpdateOperation updateOperation : updateOperations) {
-      if (updateOperation.shouldApplyIf(docInserted)) {
-        final UpdateOperation.UpdateOperationResult updateOperationResult =
-            updateOperation.updateDocument(docToUpdate);
+
+    for (var updateOperation : updateOperations) {
+      if (updateOperation.shouldApplyIf(isNew)) {
+        final var updateOperationResult = updateOperation.updateDocument(docToUpdate);
         modified |= updateOperationResult.modified();
         embeddingUpdateOperationList.addAll(updateOperationResult.embeddingUpdateOperations());
       }
     }
+
     return new DocumentUpdaterResponse(docToUpdate, modified, embeddingUpdateOperationList);
   }
 
   /**
    * Will be used for findOneAndReplace. This is first level replace. This method will replace the
    * document, but won't re-vectorize yet(detail in updateEmbeddingVector method)
-   *
-   * @param docToUpdate
-   * @param docInserted
-   * @return
    */
-  private DocumentUpdaterResponse replace(ObjectNode docToUpdate, boolean docInserted) {
+  private DocumentUpdaterResponse replace(
+      ObjectNode docToUpdate, boolean isNew, DocumentReconstructor reconstructor) {
+    if (isNew) {
+      docToUpdate = reconstructor.apply(DocumentConstants.Fields.DOC_ID::equals);
+    }
+
     // Do deep clone so we can remove _id field and check
     ObjectNode compareDoc = docToUpdate.deepCopy();
 
@@ -102,6 +118,10 @@ public record DocumentUpdater(
     // from the replacement document to use later, future work needed to so we can
     // reliably go back and forth between JsonNode and DocumentId without losing the benefits of
     // both.
+    //
+    // addendum (toptobes) - instead of removing the field from the doc we can just overwrite the
+    // _id in the replaceDocument (if idNode != null) as they're proven to be already equivalent
+    // (i.e. no compareDoc, no deep clone, and use .get() instead of .remove())
     JsonNode idNode = compareDoc.remove(DocumentConstants.Fields.DOC_ID);
 
     // The replace document cannot specify an _id value that differs from the replaced document.
