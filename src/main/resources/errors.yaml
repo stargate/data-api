@@ -317,6 +317,21 @@ request-errors:
       
       Resend the command including the query text for reranking.
 
+  - scope:
+    code: MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT
+    title: Hybrid sort requires $vector or $vectorize
+    body: |-
+      Hybrid sort must include vector search for the retrieval of documents.
+
+      The vector search to perform can be specified in the sort clause either:
+      * through an explicit vector (binary-encoded or not) as in `{"$hybrid": {"$vector": vector, ...}}
+      * through a query text, whose vector embedding becomes the query vector: `{"$hybrid": {"$vectorize": "query text", ...}}`
+      * via the shorthand `{"$hybrid": "query text"}`
+
+      Field '$hybrid' cannot be used without a '$vector', or '$vectorize' clause (explicit or implied).
+
+      Resend the command by providing directions for the vector search.
+
   # ================================================================================================================
   # Family: REQUEST         Scope: SECURITY
   # ================================================================================================================
