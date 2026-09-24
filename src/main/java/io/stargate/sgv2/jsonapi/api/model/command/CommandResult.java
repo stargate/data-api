@@ -1,7 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkiverse.mcp.server.MetaKey;
+import io.quarkiverse.mcp.server.TextContent;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import jakarta.ws.rs.core.Response;
@@ -104,15 +107,17 @@ public record CommandResult(
    * <p>Mapping rules:
    *
    * <ul>
+   *   <li>The full Data API response envelope is serialized into text content
    *   <li>{@link #errors()} → {@link ToolResponse#isError()} and error content in {@link
    *       ToolResponse#structuredContent()}
    *   <li>{@link #data()} → {@link ToolResponse#structuredContent()} (when no errors)
    *   <li>{@link #status()} → {@link ToolResponse#_meta()} with key {@code "status"}
    * </ul>
    *
+   * @param objectMapper serializes the Data API response envelope
    * @return A new {@link ToolResponse} representing this command result.
    */
-  public ToolResponse toToolResponse() {
+  public ToolResponse toToolResponse(ObjectMapper objectMapper) {
 
     boolean hasErrors = errors != null && !errors.isEmpty();
 
@@ -120,10 +125,22 @@ public record CommandResult(
     Map<MetaKey, Object> meta =
         (status != null && !status.isEmpty()) ? Map.of(MetaKey.of("status"), status) : Map.of();
 
-    // Map "errors" or "data" to structuredContent
-    // Also, structuredContent is expected to be a Record (a plain JSON object {})
-    return new ToolResponse(
-        hasErrors, List.of(), hasErrors ? Map.of("errors", errors) : data, meta);
+    String content;
+    Object structuredContent = hasErrors ? Map.of("errors", errors) : data;
+    try {
+      content = objectMapper.writeValueAsString(this);
+    } catch (JsonProcessingException e) {
+      // A serialization failure must be visible to clients reading the primary content field.
+      var fallback = objectMapper.createObjectNode();
+      fallback.putArray("errors").addObject().put("message", "Unable to serialize command result");
+      content = fallback.toString();
+      hasErrors = true;
+      structuredContent =
+          Map.of("errors", List.of(Map.of("message", "Unable to serialize command result")));
+    }
+
+    // Preserve the existing structured form for consumers that use it.
+    return new ToolResponse(hasErrors, List.of(new TextContent(content)), structuredContent, meta);
   }
 
   /**

@@ -60,6 +60,18 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
   @Override
   public Uni<SecurityIdentity> authenticate(
       RoutingContext context, IdentityProviderManager identityProviderManager) {
+    String headerValue = authenticationHeader(context, headerName);
+    if (null != headerValue) {
+      HeaderAuthenticationRequest request =
+          new HeaderAuthenticationRequest(headerName, headerValue);
+      HttpSecurityUtils.setRoutingContextAttribute(request, context);
+      return identityProviderManager.authenticate(request);
+    }
+    return Uni.createFrom().optional(Optional.empty());
+  }
+
+  /** The same credential lookup is used by the MCP transport guard before it emits a response. */
+  public static String authenticationHeader(RoutingContext context, String headerName) {
     // Data API Authentication header key: Token
     String headerValue = context.request().getHeader(headerName);
     // Data API Authentication header key: token
@@ -70,14 +82,7 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
     if (null == headerValue) {
       headerValue = context.request().getHeader(DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME);
     }
-    if (null != headerValue) {
-      HeaderAuthenticationRequest request =
-          new HeaderAuthenticationRequest(headerName, headerValue);
-      HttpSecurityUtils.setRoutingContextAttribute(request, context);
-      return identityProviderManager.authenticate(request);
-    }
-    // No suitable header has been found in this requests
-    return Uni.createFrom().optional(Optional.empty());
+    return headerValue;
   }
 
   /** {@inheritDoc} */

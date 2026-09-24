@@ -64,6 +64,7 @@ public class McpFeatureDisabledIntegrationTest extends McpIntegrationTestBase {
         McpAssured.newStreamableClient()
             .setBaseUri(URI.create(MCP_HOSTNAME + getTestPort()))
             .setMcpPath(MCP_PATH)
+            .setStateless()
             .setAdditionalHeaders(msg -> authHeaders().add(ApiFeature.MCP.httpHeaderName(), "true"))
             .build()
             .connect();

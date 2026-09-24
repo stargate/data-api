@@ -42,6 +42,7 @@ public class McpResource {
   private static final Logger LOGGER = LoggerFactory.getLogger(McpResource.class);
 
   private final ObjectMapper objectMapper;
+  private final MeterRegistry meterRegistry;
   private final MeteredCommandProcessor meteredCommandProcessor;
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final EmbeddingProviderFactory embeddingProviderFactory;
@@ -71,6 +72,7 @@ public class McpResource {
     // TODO: these vars are needed to replicate what we do in GeneralResource,
     // KeyspaceResource, etc. We should refactor to avoid duplication later.
     this.objectMapper = objectMapper;
+    this.meterRegistry = meterRegistry;
     this.meteredCommandProcessor = meteredCommandProcessor;
     this.embeddingProviderFactory = embeddingProviderFactory;
     this.schemaObjectCacheSupplier = schemaObjectCacheSupplier;
@@ -95,20 +97,22 @@ public class McpResource {
    * io.stargate.sgv2.jsonapi.api.v1.GeneralResource}
    */
   public Uni<CommandContext<?>> buildDatabaseContext(GeneralCommand command) {
-
-    var requestContext = createRequestContext();
-    var dbIdentifier = SchemaObjectIdentifier.forDatabase(requestContext.tenant());
-
-    return schemaObjectCacheSupplier
-        .get()
-        .getDatabase(requestContext, dbIdentifier, requestContext.userAgent())
-        .map(
-            databaseSchemaObject ->
-                contextBuilderSupplier
-                    .getBuilder(databaseSchemaObject)
-                    .withCommandName(command.getClass().getSimpleName())
-                    .withRequestContext(requestContext)
-                    .build());
+    return Uni.createFrom()
+        .deferred(
+            () -> {
+              var requestContext = createRequestContext();
+              var dbIdentifier = SchemaObjectIdentifier.forDatabase(requestContext.tenant());
+              return schemaObjectCacheSupplier
+                  .get()
+                  .getDatabase(requestContext, dbIdentifier, requestContext.userAgent())
+                  .map(
+                      databaseSchemaObject ->
+                          contextBuilderSupplier
+                              .getBuilder(databaseSchemaObject)
+                              .withCommandName(command.getClass().getSimpleName())
+                              .withRequestContext(requestContext)
+                              .build());
+            });
   }
 
   /**
@@ -116,23 +120,25 @@ public class McpResource {
    * io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource}
    */
   public Uni<CommandContext<?>> buildKeyspaceContext(String keyspace, KeyspaceCommand command) {
-
-    var requestContext = createRequestContext();
-    var keyspaceIdentifier =
-        SchemaObjectIdentifier.forKeyspace(
-            requestContext.tenant(), cqlIdentifierFromUserInput(keyspace));
-
-    // Force refresh on all keyspace commands because they are all DDL commands
-    return schemaObjectCacheSupplier
-        .get()
-        .getKeyspace(requestContext, keyspaceIdentifier, requestContext.userAgent(), true)
-        .map(
-            keyspaceSchemaObject ->
-                contextBuilderSupplier
-                    .getBuilder(keyspaceSchemaObject)
-                    .withCommandName(command.getClass().getSimpleName())
-                    .withRequestContext(createRequestContext())
-                    .build());
+    return Uni.createFrom()
+        .deferred(
+            () -> {
+              var requestContext = createRequestContext();
+              var keyspaceIdentifier =
+                  SchemaObjectIdentifier.forKeyspace(
+                      requestContext.tenant(), cqlIdentifierFromUserInput(keyspace));
+              // Refresh for DDL commands.
+              return schemaObjectCacheSupplier
+                  .get()
+                  .getKeyspace(requestContext, keyspaceIdentifier, requestContext.userAgent(), true)
+                  .map(
+                      keyspaceSchemaObject ->
+                          contextBuilderSupplier
+                              .getBuilder(keyspaceSchemaObject)
+                              .withCommandName(command.getClass().getSimpleName())
+                              .withRequestContext(requestContext)
+                              .build());
+            });
   }
 
   /**
@@ -141,6 +147,15 @@ public class McpResource {
    * before delegating execution to processCommand.
    */
   public Uni<ToolResponse> processCollectionCommand(
+      String keyspace, String collection, CollectionCommand command) {
+
+    return Uni.createFrom()
+        .deferred(() -> processCollectionCommandInternal(keyspace, collection, command))
+        .onFailure()
+        .recoverWithItem(this::errorToolResponse);
+  }
+
+  private Uni<ToolResponse> processCollectionCommandInternal(
       String keyspace, String collection, CollectionCommand command) {
 
     var requestContext = createRequestContext();
@@ -161,11 +176,7 @@ public class McpResource {
             (schemaObject, throwable) -> {
               if (throwable != null) {
                 // If schema resolution or authorization fails, return an error ToolResponse
-                CommandResult errorResult =
-                    CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
-                        .addThrowable(throwable)
-                        .build();
-                return Uni.createFrom().item(errorResult.toToolResponse());
+                return Uni.createFrom().item(errorToolResponse(throwable));
               } else {
                 VectorColumnDefinition vectorColDef = null;
                 if (schemaObject.type() == SchemaObjectType.COLLECTION) {
@@ -234,7 +245,24 @@ public class McpResource {
               }
               return meteredCommandProcessor.processCommand(context, command);
             })
-        .map(CommandResult::toToolResponse);
+        .map(
+            result -> {
+              if (!result.errors().isEmpty()) {
+                meterRegistry.counter("mcp.tool.errors").increment();
+              }
+              return result.toToolResponse(objectMapper);
+            })
+        .onFailure()
+        .recoverWithItem(this::errorToolResponse);
+  }
+
+  private ToolResponse errorToolResponse(Throwable throwable) {
+    meterRegistry.counter("mcp.tool.errors").increment();
+    LOGGER.warn("MCP tool call failed outside command processing", throwable);
+    return CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+        .addThrowable(throwable)
+        .build()
+        .toToolResponse(objectMapper);
   }
 
   /**

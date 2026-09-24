@@ -66,6 +66,7 @@ public abstract class McpIntegrationTestBase {
         McpAssured.newStreamableClient()
             .setBaseUri(URI.create(MCP_HOSTNAME + getTestPort()))
             .setMcpPath(MCP_PATH)
+            .setStateless()
             .setAdditionalHeaders(msg -> authHeaders())
             .build()
             .connect();
@@ -149,7 +150,8 @@ public abstract class McpIntegrationTestBase {
       assertFalse(response.isError());
       assertNotNull(response._meta());
       assertNull(response.structuredContent());
-      assertThat(response.content()).isEmpty();
+      assertEquals(1, response.content().size());
+      assertEquals(1, contentEnvelope(response).getJsonObject("status").getInteger("ok"));
 
       var status = (JsonObject) response._meta().get(MetaKey.of("status"));
       assertNotNull(status, "Status should not be null");
@@ -168,7 +170,7 @@ public abstract class McpIntegrationTestBase {
       assertFalse(response.isError());
       assertNotNull(response._meta());
       assertNull(response.structuredContent());
-      assertThat(response.content()).isEmpty();
+      assertEquals(1, response.content().size());
 
       var status = (JsonObject) response._meta().get(MetaKey.of("status"));
       assertNotNull(status, "Status should not be null");
@@ -184,8 +186,8 @@ public abstract class McpIntegrationTestBase {
    */
   protected Consumer<ToolResponse> assertErrorOnly(Consumer<JsonArray> errorsAssertions) {
     return response -> {
-      assertThat(response.content()).isEmpty();
-      assertThat(response._meta()).isEmpty();
+      assertEquals(1, response.content().size());
+      assertThat(contentEnvelope(response).getJsonArray("errors")).isNotEmpty();
       assertTrue(response.isError());
       assertThat(response.structuredContent()).isNotNull();
 
@@ -206,8 +208,8 @@ public abstract class McpIntegrationTestBase {
   protected Consumer<ToolResponse> assertDataOnly(Consumer<JsonObject> dataAssertions) {
     return response -> {
       assertFalse(response.isError());
-      assertThat(response.content()).isEmpty();
-      assertThat(response._meta()).isEmpty();
+      assertEquals(1, response.content().size());
+      assertNotNull(contentEnvelope(response).getJsonObject("data"));
       assertNotNull(response.structuredContent());
 
       var data = (JsonObject) response.structuredContent();
@@ -226,7 +228,8 @@ public abstract class McpIntegrationTestBase {
       Consumer<JsonObject> dataAssertions, Consumer<JsonObject> statusAssertions) {
     return response -> {
       assertFalse(response.isError());
-      assertThat(response.content()).isEmpty();
+      assertEquals(1, response.content().size());
+      assertNotNull(contentEnvelope(response).getJsonObject("data"));
       assertNotNull(response._meta());
       assertNotNull(response.structuredContent());
 
@@ -247,5 +250,9 @@ public abstract class McpIntegrationTestBase {
   protected void callToolAndAssert(
       String toolName, Map<String, Object> args, Consumer<ToolResponse> assertFn) {
     mcpClient.when().toolsCall(toolName, args, assertFn).thenAssertResults();
+  }
+
+  private JsonObject contentEnvelope(ToolResponse response) {
+    return new JsonObject(response.content().get(0).asText().text());
   }
 }

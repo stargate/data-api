@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkiverse.mcp.server.MetaKey;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -14,10 +15,12 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link CommandResult#toToolResponse()} verifying the CommandResult → ToolResponse
- * mapping logic.
+ * Unit tests for {@link CommandResult#toToolResponse(ObjectMapper)} verifying the CommandResult →
+ * ToolResponse mapping logic.
  */
 public class CommandResultToToolResponseTest {
+
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
   void successWithStatusOnly() {
@@ -28,11 +31,12 @@ public class CommandResultToToolResponseTest {
             .build();
 
     // Act
-    ToolResponse response = commandResult.toToolResponse();
+    ToolResponse response = commandResult.toToolResponse(objectMapper);
 
     // Assert: no error, no content and structuredContent, status should be mapped into _meta
     assertFalse(response.isError());
-    assertThat(response.content()).isEmpty();
+    assertThat(response.content()).hasSize(1);
+    assertThat(response.content().get(0).asText().text()).contains("\"status\"");
     assertNull(response.structuredContent());
     assertNotNull(response._meta());
     assertNotNull(response._meta().get(MetaKey.of("status")));
@@ -48,11 +52,12 @@ public class CommandResultToToolResponseTest {
             .build();
 
     // Act
-    ToolResponse response = commandResult.toToolResponse();
+    ToolResponse response = commandResult.toToolResponse(objectMapper);
 
     // Assert: no error, no content, data in structuredContent, status should be mapped into _meta
     assertFalse(response.isError());
-    assertThat(response.content()).isEmpty();
+    assertThat(response.content()).hasSize(1);
+    assertThat(response.content().get(0).asText().text()).contains("\"data\"");
     assertThat(response.structuredContent()).isNotNull();
     assertInstanceOf(ResponseData.class, response.structuredContent());
     assertNotNull(response._meta());
@@ -68,10 +73,11 @@ public class CommandResultToToolResponseTest {
             .build();
 
     // Act
-    ToolResponse response = commandResult.toToolResponse();
+    ToolResponse response = commandResult.toToolResponse(objectMapper);
 
     // Assert: should be an error in structuredContent, no _meta and content
-    assertThat(response.content()).isEmpty();
+    assertThat(response.content()).hasSize(1);
+    assertThat(response.content().get(0).asText().text()).contains("\"errors\"");
     assertThat(response._meta()).isEmpty();
     assertTrue(response.isError());
     assertThat(response.structuredContent()).isNotNull();
@@ -90,10 +96,11 @@ public class CommandResultToToolResponseTest {
             .build();
 
     // Act
-    ToolResponse response = commandResult.toToolResponse();
+    ToolResponse response = commandResult.toToolResponse(objectMapper);
 
     // Assert: no content, should be an error in structuredContent, and status in _meta
-    assertThat(response.content()).isEmpty();
+    assertThat(response.content()).hasSize(1);
+    assertThat(response.content().get(0).asText().text()).contains("\"errors\"");
     assertTrue(response.isError());
     assertThat(response.structuredContent()).isNotNull();
     @SuppressWarnings("unchecked")
