@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.0.55](https://github.com/stargate/data-api/tree/v1.0.55) (2026-09-22)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.54...v1.0.55)
+
+**Merged pull requests:**
+
+- Ajm/fix 2585 ignore missing lexical [\#2587](https://github.com/stargate/data-api/pull/2587) ([amorton](https://github.com/amorton))
+- Bumping version for next data-api release [\#2586](https://github.com/stargate/data-api/pull/2586) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.54](https://github.com/stargate/data-api/tree/v1.0.54) (2026-09-21)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.53...v1.0.54)
