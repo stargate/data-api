@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "name": "assertions-templates",
+    "kind": "assertion_template"
+  },
+  "templates": {
+    "isSuccess": {
+      "createCollection": {
+        "http.success": null,
+        "response.isDDLSuccess": null
+      },
+      "createKeyspace": {
+        "http.success": null,
+        "response.isDDLSuccess": null
+      },
+      "deleteCollection": {
+        "http.success": null,
+        "response.isDDLSuccess": null
+      },
+      "dropKeyspace": {
+        "http.success": null,
+        "response.isDDLSuccess": null
+      },
+      "find": {
+        "http.success": null,
+        "response.isFindSuccess": null
+      },
+      "findOne": {
+        "http.success": null,
+        "response.isFindSuccess": null
+      },
+      "insertOne": {
+        "http.success": null,
+        "response.isWriteSuccess": null
+      },
+      "insertMany": {
+        "http.success": null,
+        "response.isWriteSuccess": null
+      },
+      "findEmbeddingProviders": {
+        "http.success": null,
+        "response.isDDLSuccess": null
+      },
+      "findOneAndDelete": {
+        "http.success": null,
+        "response.isFindAndSuccess": null
+      },
+      "findOneAndReplace": {
+        "http.success": null,
+        "response.isFindAndSuccess": null
+      },
+      "findOneAndUpdate": {
+        "http.success": null,
+        "response.isFindAndSuccess": null
+      }
+    }
+  }
+}

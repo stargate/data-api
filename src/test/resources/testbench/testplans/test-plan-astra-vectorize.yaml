@@ -1,0 +1,12 @@
+name: Test Plan - Astra - Vectorize Workflows
+customTarget:
+  name: ${TARGET_NAME}
+  backend: astra
+  connection:
+    domain: ${ENDPOINT}
+    port: 443
+    basePath: /api/json/v1
+workflows:
+  - vectorize-header-workflow
+  - vectorize-shared-workflow
+ignoreDisabled: true

@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "name": "findEmbeddingProviders-workflow",
+    "kind": "workflow"
+  },
+  "jobs": [
+    {
+      "meta": {
+        "name": "findEmbeddingProviders",
+        "tags": [
+        ]
+      },
+      "fromEnvironment": {
+        "Token": "Token"
+      },
+      "variables": {
+      },
+      "matrix": {
+        "filterModelStatus": [
+          "SUPPORTED",
+          "DEPRECATED",
+          "END_OF_LIFE"
+        ]
+      },
+      "tests": [
+        "findEmbeddingProviders"
+      ]
+    }
+  ]
+}
