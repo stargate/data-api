@@ -18,6 +18,7 @@ import org.mockito.ArgumentCaptor;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
@@ -115,6 +116,9 @@ class S3BatchedLogUploaderTest {
     assertThat(request.contentType())
         .as("content type is as expected")
         .isEqualTo(S3BatchedLogUploader.CONTENT_TYPE_NDJSON);
+    assertThat(request.acl())
+        .as("bucket owner has full control of billing objects")
+        .isEqualTo(ObjectCannedACL.BUCKET_OWNER_FULL_CONTROL);
 
     var body = bodyCaptor.getValue();
     assertThat(body.contentLength()).as("content length matches batch").hasValue(BATCH.bytes());
