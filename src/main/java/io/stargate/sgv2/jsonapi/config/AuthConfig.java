@@ -88,7 +88,7 @@ public interface AuthConfig {
      * @return The type of the {@link RequestAuthTokenResolver} used.
      */
     @WithDefault("principal")
-    Optional<@Pattern(regexp = "header|principal|fixed") String> type();
+    Optional<@Pattern(regexp = "header|principal|fixed|bearer") String> type();
 
     /**
      * @return Specific settings for the <code>header</code> token resolver type.
@@ -119,6 +119,21 @@ public interface AuthConfig {
        * @return Token value.
        */
       Optional<String> token();
+    }
+
+    /**
+     * @return Specific settings for the <code>bearer</code> token resolver type.
+     */
+    @Valid
+    BearerTokenResolverConfig bearer();
+
+    interface BearerTokenResolverConfig {
+
+      /**
+       * @return URL of the JWKS endpoint used to validate Bearer JWT signatures. E.g. {@code
+       *     http://auth-manager:8080/v2/jwks}.
+       */
+      Optional<String> jwksUrl();
     }
   }
 }
