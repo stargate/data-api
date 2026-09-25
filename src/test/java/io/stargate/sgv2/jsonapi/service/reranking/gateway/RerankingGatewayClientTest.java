@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.reranking.gateway;
 
+import static io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties.TruncateOption.NONE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -46,7 +47,7 @@ public class RerankingGatewayClientTest {
           .RequestPropertiesImpl
       REQUEST_PROPERTIES =
           new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10);
+              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10, NONE);
 
   private static final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig MODEL_CONFIG =
       new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
