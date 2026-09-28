@@ -5,6 +5,8 @@ import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Usage of a model, any model, recorded for billing or metrics purposes.
@@ -13,6 +15,8 @@ import java.util.Objects;
  * Note that the durations are added , use the batchCount to get average duration.
  */
 public final class ModelUsage implements Recordable {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ModelUsage.class);
 
   private final ModelProvider modelProvider;
   private final ModelType modelType;
@@ -99,6 +103,10 @@ public final class ModelUsage implements Recordable {
       EmbeddingGateway.ModelUsage grpcModelUsage, Tenant tenant) {
     Objects.requireNonNull(tenant, "tenant must not be null");
     if (!tenant.toString().equalsIgnoreCase(grpcModelUsage.getTenantId())) {
+      LOGGER.warn(
+          "fromEmbeddingGateway() - tenant mismatch, requestTenant: {}, gatewayTenant: {}",
+          tenant,
+          grpcModelUsage.getTenantId());
       throw new IllegalArgumentException(
           "Gateway model usage tenant does not match request tenant");
     }
