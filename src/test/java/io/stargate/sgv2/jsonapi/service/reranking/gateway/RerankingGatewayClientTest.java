@@ -13,6 +13,7 @@ import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.RerankingService;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
@@ -63,6 +64,9 @@ public class RerankingGatewayClientTest {
 
   @Test
   void handleValidResponse() {
+    var tenant =
+        Tenant.create(
+            testConstants.TENANT.databaseType(), testConstants.TENANT.toString(), "eu-central-1");
     RerankingService rerankService = mock(RerankingService.class);
     final EmbeddingGateway.RerankingResponse.Builder builder =
         EmbeddingGateway.RerankingResponse.newBuilder();
@@ -99,7 +103,7 @@ public class RerankingGatewayClientTest {
         new RerankingEGWClient(
             ModelProvider.NVIDIA,
             MODEL_CONFIG,
-            testConstants.TENANT,
+            tenant,
             "default",
             rerankService,
             Map.of(),
@@ -107,7 +111,11 @@ public class RerankingGatewayClientTest {
 
     final RerankingProvider.BatchedRerankingResponse response =
         rerankEGWClient
-            .rerank(1, "apple", List.of("orange", "apple"), RERANK_CREDENTIALS)
+            .rerank(
+                1,
+                "apple",
+                List.of("orange", "apple"),
+                new RerankingCredentials(tenant, "mocked reranking api key"))
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .awaitItem()
@@ -123,6 +131,7 @@ public class RerankingGatewayClientTest {
     assertThat(response.ranks().get(1).score()).isEqualTo(0.1f);
 
     assertThat(response.modelUsage()).isNotNull();
+    assertThat(response.modelUsage().tenant().region()).isEqualTo("eu-central-1");
     assertThat(response.modelUsage().modelType()).isEqualTo(ModelType.RERANKING);
     assertThat(response.modelUsage().modelProvider()).isEqualTo(ModelProvider.NVIDIA);
     assertThat(response.modelUsage().modelName()).isEqualTo("llama-3.2-nv-rerankqa-1b-v2");

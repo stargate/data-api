@@ -353,7 +353,8 @@ public abstract class ProviderBase {
         durationNanos);
   }
 
-  protected ModelUsage createModelUsage(EmbeddingGateway.ModelUsage gatewayModelUsage) {
-    return ModelUsage.fromEmbeddingGateway(gatewayModelUsage);
+  protected ModelUsage createModelUsage(
+      Tenant tenant, EmbeddingGateway.ModelUsage gatewayModelUsage) {
+    return ModelUsage.fromEmbeddingGateway(gatewayModelUsage, tenant);
   }
 }

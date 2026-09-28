@@ -12,6 +12,8 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -105,6 +107,9 @@ public class EmbeddingGatewayClientTest {
 
   @Test
   void handleValidResponse() {
+    var tenant =
+        Tenant.create(
+            testConstants.TENANT.databaseType(), testConstants.TENANT.toString(), "eu-central-1");
 
     var floatEmbeddingBuilder =
         EmbeddingGateway.EmbeddingResponse.FloatEmbedding.newBuilder()
@@ -145,7 +150,7 @@ public class EmbeddingGatewayClientTest {
             SERVICE_CONFIG,
             1536,
             Map.of(),
-            testConstants.TENANT,
+            tenant,
             "default",
             embeddingService,
             Map.of(),
@@ -156,7 +161,8 @@ public class EmbeddingGatewayClientTest {
             .vectorize(
                 1,
                 List.of("data 1", "data 2"),
-                testConstants.EMBEDDING_CREDENTIALS,
+                new EmbeddingCredentials(
+                    tenant, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()),
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
@@ -171,6 +177,7 @@ public class EmbeddingGatewayClientTest {
     assertThat(response.embeddings().get(1).length).isEqualTo(5);
 
     assertThat(response.modelUsage()).isNotNull();
+    assertThat(response.modelUsage().tenant().region()).isEqualTo("eu-central-1");
     assertThat(response.modelUsage().modelProvider()).isEqualTo(ModelProvider.OPENAI);
     assertThat(response.modelUsage().modelType()).isEqualTo(ModelType.EMBEDDING);
     assertThat(response.modelUsage().modelName()).isEqualTo("test-model");
