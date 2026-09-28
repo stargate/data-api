@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.0.57](https://github.com/stargate/data-api/tree/v1.0.57) (2026-09-28)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.56...v1.0.57)
+
+**Merged pull requests:**
+
+- Fix region loss in gateway billing usage [\#2594](https://github.com/stargate/data-api/pull/2594) ([erichare](https://github.com/erichare))
+- Bumping version for next data-api release [\#2593](https://github.com/stargate/data-api/pull/2593) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.56](https://github.com/stargate/data-api/tree/v1.0.56) (2026-09-25)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.55...v1.0.56)
