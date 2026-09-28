@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.0.56](https://github.com/stargate/data-api/tree/v1.0.56) (2026-09-25)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.55...v1.0.56)
+
+**Merged pull requests:**
+
+- Grant bucket owner full control on billing S3 uploads [\#2592](https://github.com/stargate/data-api/pull/2592) ([erichare](https://github.com/erichare))
+- Bumping version for next data-api release [\#2588](https://github.com/stargate/data-api/pull/2588) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.55](https://github.com/stargate/data-api/tree/v1.0.55) (2026-09-22)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.54...v1.0.55)
