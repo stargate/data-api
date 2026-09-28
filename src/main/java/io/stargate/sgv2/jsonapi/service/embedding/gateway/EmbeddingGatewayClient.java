@@ -208,7 +208,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
                           })
                       .toList();
               return new BatchedEmbeddingResponse(
-                  batchId, vectors, createModelUsage(gatewayResponse.getModelUsage()));
+                  batchId, vectors, createModelUsage(tenant, gatewayResponse.getModelUsage()));
             });
   }
 

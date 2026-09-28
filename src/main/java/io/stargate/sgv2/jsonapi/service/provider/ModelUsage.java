@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.provider;
 
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
-import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
@@ -95,8 +94,14 @@ public final class ModelUsage implements Recordable {
     this.batchCount = batchCount;
   }
 
-  /** Create a ModelUsage from an EmbeddingGateway.ModelUsage. grpc object */
-  public static ModelUsage fromEmbeddingGateway(EmbeddingGateway.ModelUsage grpcModelUsage) {
+  /** Create gateway usage with the request tenant, since the gateway does not carry its region. */
+  public static ModelUsage fromEmbeddingGateway(
+      EmbeddingGateway.ModelUsage grpcModelUsage, Tenant tenant) {
+    Objects.requireNonNull(tenant, "tenant must not be null");
+    if (!tenant.toString().equalsIgnoreCase(grpcModelUsage.getTenantId())) {
+      throw new IllegalArgumentException(
+          "Gateway model usage tenant does not match request tenant");
+    }
 
     return new ModelUsage(
         ModelProvider.fromApiName(grpcModelUsage.getModelProvider())
@@ -112,7 +117,7 @@ public final class ModelUsage implements Recordable {
                         "ModelUsage() - Unknown grpcModelUsage.getModelType(): '%s'"
                             .formatted(grpcModelUsage.getModelType()))),
         grpcModelUsage.getModelName(),
-        TenantFactory.instance().create(grpcModelUsage.getTenantId()),
+        tenant,
         ModelInputType.fromEmbeddingGateway(grpcModelUsage.getInputType())
             .orElseThrow(
                 () ->
