@@ -48,7 +48,37 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
 
   @Override
   protected FilterClause validateAndBuild(LogicalExpression rootExpr) {
+    validateOpenSearchExclusivity(rootExpr);
     return new FilterClause(validateWithSchema(rootExpr));
+  }
+
+  private void validateOpenSearchExclusivity(LogicalExpression rootExpr) {
+    boolean hasSearch = hasOpenSearchField(rootExpr);
+    if (hasSearch) {
+      if (rootExpr.logicalExpressions.size() > 0
+          || rootExpr.comparisonExpressions.size() != 1
+          || !DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD.equals(
+              rootExpr.comparisonExpressions.get(0).getPath())) {
+        throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
+            Map.of(
+                "message",
+                "cannot combine '$search' with other filter expressions: '$search' must be the only filter condition"));
+      }
+    }
+  }
+
+  private boolean hasOpenSearchField(LogicalExpression logicalExpression) {
+    for (ComparisonExpression comp : logicalExpression.comparisonExpressions) {
+      if (DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD.equals(comp.getPath())) {
+        return true;
+      }
+    }
+    for (LogicalExpression subExpr : logicalExpression.logicalExpressions) {
+      if (hasOpenSearchField(subExpr)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override
@@ -81,14 +111,6 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
         case DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD -> {
           if (!schema.openSearchDef().enabled()) {
             throw SchemaException.Code.OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION.get(errVars(schema));
-          }
-          // Only $eq (implicit string value) valid on $search field
-          if (operator != ValueComparisonOperator.EQ) {
-            throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
-                Map.of(
-                    "message",
-                    "cannot filter on '%s' field using operator '%s': only a plain string value is supported"
-                        .formatted(path, operator.getOperator())));
           }
           return path;
         }

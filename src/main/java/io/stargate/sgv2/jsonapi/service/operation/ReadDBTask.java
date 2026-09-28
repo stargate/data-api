@@ -183,7 +183,15 @@ public class ReadDBTask<SchemaT extends TableBasedSchemaObject> extends DBTask<S
     // these are options that go on the statement, such as page size
     statement = applyOptions(statement);
 
-    return rowSorter.updatePagingState(pagingState).addToStatement(statement);
+    statement = rowSorter.updatePagingState(pagingState).addToStatement(statement);
+
+    // Log full CQL at INFO so it can always be inspected in cqlsh without enabling debug/trace
+    LOGGER.info(
+        "[ReadDBTask] buildReadStatement() - FULL CQL: cql='{}', positionalValues={}",
+        statement.getQuery(),
+        statement.getPositionalValues());
+
+    return statement;
   }
 
   protected Select applySelect(SelectFrom selectFrom, List<Object> positionalValues) {

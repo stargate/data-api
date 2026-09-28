@@ -1408,7 +1408,8 @@ request-errors:
     code: OPEN_SEARCH_MISSING_FIELD_MAPPINGS
     title: OpenSearch mappings are required
     body: |-
-      'openSearch.mappings' is required, must be a non-empty object, and must not contain '_id'.
+      'openSearch.mappings' is required, must be a non-empty object, and must not contain reserved field names.
+      Reserved field names that cannot be used in OpenSearch mappings: '_id' (built-in OpenSearch metadata field), and any field starting with '$' (Data API internal fields such as '$vector' and '$lexical' are stored in dedicated Cassandra columns, not in the document JSON that OpenSearch indexes).
 
   - scope: SCHEMA
     code: OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION

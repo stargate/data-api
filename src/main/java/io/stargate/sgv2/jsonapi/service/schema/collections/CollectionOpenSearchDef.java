@@ -77,6 +77,14 @@ public record CollectionOpenSearchDef(
     if (mappings.has("_id")) {
       throw SchemaException.Code.OPEN_SEARCH_MISSING_FIELD_MAPPINGS.get();
     }
+    mappings
+        .fieldNames()
+        .forEachRemaining(
+            fieldName -> {
+              if (fieldName.startsWith("$")) {
+                throw SchemaException.Code.OPEN_SEARCH_MISSING_FIELD_MAPPINGS.get();
+              }
+            });
 
     String defaultIndexName = "hcd_%s_%s".formatted(keyspace, collectionName);
     String indexName =
@@ -161,7 +169,6 @@ public record CollectionOpenSearchDef(
 
   public ObjectNode customMappings(ObjectMapper objectMapper) {
     ObjectNode properties = objectMapper.createObjectNode();
-    properties.putObject("_id").put("type", "keyword");
     mappings().properties().forEach(entry -> properties.set(entry.getKey(), entry.getValue()));
     return objectMapper.createObjectNode().set("properties", properties);
   }

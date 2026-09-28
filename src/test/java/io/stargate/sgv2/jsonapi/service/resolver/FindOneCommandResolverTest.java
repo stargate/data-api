@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -15,7 +16,9 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.filters.collection.OpenSearchCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
@@ -356,6 +359,46 @@ public class FindOneCommandResolverTest {
 
               assertThat(op.objectMapper()).isEqualTo(objectMapper);
               assertThat(op.commandContext()).isEqualTo(commandContext);
+              assertThat(op.limit()).isEqualTo(1);
+              assertThat(op.pageSize()).isEqualTo(1);
+              assertThat(op.pageState()).isNull();
+              assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+              assertThat(op.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+              assertThat(op.singleResponse()).isTrue();
+            });
+  }
+
+  @Test
+  public void openSearchFilterCondition() throws Exception {
+    String json =
+        """
+        {
+          "findOne": {
+            "filter" : {"$search" : {"match": {"title": "Widget"}}}
+          }
+        }
+        """;
+
+    CommandContext<CollectionSchemaObject> osContext =
+        testConstants.collectionContext(
+            testConstants.COMMAND_NAME, testConstants.OPEN_SEARCH_COLLECTION_SCHEMA_OBJECT);
+
+    FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
+    Operation operation = resolver.resolveCommand(osContext, command);
+
+    assertThat(operation)
+        .isInstanceOfSatisfying(
+            FindCollectionOperation.class,
+            op -> {
+              String saiIndexName = osContext.schemaObject().openSearchDef().saiIndexName();
+              JsonNode queryDsl =
+                  objectMapper
+                      .createObjectNode()
+                      .set("match", objectMapper.createObjectNode().put("title", "Widget"));
+              DBFilterBase filter = new OpenSearchCollectionFilter(saiIndexName, queryDsl);
+
+              assertThat(op.objectMapper()).isEqualTo(objectMapper);
+              assertThat(op.commandContext()).isEqualTo(osContext);
               assertThat(op.limit()).isEqualTo(1);
               assertThat(op.pageSize()).isEqualTo(1);
               assertThat(op.pageState()).isNull();

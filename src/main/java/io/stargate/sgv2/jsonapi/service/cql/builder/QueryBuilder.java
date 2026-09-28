@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.cql.ColumnUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.ArrayList;
 import java.util.List;
@@ -240,7 +241,13 @@ public class QueryBuilder {
         BuiltCondition condition = variable.getValue();
         condition.lhs.appendToBuilder(sb);
         condition.rhsTerm.appendPositionalValue(values);
-        sb.append(condition.predicate.getCql()).append("?");
+        if (condition.predicate == BuiltConditionPredicate.EXPR) {
+          // expr(<indexName>, ?) — the LHS already appended "expr(name, "
+          // so we just need the bound placeholder and the closing paren.
+          sb.append("?").append(")");
+        } else {
+          sb.append(condition.predicate.getCql()).append("?");
+        }
       }
       default ->
           throw ServerException.internalServerError(

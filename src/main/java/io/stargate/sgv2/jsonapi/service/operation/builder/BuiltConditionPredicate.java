@@ -18,7 +18,9 @@ public enum BuiltConditionPredicate {
   NEQ("!="),
   NOT_CONTAINS("NOT CONTAINS"),
   NOT_CONTAINS_KEY("NOT CONTAINS KEY"),
-  TEXT_SEARCH(":");
+  TEXT_SEARCH(":"),
+  /** Used for CQL {@code expr(<indexName>, ?)} predicates (HCD OpenSearch). */
+  EXPR("");
 
   /**
    * Stores the CQL string representation of the predicate, wrapped with spaces on both sides. While

@@ -94,7 +94,7 @@ public abstract class CollectionFilter extends DBFilterBase {
     return nodeFactory.nullNode();
   }
 
-  protected static JsonNode toJsonNode(JsonNodeFactory nodeFactory, Object value) {
+  public static JsonNode toJsonNode(JsonNodeFactory nodeFactory, Object value) {
     return switch (value) {
       case null -> nodeFactory.nullNode();
       case DocumentId id -> toJsonNode(nodeFactory, id);
@@ -102,6 +102,9 @@ public abstract class CollectionFilter extends DBFilterBase {
       case BigDecimal bd -> toJsonNode(nodeFactory, bd);
       case Boolean b -> toJsonNode(nodeFactory, b);
       case Date d -> toJsonNode(nodeFactory, d);
+      case Map<?, ?> map -> toJsonNode(nodeFactory, (Map<String, Object>) map);
+      case List<?> list -> toJsonNode(nodeFactory, (List<Object>) list);
+      case JsonNode jsonNode -> jsonNode;
       default ->
           throw ServerException.internalServerError(
               "Unexpected Object class for CollectionFilter: " + value.getClass().getName());

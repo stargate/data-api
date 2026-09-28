@@ -10,10 +10,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
+import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.filters.collection.OpenSearchCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -188,6 +191,32 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           operationsConfig.maxDocumentSortCount(),
           includeSortVector);
     }
+
+    // OpenSearch $search: the expr(index, ?) predicate is fully evaluated inside OpenSearch before
+    // Cassandra returns rows — a CQL LIMIT N would cap the result to N rows in a single shot and
+    // cause hasMorePages()=false, so there would be no cursor for page 2.
+    // Fix: emit NO CQL LIMIT (buildSelectQueries will pass null to QueryBuilder when it detects an
+    // OpenSearch filter); the driver's pageSize controls how many rows come back per Cassandra
+    // page,
+    // which gives us a real pagingState cursor for subsequent pages.
+    // The in-memory limit trim (applyLimitToFindResponses) is bypassed via Integer.MAX_VALUE.
+    if (hasOpenSearchFilter(resolvedDbLogicalExpression)) {
+      int openSearchPageSize =
+          (limit == Integer.MAX_VALUE)
+              ? QueryBuilder.DEFAULT_BM25_LIMIT
+              : Math.min(limit, QueryBuilder.MAX_BM25_LIMIT);
+      return FindCollectionOperation.unsorted(
+          commandContext,
+          resolvedDbLogicalExpression,
+          command.buildProjector(),
+          pageState,
+          Integer.MAX_VALUE, // no in-memory trim — OpenSearch already bounded the result set
+          openSearchPageSize, // driver pageSize controls the Cassandra fetch window
+          CollectionReadType.DOCUMENT,
+          objectMapper,
+          includeSortVector);
+    }
+
     // Hack: See https://github.com/stargate/data-api/issues/1961
     // not commandContext.getHybridLimits() becuase there is no limit for a non ANN or BM25 query
     return FindCollectionOperation.unsorted(
@@ -200,5 +229,23 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
         CollectionReadType.DOCUMENT,
         objectMapper,
         includeSortVector);
+  }
+
+  /**
+   * Returns true if the resolved expression contains at least one {@link
+   * OpenSearchCollectionFilter}.
+   */
+  private static boolean hasOpenSearchFilter(DBLogicalExpression expr) {
+    for (var filter : expr.filters()) {
+      if (filter instanceof OpenSearchCollectionFilter) {
+        return true;
+      }
+    }
+    for (var sub : expr.subExpressions()) {
+      if (hasOpenSearchFilter(sub)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

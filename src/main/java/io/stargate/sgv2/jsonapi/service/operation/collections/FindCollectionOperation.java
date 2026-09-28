@@ -19,6 +19,7 @@ import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.CollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.filters.collection.OpenSearchCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -27,6 +28,8 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMe
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.util.*;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Operation that returns the documents or its key based on the filter condition. */
 public record FindCollectionOperation(
@@ -53,6 +56,9 @@ public record FindCollectionOperation(
     /** Whether to include the sort vector in the response. This is used for vector search. */
     boolean includeSortVector)
     implements CollectionReadOperation {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(FindCollectionOperation.class);
+
   /**
    * Constructs find operation for unsorted single document find.
    *
@@ -501,8 +507,14 @@ public record FindCollectionOperation(
     final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(dbLogicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
+      LOGGER.info(
+          "[FindCollectionOperation] buildSelectQueries() - expressions=null, will find nothing");
       return List.of();
     }
+    // For OpenSearch expr() queries, omit the CQL LIMIT entirely.  A LIMIT N causes OpenSearch to
+    // return exactly N rows in a single shot → hasMorePages()=false → no pagingState cursor.
+    // Driver pageSize (set by the caller) controls the Cassandra fetch window instead.
+    final boolean openSearch = hasOpenSearchFilter(dbLogicalExpression);
     List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
@@ -519,7 +531,7 @@ public record FindCollectionOperation(
                         commandContext.schemaObject().identifier().keyspace(),
                         commandContext.schemaObject().identifier().table())
                     .where(expression)
-                    .limit(limit);
+                    .limit(openSearch ? null : limit);
             var bm25Expr = bm25SearchExpression();
             if (bm25Expr != null) {
               qb =
@@ -530,10 +542,62 @@ public record FindCollectionOperation(
           } else {
             query = getVectorSearchQueryByExpression(expression);
           }
-          queries.add(query.queryToStatement());
+          SimpleStatement stmt = query.queryToStatement();
+          logStatementForCqlsh(stmt);
+          queries.add(stmt);
         });
 
     return queries;
+  }
+
+  /** Returns {@code true} if {@code expr} (recursively) contains an OpenSearch filter. */
+  private static boolean hasOpenSearchFilter(DBLogicalExpression expr) {
+    for (var filter : expr.filters()) {
+      if (filter instanceof OpenSearchCollectionFilter) {
+        return true;
+      }
+    }
+    for (var sub : expr.subExpressions()) {
+      if (hasOpenSearchFilter(sub)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Logs the CQL statement in two forms:
+   *
+   * <ol>
+   *   <li>The parameterised form with positional values list (as the driver sees it)
+   *   <li>A cqlsh-ready form where every {@code ?} placeholder is replaced inline with the
+   *       corresponding value, so the statement can be copy-pasted directly into cqlsh.
+   * </ol>
+   */
+  private static void logStatementForCqlsh(SimpleStatement stmt) {
+    String cql = stmt.getQuery();
+    List<Object> values = stmt.getPositionalValues();
+    LOGGER.info("[FindCollectionOperation] CQL template  : {}", cql);
+    LOGGER.info("[FindCollectionOperation] Bound values  : {}", values);
+
+    // Build a cqlsh-ready string by substituting each ? with the value as a CQL literal
+    StringBuilder cqlsh = new StringBuilder();
+    int valueIdx = 0;
+    for (int i = 0; i < cql.length(); i++) {
+      char c = cql.charAt(i);
+      if (c == '?' && valueIdx < values.size()) {
+        Object v = values.get(valueIdx++);
+        if (v instanceof String s) {
+          // Escape single quotes and wrap in single quotes
+          cqlsh.append('\'').append(s.replace("'", "''")).append('\'');
+        } else {
+          cqlsh.append(v);
+        }
+      } else {
+        cqlsh.append(c);
+      }
+    }
+    LOGGER.info("[FindCollectionOperation] CQLSH-ready   : {}", cqlsh);
   }
 
   /**

@@ -6,7 +6,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -53,6 +55,15 @@ public class FindAndRerankCommandResolver implements CommandResolver<FindAndRera
         commandContext.apiFeatures().isFeatureEnabled(ApiFeature.RERANKING);
     if (!isRerankingEnabledForAPI) {
       throw SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED.get();
+    }
+
+    if (command.filterDefinition() != null
+        && command.filterDefinition().json() != null
+        && command
+            .filterDefinition()
+            .json()
+            .has(DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD)) {
+      throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
     }
 
     return new FindAndRerankOperationBuilder(commandContext)

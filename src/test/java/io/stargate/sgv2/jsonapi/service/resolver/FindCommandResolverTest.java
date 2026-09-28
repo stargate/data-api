@@ -313,6 +313,46 @@ public class FindCommandResolverTest {
     }
 
     @Test
+    public void openSearchFilterCondition() throws Exception {
+      String json =
+          """
+          {
+            "find": {
+              "filter" : {"$search" : {"match": {"title": "Widget"}}}
+            }
+          }
+          """;
+
+      CommandContext<CollectionSchemaObject> osContext =
+          testConstants.collectionContext(
+              TestConstants.COMMAND_NAME, testConstants.OPEN_SEARCH_COLLECTION_SCHEMA_OBJECT);
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(osContext, findCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindCollectionOperation.class,
+              find -> {
+                String saiIndexName = osContext.schemaObject().openSearchDef().saiIndexName();
+                JsonNode queryDsl =
+                    objectMapper
+                        .createObjectNode()
+                        .set("match", objectMapper.createObjectNode().put("title", "Widget"));
+                DBFilterBase filter = new OpenSearchCollectionFilter(saiIndexName, queryDsl);
+
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(osContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pageState()).isNull();
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
+              });
+    }
+
+    @Test
     public void noFilterCondition() throws Exception {
       String json =
           """

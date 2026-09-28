@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -1360,6 +1361,69 @@ public class FilterClauseBuilderTest {
                     .contains(
                         "cannot filter on '$lexical' field using operator '$eq': only '$match' is supported");
               });
+    }
+
+    @Test
+    public void validOpenSearchFilter() {
+      String json =
+          """
+          {"$search": {"match": {"title": "Widget"}}}
+          """;
+      FilterClause filterClause =
+          FilterClauseBuilder.builderFor(testConstants.OPEN_SEARCH_COLLECTION_SCHEMA_OBJECT)
+              .build(operationsConfig, readJsonTree(json));
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo("$search");
+    }
+
+    @Test
+    public void mustFailOnSearchWhenDisabled() {
+      String json =
+          """
+          {"$search": {"match": {"title": "Widget"}}}
+          """;
+      Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
+      assertThat(throwable)
+          .isInstanceOf(SchemaException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .contains(
+                        "The '$search' filter can only be used on collections for which the OpenSearch feature is enabled");
+              });
+    }
+
+    @Test
+    public void mustFailOnSearchCombinedWithOtherFilters() {
+      String json =
+          """
+          {
+            "$search": {"match": {"title": "Widget"}},
+            "status": "published"
+          }
+          """;
+      Throwable throwable =
+          catchThrowable(
+              () ->
+                  FilterClauseBuilder.builderFor(testConstants.OPEN_SEARCH_COLLECTION_SCHEMA_OBJECT)
+                      .build(operationsConfig, readJsonTree(json)));
+      assertThat(throwable)
+          .isInstanceOf(FilterException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .contains("cannot combine '$search' with other filter expressions");
+              });
+    }
+  }
+
+  private com.fasterxml.jackson.databind.JsonNode readJsonTree(String json) {
+    try {
+      return objectMapper.readTree(json);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
   }
 

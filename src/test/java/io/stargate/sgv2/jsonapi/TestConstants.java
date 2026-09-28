@@ -123,6 +123,7 @@ public class TestConstants {
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY;
   public final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
+  public final CollectionSchemaObject OPEN_SEARCH_COLLECTION_SCHEMA_OBJECT;
   public final TableSchemaObject TABLE_SCHEMA_OBJECT;
   public final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
   public final DatabaseSchemaObject DATABASE_SCHEMA_OBJECT;
@@ -247,6 +248,25 @@ public class TestConstants {
                     true,
                     new CollectionRerankDef.RerankServiceDef(
                         "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
+
+    OPEN_SEARCH_COLLECTION_SCHEMA_OBJECT =
+        new CollectionSchemaObject(
+            COLLECTION_IDENTIFIER,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.NOT_ENABLED_CONFIG,
+            null,
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
+            new io.stargate.sgv2.jsonapi.service.schema.collections
+                    .CollectionOpenSearchDefSchemaFactory()
+                .currentVersion(
+                    new io.stargate.sgv2.jsonapi.service.schema.collections.CollectionOpenSearchDef(
+                        true,
+                        "hcd_" + KEYSPACE_NAME + "_" + COLLECTION_NAME,
+                        null,
+                        null,
+                        null,
+                        "hcd_" + KEYSPACE_NAME + "_" + COLLECTION_NAME)),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null));
 
     TABLE_SCHEMA_OBJECT = new TableSchemaObject(TABLE_IDENTIFIER);
 

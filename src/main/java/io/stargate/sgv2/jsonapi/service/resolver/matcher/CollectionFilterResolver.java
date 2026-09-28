@@ -1,11 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.WithWarnings;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -15,6 +19,8 @@ import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.BiConsumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link FilterResolver} for resolving {@link FilterClause} against a {@link
@@ -27,6 +33,8 @@ import java.util.function.BiConsumer;
  */
 public class CollectionFilterResolver<T extends Command & Filterable>
     extends FilterResolver<T, CollectionSchemaObject> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CollectionFilterResolver.class);
 
   private static final Object ID_GROUP = new Object();
   private static final Object ID_GROUP_IN = new Object();
@@ -53,6 +61,39 @@ public class CollectionFilterResolver<T extends Command & Filterable>
   }
 
   @Override
+  public WithWarnings<DBLogicalExpression> resolve(
+      CommandContext<CollectionSchemaObject> commandContext, T command) {
+    WithWarnings<DBLogicalExpression> resolved = super.resolve(commandContext, command);
+    if (commandContext != null
+        && commandContext.schemaObject() != null
+        && commandContext.schemaObject().openSearchDef() != null) {
+      String saiIndexName = commandContext.schemaObject().openSearchDef().saiIndexName();
+      LOGGER.info(
+          "[CollectionFilterResolver] resolve() - openSearchDef present, saiIndexName={}, openSearchEnabled={}",
+          saiIndexName,
+          commandContext.schemaObject().openSearchDef().enabled());
+      populateSaiIndexName(resolved.target(), saiIndexName);
+    } else {
+      LOGGER.info(
+          "[CollectionFilterResolver] resolve() - no openSearchDef on schema, $search filter will have null saiIndexName");
+    }
+    return resolved;
+  }
+
+  private void populateSaiIndexName(DBLogicalExpression expr, String saiIndexName) {
+    if (expr == null) return;
+    for (var filter : expr.filters()) {
+      if (filter instanceof OpenSearchCollectionFilter osFilter
+          && osFilter.saiIndexName() == null) {
+        osFilter.setSaiIndexName(saiIndexName);
+      }
+    }
+    for (var subExpr : expr.subExpressions()) {
+      populateSaiIndexName(subExpr, saiIndexName);
+    }
+  }
+
+  @Override
   protected FilterMatchRules<T> buildMatchRules() {
     var matchRules = new FilterMatchRules<T>();
 
@@ -70,6 +111,27 @@ public class CollectionFilterResolver<T extends Command & Filterable>
         .matcher()
         .capture(ID_GROUP_IN)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
+
+    // Dedicated rule for $search placed BEFORE the GREEDY rule so that a $search filter is
+    // matched here and never stolen by the wildcard ("*") captures (DYNAMIC_TEXT_GROUP,
+    // SUB_DOC_EQUALS, …) that come first inside the GREEDY capture list.
+    // GREEDY is used because the two captures cover the two legal value shapes (String and
+    // sub-document); only one will fire and GREEDY tolerates unmatched captures.
+    // $search is always the sole filter (enforced by CollectionFilterClauseBuilder), so
+    // unmatchedComparisonExpressionCount will reach 0 and the rule succeeds.
+    matchRules
+        .addMatchRule(CollectionFilterResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
+        .matcher()
+        .capture(SEARCH_GROUP)
+        .compareValues(
+            DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD,
+            EnumSet.of(ValueComparisonOperator.EQ),
+            JsonType.STRING)
+        .capture(SEARCH_GROUP)
+        .compareValues(
+            DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD,
+            EnumSet.of(ValueComparisonOperator.EQ),
+            JsonType.SUB_DOC);
 
     matchRules
         .addMatchRule(CollectionFilterResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
@@ -164,13 +226,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
         .capture(MATCH_GROUP)
         .compareValues(
             // Should be "$lexical" but validated elsewhere
-            "*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING)
-        .capture(SEARCH_GROUP)
-        .compareValues(
-            // Should be "$search" but validated elsewhere
-            DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD,
-            EnumSet.of(ValueComparisonOperator.EQ),
-            JsonType.STRING);
+            "*", EnumSet.of(ValueComparisonOperator.MATCH), JsonType.STRING);
 
     return matchRules;
   }
@@ -536,9 +592,28 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<Object> searchGroup = (CaptureGroup<Object>) captureGroup;
                     searchGroup.consumeAllCaptures(
                         expression -> {
-                          dbLogicalExpression.addFilter(
-                              new SearchCollectionFilter(
-                                  expression.path(), (String) expression.value()));
+                          LOGGER.info(
+                              "[CollectionFilterResolver] findDynamic() SEARCH_GROUP - path={}, operator={}, valueType={}, value={}",
+                              expression.path(),
+                              expression.operator(),
+                              expression.value() == null
+                                  ? "null"
+                                  : expression.value().getClass().getSimpleName(),
+                              expression.value());
+                          JsonNode queryDsl;
+                          if (expression.value() instanceof JsonNode jsonNode) {
+                            queryDsl = jsonNode;
+                          } else if (expression.value() instanceof String str) {
+                            queryDsl = JsonNodeFactory.instance.textNode(str);
+                          } else {
+                            queryDsl =
+                                CollectionFilter.toJsonNode(
+                                    JsonNodeFactory.instance, expression.value());
+                          }
+                          LOGGER.info(
+                              "[CollectionFilterResolver] findDynamic() SEARCH_GROUP - resolved queryDsl={}",
+                              queryDsl);
+                          dbLogicalExpression.addFilter(new OpenSearchCollectionFilter(queryDsl));
                         });
                   });
         };
