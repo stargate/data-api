@@ -77,14 +77,7 @@ public record ReadAndUpdateCollectionOperation(
               pageStateReference.set(findResponse.pageState());
               final List<ReadDocument> docs = findResponse.docs();
               if (upsert() && docs.isEmpty() && matchedCount.get() == 0) {
-                // TODO: creating the new document here, with the defaults from the filter, makes it
-                // harder because the new document created here may nto have an _id if there was
-                // none in the filter. A better approach may be to have the documentUpdater create
-                // the upsert document totally in once place.
-                // Currently creating to upsert document is in multiple places. To do this we would
-                // create UpdateOperations from the filter and give them to the document updated
-                // when it is created.
-                return Multi.createFrom().item(findCollectionOperation().getNewDocument());
+                return Multi.createFrom().item(findCollectionOperation().newEmptyDocument());
               } else {
                 matchedCount.addAndGet(docs.size());
                 return Multi.createFrom().items(docs.stream());
@@ -182,7 +175,11 @@ public record ReadAndUpdateCollectionOperation(
               JsonNode originalDocument = upsert ? null : readDocument.get();
 
               DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
-                  documentUpdater().apply(readDocument.get().deepCopy(), upsert);
+                  documentUpdater()
+                      .apply(
+                          readDocument.get().deepCopy(),
+                          upsert,
+                          findCollectionOperation()::reconstructDocumentFromFilter);
 
               return documentUpdaterResponse
                   .updateEmbeddingVector(
