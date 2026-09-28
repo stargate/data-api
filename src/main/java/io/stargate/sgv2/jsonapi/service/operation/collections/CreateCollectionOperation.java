@@ -25,6 +25,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -613,15 +614,12 @@ public record CreateCollectionOperation(
     }
 
     if (overrideLexicalDef.enabled()) {
-      var analyzerDef = overrideLexicalDef.analyzerDefinition();
-      var analyzerString = analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
       statements.add(
-          buildSaiIndex(
-              collectionExisted,
-              "query_lexical_value",
-              "query_lexical_value",
-              false,
-              Map.of("index_analyzer", analyzerString)));
+          buildLexicalIndexStatement(
+              commandContext.schemaObject().identifier().keyspace().asInternal(),
+              collectionName.asInternal(),
+              overrideLexicalDef,
+              collectionExisted));
     }
 
     if (LOGGER.isTraceEnabled()) {
@@ -666,5 +664,43 @@ public record CreateCollectionOperation(
     }
 
     return new ExtendedCreateIndex((DefaultCreateIndex) createIndex).build();
+  }
+
+  /**
+   * Builds the {@code CREATE CUSTOM INDEX} statement for the lexical column, used both by
+   * createCollection (when the table is fresh or being recreated) and by alterCollection (when
+   * enabling lexical on an existing collection).
+   *
+   * @param ifNotExists when true, emits {@code IF NOT EXISTS} for idempotent retries
+   */
+  public static SimpleStatement buildLexicalIndexStatement(
+      String keyspace, String table, CollectionLexicalDef lexicalConfig, boolean ifNotExists) {
+    var analyzerDef = lexicalConfig.analyzerDefinition();
+    // Note: needs to be either plain (unquoted) String (NOT quoted JSON String) OR JSON Object
+    final String analyzerString =
+        analyzerDef.isTextual() ? analyzerDef.asText() : analyzerDef.toString();
+    final String lexicalCol = DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME;
+    final String prefix = ifNotExists ? "CREATE CUSTOM INDEX IF NOT EXISTS" : "CREATE CUSTOM INDEX";
+    return SimpleStatement.newInstance(
+            """
+                %s "%s" ON "%s"."%s" (%s)
+                  USING 'StorageAttachedIndex' WITH OPTIONS = { 'index_analyzer': '%s' }
+                """
+            .formatted(
+                prefix, lexicalIndexName(table), keyspace, table, lexicalCol, analyzerString));
+  }
+
+  /**
+   * Name of the lexical SAI: {@code "<table>_<lexicalColumn>"}. Shared with {@link
+   * #buildLexicalIndexStatement} so callers referencing the index by name stay in sync with how it
+   * is created.
+   *
+   * <p>The {@code "<table>_<column>"} format is part of the on-disk schema: existing collections
+   * have indexes named this way, and recovery paths (e.g. {@code alterCollection}'s already-exists
+   * check) match by this exact name. Do not change the format without a migration for existing
+   * collections.
+   */
+  public static String lexicalIndexName(String table) {
+    return table + "_" + DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME;
   }
 }
