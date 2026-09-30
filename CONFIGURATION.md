@@ -54,6 +54,36 @@ Other Quarkus properties that are specifically relevant for the service:
 | `stargate.jsonapi.operations.database-config.ddl-delay-millis`          | `int`     | `2000`   | Delay between create table and create index to get the schema sync.                                                                                                                                |
 | `stargate.jsonapi.operations.vectorize-enabled`                         | `boolean` | `false`  | Flag to enable server side vectorization.                                                                                                                                              |
 
+### Database readiness
+
+`GET /v1/health/ready` is an authenticated readiness endpoint, the same probe for Astra and
+Cassandra. It uses the request's tenant, `Token`, and `User-Agent` to get a session from the normal
+session cache, and reports ready when that session's driver metadata has a node in the `UP` state.
+No query is issued - getting the session is itself the check. `UP` means this pod holds a working
+session, nothing more; it says nothing about quorum, write availability, or other tenants.
+
+| Status | Body | When |
+|--------|------|------|
+| 200 | `{"status":"UP"}` | session metadata has an `UP` node |
+| 401 | Data API error | `Token` missing or authentication failed |
+| 403 | empty | User-Agent does not match the configured SLA User-Agent |
+| 503 | `{"status":"DOWN"}` | session failure, 5s timeout, or SLA User-Agent not configured |
+
+Probes must treat the HTTP status as the contract, not the body's `status` field.
+
+- **User-Agent** - callers must send the full `stargate.jsonapi.operations.sla-user-agent` value so
+  the probe session gets the shorter SLA cache TTL; anything else is rejected before the session
+  cache is touched, and the endpoint fails closed when that setting is unset. Astra callers must
+  use the probe database hostname so tenant and region resolve from `Host`.
+- **Probe token needs schema read** - `CqlSessionFactory` rejects any new session missing the
+  `system` keyspace, so a token that authenticates but cannot read the schema reports `DOWN` rather
+  than an auth error. Readiness drives pod rotation, so a fleet-wide `DOWN` means a credential
+  problem, not an outage.
+- **Deployment** - probe each pod directly and restrict the endpoint to trusted traffic; the
+  User-Agent check is an operational guard, not an authentication boundary. Kubernetes `httpGet`
+  headers cannot reference a Secret, so deliver the probe token outside Data API config - an
+  external checker, or a Secret-mounted file read by an `exec` probe.
+
 
 ## Jsonapi metering configuration
 *Configuration for jsonapi metering, defined by [JsonApiMetricsConfig.java](io/stargate/sgv2/jsonapi/api/v1/metrics/JsonApiMetricsConfig.java).*
