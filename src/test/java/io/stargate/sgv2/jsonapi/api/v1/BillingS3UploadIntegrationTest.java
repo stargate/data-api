@@ -12,6 +12,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.service.billing.BillingEventType;
+import io.stargate.sgv2.jsonapi.service.provider.ModelType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.testresource.S3MockTestResource;
 import java.net.URI;
@@ -56,8 +57,13 @@ public class BillingS3UploadIntegrationTest extends AbstractCollectionIntegratio
   private static final int DOCUMENT_COUNT = 10;
   private static final Pattern KEY_PATTERN =
       Pattern.compile("data-api/\\d{4}/\\d{2}/\\d{2}/\\d{2}/\\d{2}/[0-9a-f-]{36}\\.jsonl");
+  // inserts are vectorized, so only embedding events
   private static final Set<String> EVENT_TYPES =
-      new HashSet<>(BillingEventType.ALL.stream().map(BillingEventType::eventName).toList());
+      new HashSet<>(
+          BillingEventType.ALL.stream()
+              .filter(type -> type.modelType() == ModelType.EMBEDDING)
+              .map(BillingEventType::eventName)
+              .toList());
 
   @BeforeAll
   public void setup() {

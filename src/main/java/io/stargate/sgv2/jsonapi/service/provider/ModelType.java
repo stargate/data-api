@@ -24,6 +24,21 @@ public enum ModelType {
     };
   }
 
+  /**
+   * Name of the model type used in the billing event name.
+   *
+   * @throws IllegalArgumentException for {@link #MODEL_TYPE_UNSPECIFIED}, it cannot be billed
+   */
+  public String billingEventName() {
+    return switch (this) {
+      case MODEL_TYPE_UNSPECIFIED ->
+          throw new IllegalArgumentException(
+              "ModelType.billingEventName() - MODEL_TYPE_UNSPECIFIED has no billing event name");
+      case EMBEDDING -> "embedding";
+      case RERANKING -> "reranking";
+    };
+  }
+
   public EmbeddingGateway.ModelUsage.ModelType toEmbeddingGateway() {
     return switch (this) {
       case MODEL_TYPE_UNSPECIFIED -> EmbeddingGateway.ModelUsage.ModelType.MODEL_TYPE_UNSPECIFIED;

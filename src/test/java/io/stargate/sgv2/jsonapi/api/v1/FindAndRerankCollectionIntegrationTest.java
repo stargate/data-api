@@ -75,7 +75,58 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
   }
 
   @Test
+  void successOnLexicalDisabledHybrid() {
+    // lexical disabled, and using $hybrid
+    // will get EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name() because
+    // using open AI with no token
+    errorOnNotEnabled(
+        "lexical_not_enabled",
+        """
+            {
+              "name" : "%s",
+              "options": {
+                "vector": {
+                        "metric": "cosine",
+                        "dimension": 1024,
+                        "service": {
+                            "provider": "openai",
+                            "modelName": "text-embedding-3-small"
+                        }
+                    },
+                "lexical": {
+                    "enabled": false
+                }
+              }
+            }
+            """,
+        EmbeddingProviderException.Code.EMBEDDING_PROVIDER_CLIENT_ERROR.name(),
+        "Incorrect API key provided:");
+  }
+
+  @Test
   void failOnLexicalDisabled() {
+    // lexical disabled, and using $lexical
+    var rerank =
+        """
+                    {"findAndRerank": {
+                            "filter": {},
+                            "projection": {},
+                            "sort": {
+                                "$hybrid": {
+                                  "$vectorize" : "hello",
+                                  "$lexical" : "hello"
+                                }
+                            },
+                            "options": {
+                                "limit" : 10,
+                                "hybridLimits" : 10,
+                                "includeScores": true,
+                                "includeSortVector": false
+                            }
+                        }
+                    }
+                    """;
+
     errorOnNotEnabled(
         "lexical_not_enabled",
         """
@@ -96,8 +147,9 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
           }
         }
         """,
-        "LEXICAL_NOT_ENABLED_FOR_COLLECTION",
-        "only be used on collections for which Lexical feature is enabled");
+        SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.name(),
+        "The collection without a lexical index: %s.%s.",
+        rerank);
   }
 
   @Test
@@ -194,27 +246,36 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
 
   private void errorOnNotEnabled(
       String collectionName, String collectionSpec, String errorCode, String errorMessageContains) {
-    createCollectionWithCleanup(collectionName, collectionSpec);
 
     var rerank =
         """
-          {"findAndRerank": {
-                  "filter": {},
-                  "projection": {},
-                  "sort": {
-                      "$hybrid": "hybrid sort"
-                  },
-                  "options": {
-                      "limit" : 10,
-                      "hybridLimits" : 10,
-                      "includeScores": true,
-                      "includeSortVector": false
-                  }
-              }
-          }
-          """;
+                    {"findAndRerank": {
+                            "filter": {},
+                            "projection": {},
+                            "sort": {
+                                "$hybrid": "hybrid sort"
+                            },
+                            "options": {
+                                "limit" : 10,
+                                "hybridLimits" : 10,
+                                "includeScores": true,
+                                "includeSortVector": false
+                            }
+                        }
+                    }
+                    """;
+    errorOnNotEnabled(collectionName, collectionSpec, errorCode, errorMessageContains, rerank);
+  }
 
-    givenHeadersPostJsonThen(keyspaceName, collectionName, rerank)
+  private void errorOnNotEnabled(
+      String collectionName,
+      String collectionSpec,
+      String errorCode,
+      String errorMessageContains,
+      String rerankCommand) {
+    createCollectionWithCleanup(collectionName, collectionSpec);
+
+    givenHeadersPostJsonThen(keyspaceName, collectionName, rerankCommand)
         .body("$", responseIsError())
         .body("errors[0].errorCode", is(errorCode))
         .body(

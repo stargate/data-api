@@ -1,5 +1,42 @@
 # Changelog
 
+## [v1.0.57](https://github.com/stargate/data-api/tree/v1.0.57) (2026-09-28)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.56...v1.0.57)
+
+**Merged pull requests:**
+
+- Fix region loss in gateway billing usage [\#2594](https://github.com/stargate/data-api/pull/2594) ([erichare](https://github.com/erichare))
+- Bumping version for next data-api release [\#2593](https://github.com/stargate/data-api/pull/2593) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.56](https://github.com/stargate/data-api/tree/v1.0.56) (2026-09-25)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.55...v1.0.56)
+
+**Merged pull requests:**
+
+- Grant bucket owner full control on billing S3 uploads [\#2592](https://github.com/stargate/data-api/pull/2592) ([erichare](https://github.com/erichare))
+- Bumping version for next data-api release [\#2588](https://github.com/stargate/data-api/pull/2588) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.55](https://github.com/stargate/data-api/tree/v1.0.55) (2026-09-22)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.54...v1.0.55)
+
+**Merged pull requests:**
+
+- Ajm/fix 2585 ignore missing lexical [\#2587](https://github.com/stargate/data-api/pull/2587) ([amorton](https://github.com/amorton))
+- Bumping version for next data-api release [\#2586](https://github.com/stargate/data-api/pull/2586) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.54](https://github.com/stargate/data-api/tree/v1.0.54) (2026-09-21)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.53...v1.0.54)
+
+**Merged pull requests:**
+
+- feat: split billing event types by embedding and reranking [\#2583](https://github.com/stargate/data-api/pull/2583) ([erichare](https://github.com/erichare))
+- Bumping version for next data-api release [\#2580](https://github.com/stargate/data-api/pull/2580) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fix: \#2030 - IllegalArgumentException when using findAndRerank without specifying rerankOn [\#2578](https://github.com/stargate/data-api/pull/2578) ([sl-at-ibm](https://github.com/sl-at-ibm))
+
 ## [v1.0.53](https://github.com/stargate/data-api/tree/v1.0.53) (2026-09-14)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.52...v1.0.53)

@@ -133,7 +133,7 @@ public class RerankingEGWClient extends RerankingProvider {
                   gatewayResponse.getRanksList().stream()
                       .map(rank -> new Rank(rank.getIndex(), rank.getScore()))
                       .toList(),
-                  createModelUsage(gatewayResponse.getModelUsage()));
+                  createModelUsage(tenant, gatewayResponse.getModelUsage()));
             });
   }
 }

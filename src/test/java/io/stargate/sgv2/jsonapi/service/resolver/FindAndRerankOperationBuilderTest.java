@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -19,6 +21,7 @@ import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
@@ -43,7 +46,7 @@ class FindAndRerankOperationBuilderTest {
   @Inject ObjectMapper objectMapper;
   @Inject FindCommandResolver findCommandResolver;
 
-  private final TestConstants testConstants = new TestConstants();
+  private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   // Reusable request properties for model configs
   private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
@@ -169,6 +172,61 @@ class FindAndRerankOperationBuilderTest {
   }
 
   @Test
+  public void failsWhenExplicitLexicalSortWhenLexicalDisabled() throws Exception {
+    var commandContext = commandContext(false);
+    var command =
+        command(
+            """
+                    {
+                      "findAndRerank": {
+                        "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                        "options": {
+                          "rerankOn": "body",
+                          "rerankQuery": "text",
+                          "hybridLimits": { "$vector": 50, "$lexical": 10 }
+                        }
+                      }
+                    }
+                    """);
+
+    assertThatThrownBy(
+            () ->
+                new FindAndRerankOperationBuilder(commandContext)
+                    .withCommand(command)
+                    .withFindCommandResolver(findCommandResolver)
+                    .build())
+        .isInstanceOf(RequestException.class)
+        .hasMessageContaining(
+            "The collection without a lexical index: %s.%s."
+                .formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME));
+  }
+
+  @Test
+  public void acceptsImplicitLexicalWhenLexcialDisabled() throws Exception {
+    var commandContext = commandContext(false);
+    var command =
+        command(
+            """
+                    {
+                      "findAndRerank": {
+                        "sort": { "$hybrid": "cheese" },
+                        "options": {
+                          "rerankOn": "body",
+                          "rerankQuery": "text",
+                          "hybridLimits": { "$vector": 50, "$lexical": 10 }
+                        }
+                      }
+                    }
+                    """);
+
+    var operation =
+        new FindAndRerankOperationBuilder(commandContext)
+            .withCommand(command)
+            .withFindCommandResolver(findCommandResolver)
+            .build();
+  }
+
+  @Test
   void failsWhenLimitBelowConfiguredMin() throws Exception {
     var commandContext = commandContext();
     var command =
@@ -242,15 +300,79 @@ class FindAndRerankOperationBuilderTest {
         .build();
   }
 
+  @Test
+  void failsWhenMissingRerankOnAndNotVectorizeSort() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """);
+
+    assertMissingRerankOn("failsWhenMissingRerankOnAndNotVectorizeSort()", commandContext, command);
+  }
+
+  @Test
+  void failsWhenBlankRerankOnAndNotVectorizeSort() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankOn": "   ",
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """);
+
+    assertMissingRerankOn("failsWhenBlankRerankOnAndNotVectorizeSort()", commandContext, command);
+  }
+
+  private void assertMissingRerankOn(
+      String context,
+      CommandContext<CollectionSchemaObject> commandContext,
+      FindAndRerankCommand command) {
+
+    var ex =
+        assertThrowsExactly(
+            RequestException.class,
+            () ->
+                new FindAndRerankOperationBuilder(commandContext)
+                    .withCommand(command)
+                    .withFindCommandResolver(findCommandResolver)
+                    .build(),
+            context);
+
+    assertThat(ex.code).as(context).isEqualTo(RequestException.Code.MISSING_RERANK_ON.name());
+  }
+
   private FindAndRerankCommand command(String json) throws Exception {
     return objectMapper.readValue(json, FindAndRerankCommand.class);
   }
 
   private CommandContext<CollectionSchemaObject> commandContext() {
+    return commandContext(true);
+  }
+
+  private CommandContext<CollectionSchemaObject> commandContext(boolean withLexical) {
+
+    var schemaObject =
+        withLexical
+            ? TEST_CONSTANTS.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT
+            : TEST_CONSTANTS.VECTORIZE_RERANK_COLLECTION_SCHEMA_OBJECT;
     var commandContext =
-        testConstants.collectionContext(
-            CommandName.FIND_AND_RERANK,
-            testConstants.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT);
+        TEST_CONSTANTS.collectionContext(CommandName.FIND_AND_RERANK, schemaObject);
 
     var rerankingProvidersConfig = mock(RerankingProvidersConfig.class);
     var modelConfig = mock(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.class);
@@ -263,6 +385,15 @@ class FindAndRerankOperationBuilderTest {
         .thenReturn(rerankingProvidersConfig);
     when(commandContext.rerankingProviderFactory().create(any(), any(), any(), any(), any(), any()))
         .thenReturn(mock(RerankingProvider.class));
+
+    if (schemaObject.vectorConfig().getFirstVectorColumnWithVectorizeDefinition().isPresent()) {
+      var embeddingProvider = mock(EmbeddingProvider.class);
+
+      when(commandContext
+              .embeddingProviderFactory()
+              .create(any(), any(), any(), any(), anyInt(), any(), any(), any()))
+          .thenReturn(embeddingProvider);
+    }
 
     return commandContext;
   }

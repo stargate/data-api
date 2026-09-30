@@ -22,7 +22,7 @@ import java.util.UUID;
  *   "id": "8c0e9b8a-1d3a-4f6b-9c0d-1234567890ab",
  *   "timestamp": "2026-05-20T14:23:11.482Z",
  *   "product": "serverless",
- *   "event_type": "internal_model_total_tokens",
+ *   "event_type": "internal_reranking_total_tokens",
  *   "properties": {
  *     "usage": 7,
  *     "region": "us-west-2",
@@ -37,7 +37,7 @@ import java.util.UUID;
  * @param id Unique random-based (UUID v4) identifier for this event.
  * @param timestamp ISO 8601 timestamp of when the event was created.
  * @param product Product identifier, e.g. {@code "serverless"}.
- * @param eventType One of the six {@link BillingEventType} values.
+ * @param eventType One of the {@link BillingEventType} values.
  * @param properties Usage details including the billable amount, region, resource and model
  *     identifiers.
  */
