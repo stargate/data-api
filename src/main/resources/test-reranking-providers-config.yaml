@@ -15,6 +15,7 @@ stargate:
               url: https://us-west-2.api-dev.ai.datastax.com/nvidia/v1/ranking
               properties:
                 max-batch-size: 10
+                truncate: END
             - name: nvidia/a-random-deprecated-model
               api-model-support:
                 status: DEPRECATED

@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.reranking.configuration;
 
+import static io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties.TruncateOption.NONE;
+
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.runtime.Startup;
 import io.stargate.embedding.gateway.EmbeddingGateway;
@@ -214,7 +216,8 @@ public class RerankingProviderConfigProducer {
                             model.getProperties().getReadTimeoutMillis(),
                             model.getProperties().getMaxBackOffMillis(),
                             model.getProperties().getJitter(),
-                            model.getProperties().getMaxBatchSize())))
+                            model.getProperties().getMaxBatchSize(),
+                            NONE)))
             .collect(Collectors.toList());
 
     return new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(
