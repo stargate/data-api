@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
@@ -72,6 +73,27 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   @Override
   public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> commandContext, FindCommand command) {
+    return resolveCollectionCommand(commandContext, command, false);
+  }
+
+  /**
+   * Resolves an internal candidate read whose budget is supplied by the inner find command.
+   * Candidate reads require an explicit positive limit instead of the ordinary find defaults.
+   */
+  public Operation<CollectionSchemaObject> resolveCollectionCandidateCommand(
+      CommandContext<CollectionSchemaObject> commandContext, FindCommand command) {
+    Preconditions.checkArgument(
+        command.options() != null
+            && command.options().limit() != null
+            && command.options().limit() > 0,
+        "Candidate reads require an explicit positive options.limit");
+    return resolveCollectionCommand(commandContext, command, true);
+  }
+
+  private Operation<CollectionSchemaObject> resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> commandContext,
+      FindCommand command,
+      boolean candidateRead) {
 
     var resolvedDbLogicalExpression =
         collectionFilterResolver.resolve(commandContext, command).target();
@@ -128,11 +150,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           Math.min(
               limit, operationsConfig.maxVectorSearchLimit()); // Max vector search support is 1000
 
-      // Hack: See https://github.com/stargate/data-api/issues/1961
-      int pageSize =
-          commandContext.getHybridLimits() == null
-              ? operationsConfig.defaultPageSize()
-              : commandContext.getHybridLimits().vectorLimit();
+      int pageSize = candidateRead ? limit : operationsConfig.defaultPageSize();
       return FindCollectionOperation.vsearch(
           commandContext,
           resolvedDbLogicalExpression,
@@ -149,11 +167,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     // BM25 search / sort?
     SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
     if (bm25Expr != null) {
-      // Hack: See https://github.com/stargate/data-api/issues/1961
-      int pageSize =
-          commandContext.getHybridLimits() == null
-              ? operationsConfig.defaultPageSize()
-              : commandContext.getHybridLimits().lexicalLimit();
+      int pageSize = candidateRead ? limit : operationsConfig.defaultPageSize();
       return FindCollectionOperation.bm25Multi(
           commandContext,
           resolvedDbLogicalExpression,
@@ -169,8 +183,6 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // if orderBy present
     if (orderBy != null) {
-      // Hack: See https://github.com/stargate/data-api/issues/1961
-      // not commandContext.getHybridLimits() becuase there is no limit for a non ANN or BM25 query
       return FindCollectionOperation.sorted(
           commandContext,
           resolvedDbLogicalExpression,
@@ -188,8 +200,6 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           operationsConfig.maxDocumentSortCount(),
           includeSortVector);
     }
-    // Hack: See https://github.com/stargate/data-api/issues/1961
-    // not commandContext.getHybridLimits() becuase there is no limit for a non ANN or BM25 query
     return FindCollectionOperation.unsorted(
         commandContext,
         resolvedDbLogicalExpression,

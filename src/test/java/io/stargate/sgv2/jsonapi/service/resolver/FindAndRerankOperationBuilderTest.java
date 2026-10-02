@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -30,7 +31,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
-import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -66,9 +66,8 @@ import org.mockito.ArgumentCaptor;
  * FindAndRerankPlannerTest}.
  *
  * <p>The operation does not expose its tasks, so the tests check the providers the builder creates,
- * the hybridLimits it sets on the command context, and what happens when the test runs the
- * operation with mock reads: the inner finds it runs, and the ranks the reranking task gives the
- * documents each read finds.
+ * and what happens when the test runs the operation with mock reads: the inner finds it runs,
+ * and the ranks the reranking task gives the documents each read finds.
  */
 class FindAndRerankOperationBuilderTest {
 
@@ -97,7 +96,7 @@ class FindAndRerankOperationBuilderTest {
           DocumentProjector.defaultProjector(),
           10);
 
-  /** The builder only reads the filter and the hybridLimits of the command. */
+  /** The builder only reads the filter of the command. */
   private static final String EMPTY_COMMAND =
       """
       {"findAndRerank": {}}
@@ -270,7 +269,7 @@ class FindAndRerankOperationBuilderTest {
             """
             {"_id": "from-lexical", "body": "lexical passage"}
             """);
-    when(findCommandResolver.resolveCommand(eq(commandContext), any()))
+    when(findCommandResolver.resolveCollectionCandidateCommand(eq(commandContext), any()))
         .thenAnswer(
             invocation -> {
               FindCommand findCommand = invocation.getArgument(1);
@@ -288,26 +287,6 @@ class FindAndRerankOperationBuilderTest {
     assertThat(result.errors()).isEmpty();
     assertThat(ranksById(result))
         .isEqualTo(Map.of("from-vector", new Ranks(1, null), "from-lexical", new Ranks(null, 1)));
-  }
-
-  // ===========================================================================================
-  // Command context
-  // ===========================================================================================
-
-  @Test
-  void keepsExplicitHybridLimitsAtMaximumPageSizeOnCommandContext() throws Exception {
-    var commandContext = commandContext();
-    var command =
-        command(
-            """
-            {"findAndRerank": {"options": {"hybridLimits": {"$vector": 100, "$lexical": 25}}}}
-            """);
-
-    build(commandContext, command, plan(null, vectorLeg(100), lexicalLeg(25)));
-
-    assertThat(commandContext.getHybridLimits().vectorLimit())
-        .isEqualTo(RerankingConstants.HybridSearchLimits.MAX);
-    assertThat(commandContext.getHybridLimits().lexicalLimit()).isEqualTo(25);
   }
 
   // ===========================================================================================
@@ -348,7 +327,7 @@ class FindAndRerankOperationBuilderTest {
         .thenReturn(TestEmbeddingProvider.TEST_EMBEDDING_PROVIDER);
 
     var emptyRead = readFinding(commandContext);
-    when(findCommandResolver.resolveCommand(eq(commandContext), any())).thenReturn(emptyRead);
+    when(findCommandResolver.resolveCollectionCandidateCommand(eq(commandContext), any())).thenReturn(emptyRead);
 
     var result = build(commandContext, plan).execute(commandContext).await().indefinitely().get();
     // the reranking task fails if a read did not fill the deferred result the task waits for
@@ -356,7 +335,8 @@ class FindAndRerankOperationBuilderTest {
 
     var findCommands = ArgumentCaptor.forClass(FindCommand.class);
     verify(findCommandResolver, times(plan.legs().size()))
-        .resolveCommand(eq(commandContext), findCommands.capture());
+        .resolveCollectionCandidateCommand(eq(commandContext), findCommands.capture());
+    verify(findCommandResolver, never()).resolveCommand(any(), any());
     return findCommands.getAllValues().stream()
         .map(findCommand -> InnerRead.from(commandContext, findCommand))
         .toList();
