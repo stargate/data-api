@@ -7,21 +7,30 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
@@ -35,6 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
@@ -84,7 +94,8 @@ class FindAndRerankOperationBuilderTest {
   }
 
   @Test
-  void keepsExplicitHybridLimitsAtMaximumPageSizeOnCommandContext() throws Exception {
+  @SuppressWarnings("unchecked")
+  void resolvesAsymmetricHybridLimitsFromInnerCommands() throws Exception {
     var commandContext = commandContext();
     var command =
         command(
@@ -101,14 +112,51 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    new FindAndRerankOperationBuilder(commandContext)
-        .withCommand(command)
-        .withFindCommandResolver(findCommandResolver)
-        .build();
+    var candidateResolver = mock(FindCommandResolver.class);
+    Operation<CollectionSchemaObject> emptyRead = mock(Operation.class);
+    var emptyResult = CommandResult.multiDocumentBuilder(RequestTracing.NO_OP).build();
+    when(emptyRead.execute(commandContext))
+        .thenReturn(Uni.createFrom().item(() -> () -> emptyResult));
+    when(candidateResolver.resolveCollectionCandidateCommand(eq(commandContext), any()))
+        .thenReturn(emptyRead);
 
-    assertThat(commandContext.getHybridLimits().vectorLimit())
-        .isEqualTo(RerankingConstants.HybridSearchLimits.MAX);
-    assertThat(commandContext.getHybridLimits().lexicalLimit()).isEqualTo(25);
+    var operation =
+        new FindAndRerankOperationBuilder(commandContext)
+            .withCommand(command)
+            .withFindCommandResolver(candidateResolver)
+            .build();
+
+    var result = operation.execute(commandContext).await().indefinitely().get();
+    assertThat(result.errors()).isEmpty();
+
+    var commands = ArgumentCaptor.forClass(FindCommand.class);
+    verify(candidateResolver, times(2))
+        .resolveCollectionCandidateCommand(eq(commandContext), commands.capture());
+    verify(candidateResolver, never()).resolveCommand(any(), any());
+
+    var reads =
+        commands.getAllValues().stream()
+            .map(
+                inner ->
+                    findCommandResolver.resolveCollectionCandidateCommand(commandContext, inner))
+            .map(FindCollectionOperation.class::cast)
+            .toList();
+    assertThat(reads)
+        .filteredOn(read -> read.vector() != null)
+        .singleElement()
+        .satisfies(
+            read -> {
+              assertThat(read.limit()).isEqualTo(RerankingConstants.HybridSearchLimits.MAX);
+              assertThat(read.pageSize()).isEqualTo(RerankingConstants.HybridSearchLimits.MAX);
+            });
+    assertThat(reads)
+        .filteredOn(read -> read.vector() == null)
+        .singleElement()
+        .satisfies(
+            read -> {
+              assertThat(read.limit()).isEqualTo(25);
+              assertThat(read.pageSize()).isEqualTo(25);
+            });
   }
 
   @Test
@@ -177,17 +225,17 @@ class FindAndRerankOperationBuilderTest {
     var command =
         command(
             """
-                    {
-                      "findAndRerank": {
-                        "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
-                        "options": {
-                          "rerankOn": "body",
-                          "rerankQuery": "text",
-                          "hybridLimits": { "$vector": 50, "$lexical": 10 }
-                        }
-                      }
-                    }
-                    """);
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text",
+                  "hybridLimits": { "$vector": 50, "$lexical": 10 }
+                }
+              }
+            }
+            """);
 
     assertThatThrownBy(
             () ->
@@ -207,17 +255,17 @@ class FindAndRerankOperationBuilderTest {
     var command =
         command(
             """
-                    {
-                      "findAndRerank": {
-                        "sort": { "$hybrid": "cheese" },
-                        "options": {
-                          "rerankOn": "body",
-                          "rerankQuery": "text",
-                          "hybridLimits": { "$vector": 50, "$lexical": 10 }
-                        }
-                      }
-                    }
-                    """);
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": "cheese" },
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text",
+                  "hybridLimits": { "$vector": 50, "$lexical": 10 }
+                }
+              }
+            }
+            """);
 
     var operation =
         new FindAndRerankOperationBuilder(commandContext)

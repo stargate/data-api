@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.DefaultRequestTracing;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
@@ -67,9 +66,6 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
   // add to this list in the ctor. See {@link #addToMDC()} and {@link #removeFromMDC()}
   private final List<LoggingMDCContext> loggingMDCContexts = new ArrayList<>();
 
-  // see accessors
-  private FindAndRerankCommand.HybridLimits hybridLimits;
-
   // used to track the features used in the command
   private final CommandFeatures commandFeatures;
 
@@ -108,22 +104,6 @@ public class CommandContext<SchemaT extends SchemaObject> implements LoggingMDCC
   /** See doc comments for {@link CommandContext} */
   public static BuilderSupplier builderSupplier() {
     return new BuilderSupplier();
-  }
-
-  /**
-   * HACK: for https://github.com/stargate/data-api/issues/1961 This is a temporary work around for
-   * needing to pass the page size to the FindCollectionOperation when doing the inner finds for
-   * findAndRerank because they will only run the command once, and not multiple times to exhaust
-   * the cursor.
-   *
-   * @return
-   */
-  public FindAndRerankCommand.HybridLimits getHybridLimits() {
-    return hybridLimits;
-  }
-
-  public void setHybridLimits(FindAndRerankCommand.HybridLimits hybridLimits) {
-    this.hybridLimits = hybridLimits;
   }
 
   public SchemaT schemaObject() {
