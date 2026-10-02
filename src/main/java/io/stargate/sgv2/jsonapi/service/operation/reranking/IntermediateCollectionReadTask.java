@@ -72,7 +72,7 @@ public class IntermediateCollectionReadTask
     }
 
     Operation<CollectionSchemaObject> findOperation =
-        findCommandResolver.resolveCommand(commandContext, findCommand);
+        findCommandResolver.resolveCollectionCandidateCommand(commandContext, findCommand);
     return new IntermediateReadResultSupplier(
         () -> {
           commandContext

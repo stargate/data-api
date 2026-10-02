@@ -43,8 +43,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  * Behavior baseline for {@link FindAndRerankOperationBuilder#build()}: pins the outcome for many
  * request shapes and collection configs. A row either builds an operation, and then pins the reads
- * it runs (rank source and limit, in order) and the hybrid limits on the command context, or it
- * pins the error code.
+ * it runs (rank source and limit, in order), or it pins the error code.
  *
  * <p>Some rows pin behaviour that is easy to change by accident:
  *
@@ -294,13 +293,13 @@ class FindAndRerankOperationBuilderBehaviorTest {
             "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 100, '$lexical': 25}}",
             Collection.VECTOR_LEXICAL,
-            success(100, 25, lexicalRead(25), vectorRead(100))),
+            success(lexicalRead(25), vectorRead(100))),
         row(
             "G23",
             "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': 30}",
             Collection.VECTOR_LEXICAL,
-            success(30, 30, lexicalRead(30), vectorRead(30))),
+            success(lexicalRead(30), vectorRead(30))),
 
         // ---- lexical-only $hybrid ----
         row(
@@ -464,7 +463,7 @@ class FindAndRerankOperationBuilderBehaviorTest {
             "{'$hybrid': {'$vectorize': 'cheese'}}",
             "{'hybridLimits': 30}",
             Collection.VECTORIZE_NO_LEXICAL,
-            success(30, 30, vectorRead(30))),
+            success(vectorRead(30))),
         row(
             "R42",
             "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
@@ -686,12 +685,6 @@ class FindAndRerankOperationBuilderBehaviorTest {
                     .toList())
             .as(row.id() + " reads, in order")
             .containsExactlyElementsOf(success.reads());
-        assertThat(commandContext.getHybridLimits().vectorLimit())
-            .as(row.id() + " hybridLimits.$vector on the command context")
-            .isEqualTo(success.vectorLimit());
-        assertThat(commandContext.getHybridLimits().lexicalLimit())
-            .as(row.id() + " hybridLimits.$lexical on the command context")
-            .isEqualTo(success.lexicalLimit());
       }
       case Failure failure -> {
         var ex =
@@ -774,15 +767,9 @@ class FindAndRerankOperationBuilderBehaviorTest {
     return new Row(id, sort, options, filter, projection, collection, expected);
   }
 
-  /** build() returns an operation with these reads, and the default hybrid limits. */
+  /** build() returns an operation with these reads and their candidate limits. */
   private static Expected success(ExpectedRead... reads) {
-    var defaults = FindAndRerankCommand.HybridLimits.DEFAULT;
-    return new Success(defaults.vectorLimit(), defaults.lexicalLimit(), List.of(reads));
-  }
-
-  /** build() returns an operation with these reads, and these hybrid limits. */
-  private static Expected success(int vectorLimit, int lexicalLimit, ExpectedRead... reads) {
-    return new Success(vectorLimit, lexicalLimit, List.of(reads));
+    return new Success(List.of(reads));
   }
 
   private static <T extends APIException> Expected failure(
@@ -857,12 +844,8 @@ class FindAndRerankOperationBuilderBehaviorTest {
 
   private sealed interface Expected permits Success, Failure {}
 
-  /**
-   * build() returns an operation with these reads, and copies these hybrid limits onto the command
-   * context.
-   */
-  private record Success(int vectorLimit, int lexicalLimit, List<ExpectedRead> reads)
-      implements Expected {}
+  /** build() returns an operation with these reads and their candidate limits. */
+  private record Success(List<ExpectedRead> reads) implements Expected {}
 
   /**
    * build() throws exactly this API exception class with this code, and optionally with this
