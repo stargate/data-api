@@ -70,7 +70,7 @@ public class FindAndRerankCollectionSuccessIntegrationTest
                 "sort", Map.of("$hybrid", Map.of("$vectorize", "default search query")),
                 "options", Map.of("includeScores", true, "includeSortVector", true)))
         .body("data.documents._id", contains("high", "middle", "low"))
-        .body("status.documentResponses.'$scores'.'$rerank'", contains(5.0f, 3.0f, 1.0f))
+        .body("status.documentResponses.scores.'$rerank'", contains(5.0f, 3.0f, 1.0f))
         .body("status.sortVector", contains(0.25f, 0.25f, 0.25f, 0.25f, 0.25f))
         .hasNoField("data.nextPageState");
 
@@ -139,7 +139,7 @@ public class FindAndRerankCollectionSuccessIntegrationTest
                           "includeScores",
                           true)))
           .body("data.documents", contains(Map.of("name", "high"), Map.of("name", "middle")))
-          .body("status.documentResponses.'$scores'.'$rerank'", contains(8.0f, 4.0f))
+          .body("status.documentResponses.scores.'$rerank'", contains(8.0f, 4.0f))
           .hasNoField("status.sortVector")
           .hasNoField("data.nextPageState");
 
@@ -210,9 +210,9 @@ public class FindAndRerankCollectionSuccessIntegrationTest
                   "options",
                       Map.of("rerankQuery", "query", "rerankOn", "content", "includeScores", true)))
           .body("data.documents._id", contains("doc3", "doc2", "doc1"))
-          .body("status.documentResponses.'$scores'.'$rerank'", contains(3.0f, 2.0f, 1.0f))
-          .body("status.documentResponses.'$scores'.'$vectorRank'", everyItem(notNullValue()))
-          .body("status.documentResponses.'$scores'.'$bm25Rank'", everyItem(notNullValue()));
+          .body("status.documentResponses.scores.'$rerank'", contains(3.0f, 2.0f, 1.0f))
+          .body("status.documentResponses.scores.'$vectorRank'", everyItem(notNullValue()))
+          .body("status.documentResponses.scores.'$bm25Rank'", everyItem(notNullValue()));
 
       assertThat(requestedPassages())
           .containsExactlyInAnyOrder(
@@ -270,7 +270,7 @@ public class FindAndRerankCollectionSuccessIntegrationTest
                         "includeScores",
                         true)))
         .body("data.documents._id", contains("doc59"))
-        .body("status.documentResponses.'$scores'.'$rerank'", contains(59.0f));
+        .body("status.documentResponses.scores.'$rerank'", contains(59.0f));
 
     assertThat(requestedPassages())
         .containsExactlyInAnyOrderElementsOf(
