@@ -112,7 +112,7 @@ public class DataApiResponseValidator {
 
     var msg = "wasSuccessful() for %s ".formatted(commandName);
     switch (commandName) {
-      case FIND_ONE, FIND -> {
+      case FIND_ONE, FIND, FIND_AND_RERANK -> {
         return hasNoErrors();
       }
       case INSERT_ONE -> {
