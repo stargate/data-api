@@ -51,7 +51,8 @@ public record FindCollectionOperation(
     SortExpression bm25SearchExpression,
 
     /** Whether to include the sort vector in the response. This is used for vector search. */
-    boolean includeSortVector)
+    boolean includeSortVector,
+    CollectionReadMode readMode)
     implements CollectionReadOperation {
   /**
    * Constructs find operation for unsorted single document find.
@@ -87,7 +88,8 @@ public record FindCollectionOperation(
         true,
         null,
         null,
-        includeSortVector);
+        includeSortVector,
+        CollectionReadMode.SINGLE_PAGE);
   }
 
   /**
@@ -129,7 +131,8 @@ public record FindCollectionOperation(
         false,
         null,
         null,
-        includeSortVector);
+        includeSortVector,
+        CollectionReadMode.SINGLE_PAGE);
   }
 
   /** Constructs find operation for BM25-sorted single-document find. */
@@ -155,7 +158,8 @@ public record FindCollectionOperation(
         true,
         null,
         bm25Expr,
-        false);
+        false,
+        CollectionReadMode.SINGLE_PAGE);
   }
 
   /** Constructs find operation for BM25-sorted multi-document find. */
@@ -184,7 +188,8 @@ public record FindCollectionOperation(
         false,
         null,
         bm25Expr,
-        false);
+        false,
+        CollectionReadMode.SINGLE_PAGE);
   }
 
   /**
@@ -222,7 +227,8 @@ public record FindCollectionOperation(
         true,
         vector,
         null,
-        includeSortVector);
+        includeSortVector,
+        CollectionReadMode.SINGLE_PAGE);
   }
 
   /**
@@ -266,7 +272,8 @@ public record FindCollectionOperation(
         false,
         vector,
         null,
-        includeSortVector);
+        includeSortVector,
+        CollectionReadMode.SINGLE_PAGE);
   }
 
   /**
@@ -310,7 +317,8 @@ public record FindCollectionOperation(
         true,
         null,
         null,
-        includeSortVector);
+        includeSortVector,
+        CollectionReadMode.SINGLE_PAGE);
   }
 
   /**
@@ -358,7 +366,35 @@ public record FindCollectionOperation(
         false,
         null,
         null,
-        includeSortVector);
+        includeSortVector,
+        CollectionReadMode.SINGLE_PAGE);
+  }
+
+  /**
+   * Copies this operation with an internal read mode, leaving public factory defaults unchanged.
+   */
+  public FindCollectionOperation withReadMode(CollectionReadMode readMode) {
+    Objects.requireNonNull(readMode, "readMode");
+    if (readMode == CollectionReadMode.CANDIDATES && limit <= 0) {
+      throw new IllegalArgumentException("Candidate reads require a positive limit");
+    }
+    return new FindCollectionOperation(
+        commandContext,
+        dbLogicalExpression,
+        projection,
+        pageState,
+        limit,
+        pageSize,
+        readType,
+        objectMapper,
+        orderBy,
+        skip,
+        maxSortReadLimit,
+        singleResponse,
+        vector,
+        bm25SearchExpression,
+        includeSortVector,
+        readMode);
   }
 
   @Override
@@ -410,25 +446,45 @@ public record FindCollectionOperation(
     switch (readType) {
       case SORTED_DOCUMENT -> {
         List<SimpleStatement> queries = buildSortedSelectQueries(additionalIdFilter);
-        return findOrderDocument(
-            dataApiRequestInfo,
-            queryExecutor,
-            queries,
-            pageSize,
-            objectMapper(),
-            new ChainedComparator(orderBy(), objectMapper()),
-            orderBy().size(),
-            skip(),
-            limit(),
-            maxSortReadLimit(),
-            projection(),
-            vector() != null,
-            commandContext.requestContext().tenant(),
-            commandContext.commandName(),
-            commandContext.jsonProcessingMetricsReporter());
+        return Uni.createFrom()
+            .deferred(
+                () ->
+                    findOrderDocument(
+                        dataApiRequestInfo,
+                        queryExecutor,
+                        queries,
+                        pageSize,
+                        objectMapper(),
+                        new ChainedComparator(orderBy(), objectMapper()),
+                        orderBy().size(),
+                        skip(),
+                        limit(),
+                        maxSortReadLimit(),
+                        projection(),
+                        vector() != null,
+                        commandContext.requestContext().tenant(),
+                        commandContext.commandName(),
+                        commandContext.jsonProcessingMetricsReporter(),
+                        readMode == CollectionReadMode.CANDIDATES));
       }
       case DOCUMENT, KEY -> {
         List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
+        if (readMode == CollectionReadMode.CANDIDATES) {
+          return findCandidateDocuments(
+              dataApiRequestInfo,
+              queryExecutor,
+              queries,
+              pageState,
+              pageSize,
+              CollectionReadType.DOCUMENT == readType,
+              objectMapper,
+              projection,
+              limit(),
+              vector() != null,
+              commandContext.requestContext().tenant(),
+              commandContext.commandName(),
+              commandContext.jsonProcessingMetricsReporter());
+        }
         return findDocument(
             dataApiRequestInfo,
             queryExecutor,
