@@ -51,8 +51,7 @@ public record FindCollectionOperation(
     SortExpression bm25SearchExpression,
 
     /** Whether to include the sort vector in the response. This is used for vector search. */
-    boolean includeSortVector,
-    CollectionReadMode readMode)
+    boolean includeSortVector)
     implements CollectionReadOperation {
   /**
    * Constructs find operation for unsorted single document find.
@@ -88,8 +87,7 @@ public record FindCollectionOperation(
         true,
         null,
         null,
-        includeSortVector,
-        CollectionReadMode.SINGLE_PAGE);
+        includeSortVector);
   }
 
   /**
@@ -131,8 +129,7 @@ public record FindCollectionOperation(
         false,
         null,
         null,
-        includeSortVector,
-        CollectionReadMode.SINGLE_PAGE);
+        includeSortVector);
   }
 
   /** Constructs find operation for BM25-sorted single-document find. */
@@ -158,8 +155,7 @@ public record FindCollectionOperation(
         true,
         null,
         bm25Expr,
-        false,
-        CollectionReadMode.SINGLE_PAGE);
+        false);
   }
 
   /** Constructs find operation for BM25-sorted multi-document find. */
@@ -188,8 +184,7 @@ public record FindCollectionOperation(
         false,
         null,
         bm25Expr,
-        false,
-        CollectionReadMode.SINGLE_PAGE);
+        false);
   }
 
   /**
@@ -227,8 +222,7 @@ public record FindCollectionOperation(
         true,
         vector,
         null,
-        includeSortVector,
-        CollectionReadMode.SINGLE_PAGE);
+        includeSortVector);
   }
 
   /**
@@ -272,8 +266,7 @@ public record FindCollectionOperation(
         false,
         vector,
         null,
-        includeSortVector,
-        CollectionReadMode.SINGLE_PAGE);
+        includeSortVector);
   }
 
   /**
@@ -317,8 +310,7 @@ public record FindCollectionOperation(
         true,
         null,
         null,
-        includeSortVector,
-        CollectionReadMode.SINGLE_PAGE);
+        includeSortVector);
   }
 
   /**
@@ -366,38 +358,16 @@ public record FindCollectionOperation(
         false,
         null,
         null,
-        includeSortVector,
-        CollectionReadMode.SINGLE_PAGE);
-  }
-
-  /** Copies this operation with the requested read mode. */
-  public FindCollectionOperation withReadMode(CollectionReadMode readMode) {
-    Objects.requireNonNull(readMode, "readMode");
-    if (readMode == CollectionReadMode.CANDIDATES && limit <= 0) {
-      throw new IllegalArgumentException("Candidate reads require a positive limit");
-    }
-    return new FindCollectionOperation(
-        commandContext,
-        dbLogicalExpression,
-        projection,
-        pageState,
-        limit,
-        pageSize,
-        readType,
-        objectMapper,
-        orderBy,
-        skip,
-        maxSortReadLimit,
-        singleResponse,
-        vector,
-        bm25SearchExpression,
-        includeSortVector,
-        readMode);
+        includeSortVector);
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
+    return executeRead(() -> getDocuments(dataApiRequestInfo, queryExecutor, pageState(), null));
+  }
+
+  Uni<Supplier<CommandResult>> executeRead(Supplier<Uni<FindResponse>> read) {
     final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
@@ -406,9 +376,7 @@ public record FindCollectionOperation(
                   errVars(commandContext().schemaObject())));
     }
 
-    // get FindResponse
-    return getDocuments(dataApiRequestInfo, queryExecutor, pageState(), null)
-        // map the response to result
+    return read.get()
         .map(
             docs -> {
               // TODO: why is this here and not higher up where it can happen for any command
@@ -443,46 +411,10 @@ public record FindCollectionOperation(
     // COUNT is not supported
     switch (readType) {
       case SORTED_DOCUMENT -> {
-        List<SimpleStatement> queries = buildSortedSelectQueries(additionalIdFilter);
-        return Uni.createFrom()
-            .deferred(
-                () ->
-                    findOrderDocument(
-                        dataApiRequestInfo,
-                        queryExecutor,
-                        queries,
-                        pageSize,
-                        objectMapper(),
-                        new ChainedComparator(orderBy(), objectMapper()),
-                        orderBy().size(),
-                        skip(),
-                        limit(),
-                        maxSortReadLimit(),
-                        projection(),
-                        vector() != null,
-                        commandContext.requestContext().tenant(),
-                        commandContext.commandName(),
-                        commandContext.jsonProcessingMetricsReporter(),
-                        readMode == CollectionReadMode.CANDIDATES));
+        return getSortedDocuments(dataApiRequestInfo, queryExecutor, additionalIdFilter, false);
       }
       case DOCUMENT, KEY -> {
         List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
-        if (readMode == CollectionReadMode.CANDIDATES) {
-          return findCandidateDocuments(
-              dataApiRequestInfo,
-              queryExecutor,
-              queries,
-              pageState,
-              pageSize,
-              CollectionReadType.DOCUMENT == readType,
-              objectMapper,
-              projection,
-              limit(),
-              vector() != null,
-              commandContext.requestContext().tenant(),
-              commandContext.commandName(),
-              commandContext.jsonProcessingMetricsReporter());
-        }
         return findDocument(
             dataApiRequestInfo,
             queryExecutor,
@@ -505,6 +437,34 @@ public record FindCollectionOperation(
                     "Unsupported find operation read type `%s`".formatted(readType)));
       }
     }
+  }
+
+  Uni<FindResponse> getSortedDocuments(
+      RequestContext dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      IDCollectionFilter additionalIdFilter,
+      boolean sequentialQueries) {
+    List<SimpleStatement> queries = buildSortedSelectQueries(additionalIdFilter);
+    return Uni.createFrom()
+        .deferred(
+            () ->
+                findOrderDocument(
+                    dataApiRequestInfo,
+                    queryExecutor,
+                    queries,
+                    pageSize,
+                    objectMapper(),
+                    new ChainedComparator(orderBy(), objectMapper()),
+                    orderBy().size(),
+                    skip(),
+                    limit(),
+                    maxSortReadLimit(),
+                    projection(),
+                    vector() != null,
+                    commandContext.requestContext().tenant(),
+                    commandContext.commandName(),
+                    commandContext.jsonProcessingMetricsReporter(),
+                    sequentialQueries));
   }
 
   /**
@@ -551,7 +511,7 @@ public record FindCollectionOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<SimpleStatement> buildSelectQueries(IDCollectionFilter additionalIdFilter) {
+  List<SimpleStatement> buildSelectQueries(IDCollectionFilter additionalIdFilter) {
     final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(dbLogicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing

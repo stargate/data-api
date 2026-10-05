@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.operation.*;
-import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadMode;
+import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionCandidateReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
@@ -83,8 +83,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     Preconditions.checkArgument(
         options != null && options.limit() != null && options.limit() > 0,
         "Candidate reads require an explicit positive options.limit");
-    return resolveCollectionCommand(commandContext, command, true)
-        .withReadMode(CollectionReadMode.CANDIDATES);
+    return new CollectionCandidateReadOperation(
+        resolveCollectionCommand(commandContext, command, true));
   }
 
   private FindCollectionOperation resolveCollectionCommand(
