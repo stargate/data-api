@@ -319,13 +319,13 @@ public class FindCommandResolverTest {
     public void nonVectorIncludeSortVector() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"tags" : { "$size" : 0}},
-              "options" : {"includeSortVector" : true}
-            }
-          }
-          """;
+                  {
+                    "find": {
+                      "filter" : {"tags" : { "$size" : 0}},
+                      "options" : {"includeSortVector" : true}
+                    }
+                  }
+                  """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -537,13 +537,13 @@ public class FindCommandResolverTest {
     public void vectorSearchWithOptionSimilarity() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
-              "options": {"includeSimilarity": true}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
+                          "options": {"includeSimilarity": true}
+                        }
+                      }
+                      """;
       final DocumentProjector projector = DocumentProjector.createFromDefinition(null, true);
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
@@ -687,15 +687,15 @@ public class FindCommandResolverTest {
     public void noFilterConditionWithOptions() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "options" : {
-                "limit" : 7,
-                "pageState" : "dlavjhvbavkjbna"
+              {
+                "find": {
+                  "options" : {
+                    "limit" : 7,
+                    "pageState" : "dlavjhvbavkjbna"
+                  }
+                }
               }
-            }
-          }
-          """;
+              """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
@@ -759,17 +759,17 @@ public class FindCommandResolverTest {
     public void explicitAnd() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" :{
-                "$and":[
-                    {"name" : "testName"},
-                    {"age" : "testAge"}
-                 ]
-              }
-            }
-          }
-          """;
+                          {
+                            "find": {
+                              "filter" :{
+                                "$and":[
+                                    {"name" : "testName"},
+                                    {"age" : "testAge"}
+                                 ]
+                              }
+                            }
+                          }
+                          """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -806,17 +806,17 @@ public class FindCommandResolverTest {
     public void explicitOr() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" :{
-                "$or":[
-                    {"name" : "testName"},
-                    {"age" : "testAge"}
-                 ]
-              }
-            }
-          }
-          """;
+                          {
+                            "find": {
+                              "filter" :{
+                                "$or":[
+                                    {"name" : "testName"},
+                                    {"age" : "testAge"}
+                                 ]
+                              }
+                            }
+                          }
+                          """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -853,15 +853,15 @@ public class FindCommandResolverTest {
     public void emptyAnd() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" :{
-                "$and":[
-                 ]
-              }
-            }
-          }
-          """;
+                          {
+                            "find": {
+                              "filter" :{
+                                "$and":[
+                                 ]
+                              }
+                            }
+                          }
+                          """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -889,31 +889,31 @@ public class FindCommandResolverTest {
     public void nestedAndOr() throws Exception {
       String json =
           """
-          {
-               "find": {
-                   "filter": {
-                       "$and": [
-                           {
-                               "name": "testName"
-                           },
-                           {
-                               "age": "testAge"
-                           },
-                           {
-                               "$or": [
-                                   {
-                                       "address": "testAddress"
-                                   },
-                                   {
-                                       "height": "testHeight"
-                                   }
-                               ]
-                           }
-                       ]
-                   }
-               }
-           }
-          """;
+                         {
+                              "find": {
+                                  "filter": {
+                                      "$and": [
+                                          {
+                                              "name": "testName"
+                                          },
+                                          {
+                                              "age": "testAge"
+                                          },
+                                          {
+                                              "$or": [
+                                                  {
+                                                      "address": "testAddress"
+                                                  },
+                                                  {
+                                                      "height": "testHeight"
+                                                  }
+                                              ]
+                                          }
+                                      ]
+                                  }
+                              }
+                          }
+                          """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -985,15 +985,15 @@ public class FindCommandResolverTest {
     public void emptyOr() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" :{
-                "$or":[
-                 ]
-              }
-            }
-          }
-          """;
+                          {
+                            "find": {
+                              "filter" :{
+                                "$or":[
+                                 ]
+                              }
+                            }
+                          }
+                          """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -1045,11 +1045,11 @@ public class FindCommandResolverTest {
       JsonNode projectionDef =
           objectMapper.readTree(
               """
-              {
-                "field1" : 1,
-                "field2" : 1
-              }
-              """);
+                      {
+                        "field1" : 1,
+                        "field2" : 1
+                      }
+                      """);
       assertThat(operation)
           .isInstanceOfSatisfying(
               FindCollectionOperation.class,
@@ -1078,15 +1078,15 @@ public class FindCommandResolverTest {
     public void noFilterConditionWithProjection() throws Exception {
       final String json =
           """
-          {
-            "find": {
-              "projection": {
-                "field1" : 1,
-                "field2" : 1
+              {
+                "find": {
+                  "projection": {
+                    "field1" : 1,
+                    "field2" : 1
+                  }
+                }
               }
-            }
-          }
-          """;
+              """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -1094,11 +1094,11 @@ public class FindCommandResolverTest {
       JsonNode projectionDef =
           objectMapper.readTree(
               """
-              {
-                "field1" : 1,
-                "field2" : 1
-              }
-              """);
+                      {
+                        "field1" : 1,
+                        "field2" : 1
+                      }
+                      """);
       assertThat(operation)
           .isInstanceOfSatisfying(
               FindCollectionOperation.class,
@@ -1131,12 +1131,12 @@ public class FindCommandResolverTest {
     public void NonIdIn() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"name" : { "$in" : ["test1", "test2"]}}
-            }
-          }
-          """;
+                    {
+                      "find": {
+                        "filter" : {"name" : { "$in" : ["test1", "test2"]}}
+                      }
+                    }
+                    """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -1169,15 +1169,15 @@ public class FindCommandResolverTest {
     public void NonIdInIdEq() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" : {
-              "_id" : "id1",
-              "name" : { "$in" : ["test1", "test2"]}
-              }
-            }
-          }
-          """;
+                    {
+                      "find": {
+                        "filter" : {
+                        "_id" : "id1",
+                        "name" : { "$in" : ["test1", "test2"]}
+                        }
+                      }
+                    }
+                    """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
       assertThat(operation)
@@ -1210,15 +1210,15 @@ public class FindCommandResolverTest {
     public void NonIdInIdIn() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" : {
-              "_id" : { "$in" : ["id1", "id2"]},
-              "name" : { "$in" : ["test1", "test2"]}
-              }
-            }
-          }
-          """;
+                    {
+                      "find": {
+                        "filter" : {
+                        "_id" : { "$in" : ["id1", "id2"]},
+                        "name" : { "$in" : ["test1", "test2"]}
+                        }
+                      }
+                    }
+                    """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
       assertThat(operation)
@@ -1252,15 +1252,15 @@ public class FindCommandResolverTest {
     public void NonIdInVSearch() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" : {
-                  "name" : { "$in" : ["test1", "test2"]}
-              },
-              "sort" : {"$vector" : [0.15, 0.1, 0.1]}
-            }
-          }
-          """;
+                    {
+                      "find": {
+                        "filter" : {
+                            "name" : { "$in" : ["test1", "test2"]}
+                        },
+                        "sort" : {"$vector" : [0.15, 0.1, 0.1]}
+                      }
+                    }
+                    """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -1292,16 +1292,16 @@ public class FindCommandResolverTest {
     public void NonIdInIdInVSearch() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" : {
-                  "_id" : { "$in" : ["id1", "id2"]},
-                  "name" : { "$in" : ["test1", "test2"]}
-              },
-              "sort" : {"$vector" : [0.15, 0.1, 0.1]}
-            }
-          }
-          """;
+                    {
+                      "find": {
+                        "filter" : {
+                            "_id" : { "$in" : ["id1", "id2"]},
+                            "name" : { "$in" : ["test1", "test2"]}
+                        },
+                        "sort" : {"$vector" : [0.15, 0.1, 0.1]}
+                      }
+                    }
+                    """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -1338,17 +1338,17 @@ public class FindCommandResolverTest {
     public void descendingSortNonIdIn() throws Exception {
       String json =
           """
-              {
-                  "find": {
-                      "sort": {
-                          "name": -1
-                      },
-                      "filter" : {
-                          "name" : {"$in" : ["test1", "test2"]}
-                      }
-                  }
-              }
-          """;
+                        {
+                            "find": {
+                                "sort": {
+                                    "name": -1
+                                },
+                                "filter" : {
+                                    "name" : {"$in" : ["test1", "test2"]}
+                                }
+                            }
+                        }
+                    """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
@@ -1382,18 +1382,18 @@ public class FindCommandResolverTest {
     public void ascendingSortNonIdInIdIn() throws Exception {
       String json =
           """
-              {
-                  "find": {
-                      "sort": {
-                          "name": 1
-                      },
-                      "filter" : {
-                          "name" : {"$in" : ["test1", "test2"]},
-                          "_id" : {"$in" : ["id1","id2"]}
-                      }
-                  }
-              }
-          """;
+                        {
+                            "find": {
+                                "sort": {
+                                    "name": 1
+                                },
+                                "filter" : {
+                                    "name" : {"$in" : ["test1", "test2"]},
+                                    "_id" : {"$in" : ["id1","id2"]}
+                                }
+                            }
+                        }
+                    """;
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
@@ -1436,12 +1436,12 @@ public class FindCommandResolverTest {
     public void gt() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"amount" : { "$gt" : 100}}
+            {
+              "find": {
+                "filter" : {"amount" : { "$gt" : 100}}
+              }
             }
-          }
-          """;
+            """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -1473,12 +1473,12 @@ public class FindCommandResolverTest {
     public void gte() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"amount" : { "$gte" : 100}}
+            {
+              "find": {
+                "filter" : {"amount" : { "$gte" : 100}}
+              }
             }
-          }
-          """;
+            """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -1510,12 +1510,12 @@ public class FindCommandResolverTest {
     public void lt() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"amount" : { "$lt" : 100}}
+            {
+              "find": {
+                "filter" : {"amount" : { "$lt" : 100}}
+              }
             }
-          }
-          """;
+            """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -1547,12 +1547,12 @@ public class FindCommandResolverTest {
     public void lte() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"dob": {"$lte" : {"$date" : 1672531200000}}}
+            {
+              "find": {
+                "filter" : {"dob": {"$lte" : {"$date" : 1672531200000}}}
+              }
             }
-          }
-          """;
+            """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -1584,12 +1584,12 @@ public class FindCommandResolverTest {
     public void rangeWithIdNumber() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"_id": {"$lte" : 5}}
-            }
+        {
+          "find": {
+            "filter" : {"_id": {"$lte" : 5}}
           }
-          """;
+        }
+        """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
@@ -1621,12 +1621,12 @@ public class FindCommandResolverTest {
     public void rangeWithDateId() throws Exception {
       String json =
           """
-          {
-            "find": {
-              "filter" : {"_id": {"$lte" : {"$date" : 1672531200000}}}
-            }
+        {
+          "find": {
+            "filter" : {"_id": {"$lte" : {"$date" : 1672531200000}}}
           }
-          """;
+        }
+        """;
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findCommand);
