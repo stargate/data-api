@@ -20,6 +20,7 @@ import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.core.retry.RetryMode;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 /**
@@ -167,6 +168,7 @@ public class S3BatchedLogUploader implements AsyncBatchedLogUploader {
             .bucket(location.bucket())
             .key(location.key())
             .contentType(CONTENT_TYPE_NDJSON)
+            .acl(ObjectCannedACL.BUCKET_OWNER_FULL_CONTROL)
             .build();
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("upload() - got putRequest. batch:{},  putRequest: {}", batch, putRequest);
