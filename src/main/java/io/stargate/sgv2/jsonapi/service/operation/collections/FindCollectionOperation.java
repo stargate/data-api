@@ -370,9 +370,7 @@ public record FindCollectionOperation(
         CollectionReadMode.SINGLE_PAGE);
   }
 
-  /**
-   * Copies this operation with an internal read mode, leaving public factory defaults unchanged.
-   */
+  /** Copies this operation with the requested read mode. */
   public FindCollectionOperation withReadMode(CollectionReadMode readMode) {
     Objects.requireNonNull(readMode, "readMode");
     if (readMode == CollectionReadMode.CANDIDATES && limit <= 0) {

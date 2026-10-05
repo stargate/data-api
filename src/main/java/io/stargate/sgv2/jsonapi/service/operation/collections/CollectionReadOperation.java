@@ -112,7 +112,7 @@ public interface CollectionReadOperation extends CollectionOperation {
         .transform(list -> applyLimitToFindResponses(list, limit));
   }
 
-  /** Reads complete internal candidate sets with one budget shared across all generated queries. */
+  /** Reads up to the candidate limit across queries and continuation pages. */
   default Uni<FindResponse> findCandidateDocuments(
       RequestContext requestContext,
       QueryExecutor queryExecutor,
@@ -304,29 +304,17 @@ public interface CollectionReadOperation extends CollectionOperation {
                         .uni(
                             () -> new AtomicReference<String>(null),
                             stateRef -> {
-                              if (vectorSearch) {
-                                return queryExecutor
-                                    .executeVectorSearch(
-                                        dataApiRequestInfo,
-                                        q,
-                                        Optional.ofNullable(stateRef.get()),
-                                        pageSize)
-                                    .onItem()
-                                    .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
-                              } else {
-                                return queryExecutor
-                                    .executeRead(
-                                        dataApiRequestInfo,
-                                        q,
-                                        Optional.ofNullable(stateRef.get()),
-                                        pageSize)
-                                    .onItem()
-                                    .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
-                              }
+                              var pagingState = Optional.ofNullable(stateRef.get());
+                              Uni<AsyncResultSet> result =
+                                  vectorSearch
+                                      ? queryExecutor.executeVectorSearch(
+                                          dataApiRequestInfo, q, pagingState, pageSize)
+                                      : queryExecutor.executeRead(
+                                          dataApiRequestInfo, q, pagingState, pageSize);
+                              return result.invoke(
+                                  rs -> stateRef.set(extractPageStateFromResultSet(rs)));
                             })
-                        // Read document while pageState exists, limit for read is set at
-                        // updateLimit
-                        // +1
+                        // Sorted reads scan all pages before applying the result limit.
                         .whilst(resultSet -> extractPageStateFromResultSet(resultSet) != null));
     return (sequentialQueries ? pages.concatenate() : pages.merge())
         .onItem()

@@ -56,6 +56,9 @@ public class RerankingTestResource implements QuarkusTestResourceLifecycleManage
                     .withTransformers(PassageScoreTransformer.NAME)));
 
     config.put("stargate.jsonapi.operations.enable-embedding-gateway", "false");
+    config.put(
+        "quarkus.log.category.\"io.stargate.sgv2.jsonapi.service.operation.reranking.RerankingTask\".level",
+        "DEBUG");
     // All three Nvidia entries in test-reranking-providers-config.yaml use the local server.
     for (int model = 0; model < 3; model++) {
       config.put(
