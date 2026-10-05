@@ -1,12 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
@@ -29,6 +31,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
@@ -63,8 +66,41 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-class FindCollectionCandidateOperationTest extends OperationTestBase {
+class CollectionCandidateReadOperationTest extends OperationTestBase {
   @Inject ObjectMapper objectMapper;
+
+  @Test
+  void requiresPositiveCandidateLimit() {
+    for (int limit : new int[] {0, -1}) {
+      assertThatThrownBy(() -> candidateOperation(limit, 50))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessage("Candidate reads require a positive limit");
+    }
+  }
+
+  @Test
+  void vectorReadRejectsCollectionWithoutVectorSupport() {
+    var executor = mock(QueryExecutor.class);
+    var operation =
+        new CollectionCandidateReadOperation(
+            FindCollectionOperation.vsearch(
+                COLLECTION_CONTEXT,
+                allDocuments(),
+                DocumentProjector.defaultProjector(),
+                null,
+                2,
+                2,
+                CollectionReadType.DOCUMENT,
+                objectMapper,
+                new float[] {1, 0},
+                false));
+
+    var actual = failure(operation, executor);
+
+    assertThat(CommandErrorFactory.create(actual).errorCode())
+        .isEqualTo(SchemaException.Code.VECTOR_SEARCH_NOT_SUPPORTED.name());
+    verifyNoInteractions(executor);
+  }
 
   @Test
   void followsUnderfilledFirstPage() {
@@ -225,7 +261,8 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
                 DocumentId.fromString("second"),
                 DocumentId.fromString("third"))));
     var operation =
-        FindCollectionOperation.unsorted(
+        new CollectionCandidateReadOperation(
+            FindCollectionOperation.unsorted(
                 COLLECTION_CONTEXT,
                 expression,
                 DocumentProjector.defaultProjector(),
@@ -234,8 +271,7 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
                 2,
                 CollectionReadType.DOCUMENT,
                 objectMapper,
-                false)
-            .withReadMode(CollectionReadMode.CANDIDATES);
+                false));
 
     var subscriber =
         operation
@@ -285,7 +321,8 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
                 DocumentId.fromString("second"),
                 DocumentId.fromString("third"))));
     var operation =
-        FindCollectionOperation.sorted(
+        new CollectionCandidateReadOperation(
+            FindCollectionOperation.sorted(
                 COLLECTION_CONTEXT,
                 expression,
                 DocumentProjector.defaultProjector(),
@@ -297,8 +334,7 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
                 List.of(new FindCollectionOperation.OrderBy("position", true)),
                 0,
                 4,
-                false)
-            .withReadMode(CollectionReadMode.CANDIDATES);
+                false));
 
     var subscriber =
         operation
@@ -331,7 +367,8 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
             eq(requestContext), any(), eq(Optional.of(token("second"))), anyInt()))
         .thenReturn(Uni.createFrom().item(secondPage));
     var operation =
-        FindCollectionOperation.vsearch(
+        new CollectionCandidateReadOperation(
+            FindCollectionOperation.vsearch(
                 vectorContext(),
                 allDocuments(),
                 DocumentProjector.defaultProjectorWithSimilarity(),
@@ -341,8 +378,7 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
                 CollectionReadType.DOCUMENT,
                 objectMapper,
                 new float[] {1, 0},
-                false)
-            .withReadMode(CollectionReadMode.CANDIDATES);
+                false));
 
     var result = execute(operation, executor);
 
@@ -364,7 +400,8 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
             page("second", List.of(row("best", document("best")))),
             page(null, List.of(row("next", document("next")))));
     var operation =
-        FindCollectionOperation.bm25Multi(
+        new CollectionCandidateReadOperation(
+            FindCollectionOperation.bm25Multi(
                 COLLECTION_CONTEXT,
                 allDocuments(),
                 DocumentProjector.defaultProjector(),
@@ -373,8 +410,7 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
                 2,
                 CollectionReadType.DOCUMENT,
                 objectMapper,
-                SortExpression.collectionLexicalSort("search text"))
-            .withReadMode(CollectionReadMode.CANDIDATES);
+                SortExpression.collectionLexicalSort("search text")));
 
     var result = execute(operation, executor);
 
@@ -455,7 +491,6 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
 
     var result = execute(operation, executor);
 
-    assertThat(operation.readMode()).isEqualTo(CollectionReadMode.SINGLE_PAGE);
     assertIds(result, "doc0", "doc1");
     assertThat(((ResponseData.MultiResponseData) result.data()).nextPageState())
         .isEqualTo(token("second"));
@@ -463,8 +498,8 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
     verifyNoMoreInteractions(executor);
   }
 
-  private FindCollectionOperation candidateOperation(int limit, int pageSize) {
-    return unsortedOperation(limit, pageSize).withReadMode(CollectionReadMode.CANDIDATES);
+  private CollectionCandidateReadOperation candidateOperation(int limit, int pageSize) {
+    return new CollectionCandidateReadOperation(unsortedOperation(limit, pageSize));
   }
 
   private FindCollectionOperation unsortedOperation(int limit, int pageSize) {
@@ -480,8 +515,9 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
         false);
   }
 
-  private FindCollectionOperation sortedOperation(int limit, int errorLimit) {
-    return FindCollectionOperation.sorted(
+  private CollectionCandidateReadOperation sortedOperation(int limit, int errorLimit) {
+    return new CollectionCandidateReadOperation(
+        FindCollectionOperation.sorted(
             COLLECTION_CONTEXT,
             allDocuments(),
             DocumentProjector.defaultProjector(),
@@ -493,8 +529,7 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
             List.of(new FindCollectionOperation.OrderBy("position", true)),
             0,
             errorLimit,
-            false)
-        .withReadMode(CollectionReadMode.CANDIDATES);
+            false));
   }
 
   private CommandContext<CollectionSchemaObject> vectorContext() {
@@ -584,7 +619,7 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
     return Base64.getEncoder().encodeToString(page.getBytes(StandardCharsets.UTF_8));
   }
 
-  private CommandResult execute(FindCollectionOperation operation, QueryExecutor executor) {
+  private CommandResult execute(CollectionReadOperation operation, QueryExecutor executor) {
     return await(operation.execute(requestContext, executor));
   }
 
@@ -597,7 +632,7 @@ class FindCollectionCandidateOperationTest extends OperationTestBase {
         .get();
   }
 
-  private Throwable failure(FindCollectionOperation operation, QueryExecutor executor) {
+  private Throwable failure(CollectionReadOperation operation, QueryExecutor executor) {
     return operation
         .execute(requestContext, executor)
         .subscribe()
