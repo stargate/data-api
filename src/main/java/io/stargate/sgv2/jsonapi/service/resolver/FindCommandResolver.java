@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
@@ -25,7 +24,7 @@ import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
 
-/** Resolves the {@link FindOneCommand } */
+/** Resolves collection and table {@link FindCommand}s. */
 @ApplicationScoped
 public class FindCommandResolver implements CommandResolver<FindCommand> {
 
@@ -76,16 +75,12 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     return resolveCollectionCommand(commandContext, command, false);
   }
 
-  /**
-   * Resolves an internal candidate read whose budget is supplied by the inner find command.
-   * Candidate reads require an explicit positive limit instead of the ordinary find defaults.
-   */
+  /** Resolves an internal reranking read. The inner find must supply a positive options.limit. */
   public Operation<CollectionSchemaObject> resolveCollectionCandidateCommand(
       CommandContext<CollectionSchemaObject> commandContext, FindCommand command) {
+    var options = command.options();
     Preconditions.checkArgument(
-        command.options() != null
-            && command.options().limit() != null
-            && command.options().limit() > 0,
+        options != null && options.limit() != null && options.limit() > 0,
         "Candidate reads require an explicit positive options.limit");
     return resolveCollectionCommand(commandContext, command, true);
   }
