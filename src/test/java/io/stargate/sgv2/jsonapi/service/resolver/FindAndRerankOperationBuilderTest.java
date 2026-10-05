@@ -94,7 +94,6 @@ class FindAndRerankOperationBuilderTest {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void resolvesAsymmetricHybridLimitsFromInnerCommands() throws Exception {
     var commandContext = commandContext();
     var command =
@@ -113,7 +112,7 @@ class FindAndRerankOperationBuilderTest {
             """);
 
     var candidateResolver = mock(FindCommandResolver.class);
-    Operation<CollectionSchemaObject> emptyRead = mock(Operation.class);
+    Operation<CollectionSchemaObject> emptyRead = mock();
     var emptyResult = CommandResult.multiDocumentBuilder(RequestTracing.NO_OP).build();
     when(emptyRead.execute(commandContext))
         .thenReturn(Uni.createFrom().item(() -> () -> emptyResult));
