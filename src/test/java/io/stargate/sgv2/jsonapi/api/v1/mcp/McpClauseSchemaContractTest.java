@@ -6,13 +6,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.victools.jsonschema.generator.*;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SpecVersion;
 import io.quarkiverse.mcp.server.GlobalInputSchemaGenerator;
 import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -21,6 +25,7 @@ import java.util.stream.Stream;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /** Contracts between advertised MCP schemas and the actual Data API JSON deserializers. */
@@ -54,7 +59,14 @@ class McpClauseSchemaContractTest {
     assertNotNull(examples, "Clause schema must advertise examples of the accepted JSON");
     assertFalse(examples.isEmpty());
     for (var example : examples) {
-      assertNotNull(objectMapper.treeToValue(example, clauseType));
+      assertSchemaAccepts(schema, example);
+      var clause = objectMapper.treeToValue(example, clauseType);
+      assertNotNull(clause);
+      if (clause instanceof FilterDefinition filter) {
+        assertNotNull(filter.build(new TestConstants().collectionContext()));
+      } else if (clause instanceof SortDefinition sort) {
+        assertNotNull(sort.build(new TestConstants().collectionContext()));
+      }
     }
   }
 
@@ -74,14 +86,24 @@ class McpClauseSchemaContractTest {
     var options = properties.path("options").path("properties");
     assertTrue(options.has("rerank"));
     assertFalse(options.has("rerankServiceOverride"));
-    assertTrue(options.path("hybridLimits").has("anyOf"));
+    var hybridLimits = options.path("hybridLimits");
+    assertSchemaAccepts(hybridLimits, objectMapper.readTree("50"));
+    assertSchemaAccepts(hybridLimits, objectMapper.readTree("{\"$vector\": 50, \"$lexical\": 10}"));
+    var rerankProperties = options.path("rerank").path("properties");
+    assertTrue(rerankProperties.has("provider"));
+    assertTrue(rerankProperties.has("modelName"));
+    assertFalse(rerankProperties.has("authentication"));
+    assertFalse(rerankProperties.has("parameters"));
     assertFalse(schema.toString().contains("commandFeatures"));
     assertFalse(schema.toString().contains("vectorLimit"));
 
     for (var example : properties.path("sort").path("examples")) {
       assertNotNull(objectMapper.treeToValue(example, FindAndRerankSort.class));
     }
-    for (var example : options.path("hybridLimits").path("examples")) {
+    var limitExamples = hybridLimits.findValues("examples");
+    assertFalse(limitExamples.isEmpty());
+    for (var example : limitExamples.getFirst()) {
+      assertSchemaAccepts(hybridLimits, example);
       assertNotNull(objectMapper.treeToValue(example, FindAndRerankCommand.HybridLimits.class));
     }
   }
@@ -110,6 +132,54 @@ class McpClauseSchemaContractTest {
     }
   }
 
+  @ParameterizedTest
+  @MethodSource("invalidWireShapes")
+  void schemaRejectsInvalidWireShapes(Class<?> clauseType, String json) throws Exception {
+    var schema =
+        JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012)
+            .getSchema(schemaFor(clauseType));
+    assertFalse(schema.validate(objectMapper.readTree(json)).isEmpty());
+  }
+
+  static Stream<Arguments> invalidWireShapes() {
+    return Stream.of(
+        Arguments.of(FindAndRerankSort.class, "{\"vectorizeSort\": \"query\"}"),
+        Arguments.of(FindAndRerankSort.class, "{\"$hybrid\": {\"$lexical\": 1}}"),
+        Arguments.of(FindAndRerankSort.class, "{\"$hybrid\": {\"$vector\": \"query\"}}"),
+        Arguments.of(
+            FindAndRerankSort.class, "{\"$hybrid\": {\"$vector\": null, \"$vectorize\": null}}"),
+        Arguments.of(
+            FindAndRerankCommand.HybridLimits.class, "{\"vectorLimit\": 50, \"lexicalLimit\": 10}"),
+        Arguments.of(FindAndRerankCommand.HybridLimits.class, "{\"$vector\": 50}"),
+        Arguments.of(
+            FindAndRerankCommand.HybridLimits.class, "{\"$vector\": 50, \"$lexical\": \"10\"}"));
+  }
+
+  @Test
+  void openApiLimitExamplesAreValidClauseJson() throws Exception {
+    var schema =
+        FindAndRerankCommand.Options.class
+            .getDeclaredField("hybridLimits")
+            .getAnnotation(Schema.class);
+    for (var example : schema.examples()) {
+      assertNotNull(objectMapper.readValue(example, FindAndRerankCommand.HybridLimits.class));
+    }
+  }
+
+  private void assertSchemaAccepts(JsonNode schema, JsonNode example) {
+    var validator =
+        JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012).getSchema(schema);
+    assertTrue(validator.validate(example).isEmpty(), () -> validator.validate(example).toString());
+  }
+
+  @Test
+  void collectionCreationKeepsItsOwnRerankServiceFields() {
+    var properties =
+        schemaFor(CreateCollectionCommand.Options.RerankServiceDesc.class).path("properties");
+    assertTrue(properties.has("authentication"));
+    assertTrue(properties.has("parameters"));
+  }
+
   private JsonNode inputSchema(String name) throws Exception {
     var tool = toolManager.getTool(name);
     assertNotNull(tool);
@@ -122,6 +192,7 @@ class McpClauseSchemaContractTest {
                 objectMapper, SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
             .without(Option.SCHEMA_VERSION_INDICATOR);
     new McpSchemaDescriptionCustomizer().customize(builder);
+    new McpClauseSchemaCustomizer().customize(builder);
     return new SchemaGenerator(builder.build()).generateSchema(type);
   }
 }
