@@ -30,8 +30,7 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(
-    description =
-        "Finds documents using using vector and lexical sorting, then reranks the results.")
+    description = "Finds candidate documents using a $hybrid sort, then reranks their passages.")
 @JsonTypeName(CommandName.Names.FIND_AND_RERANK)
 public record FindAndRerankCommand(
     @Valid @JsonProperty("filter") FilterDefinition filterDefinition,

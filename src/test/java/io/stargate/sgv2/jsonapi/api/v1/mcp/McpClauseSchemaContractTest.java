@@ -97,8 +97,19 @@ class McpClauseSchemaContractTest {
     assertFalse(schema.toString().contains("commandFeatures"));
     assertFalse(schema.toString().contains("vectorLimit"));
 
-    for (var example : properties.path("sort").path("examples")) {
+    var sortSchema = properties.path("sort");
+    assertFalse(sortSchema.path("examples").isEmpty());
+    for (var example : sortSchema.path("examples")) {
+      assertSchemaAccepts(sortSchema, example);
       assertNotNull(objectMapper.treeToValue(example, FindAndRerankSort.class));
+    }
+    var rerankSchema = options.path("rerank");
+    assertFalse(rerankSchema.path("examples").isEmpty());
+    for (var example : rerankSchema.path("examples")) {
+      assertSchemaAccepts(rerankSchema, example);
+      assertNotNull(
+          objectMapper.treeToValue(
+              example, CreateCollectionCommand.Options.RerankServiceDesc.class));
     }
     var limitExamples = hybridLimits.findValues("examples");
     assertFalse(limitExamples.isEmpty());
