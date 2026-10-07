@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -396,6 +397,181 @@ class FindAndRerankOperationBuilderTest {
     }
 
     return commandContext;
+  }
+
+  @Nested
+  class ValidateSortClauseHasVectorOrVectorize {
+
+    private CommandContext<CollectionSchemaObject> commandContextWithVectorize() {
+      var commandContext =
+          testConstants.collectionContext(
+              CommandName.FIND_AND_RERANK,
+              testConstants.VECTORIZE_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT);
+
+      var rerankingProvidersConfig = mock(RerankingProvidersConfig.class);
+      var modelConfig = mock(RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.class);
+      when(modelConfig.apiModelSupport())
+          .thenReturn(
+              new ApiModelSupport.ApiModelSupportImpl(
+                  ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()));
+      when(rerankingProvidersConfig.filterByRerankServiceDef(any())).thenReturn(modelConfig);
+      when(commandContext.rerankingProviderFactory().getRerankingConfig())
+          .thenReturn(rerankingProvidersConfig);
+      when(commandContext
+              .rerankingProviderFactory()
+              .create(any(), any(), any(), any(), any(), any()))
+          .thenReturn(mock(RerankingProvider.class));
+      when(commandContext
+              .embeddingProviderFactory()
+              .create(any(), any(), any(), any(), anyInt(), any(), any(), any()))
+          .thenReturn(mock(EmbeddingProvider.class));
+
+      return commandContext;
+    }
+
+    @Test
+    void failsWhenSortIsLexicalOnly() throws Exception {
+      var commandContext = commandContext();
+      var command =
+          command(
+              """
+              {
+                "findAndRerank": {
+                  "sort": { "$hybrid": { "$lexical": "some text" } }
+                }
+              }
+              """);
+
+      assertThatThrownBy(
+              () ->
+                  new FindAndRerankOperationBuilder(commandContext)
+                      .withCommand(command)
+                      .withFindCommandResolver(findCommandResolver)
+                      .build())
+          .isInstanceOf(RequestException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", RequestException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT.name());
+    }
+
+    @Test
+    void failsWhenSortIsLexicalOnlyEvenWithRerankOptions() throws Exception {
+      var commandContext = commandContext();
+      var command =
+          command(
+              """
+              {
+                "findAndRerank": {
+                  "sort": { "$hybrid": { "$lexical": "some text" } },
+                  "options": {
+                    "rerankOn": "body",
+                    "rerankQuery": "some text"
+                  }
+                }
+              }
+              """);
+
+      assertThatThrownBy(
+              () ->
+                  new FindAndRerankOperationBuilder(commandContext)
+                      .withCommand(command)
+                      .withFindCommandResolver(findCommandResolver)
+                      .build())
+          .isInstanceOf(RequestException.class)
+          .hasFieldOrPropertyWithValue(
+              "code", RequestException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT.name());
+    }
+
+    @Test
+    void succeedsWhenSortIsHybridShorthand() throws Exception {
+      var commandContext = commandContextWithVectorize();
+      var command =
+          command(
+              """
+              {
+                "findAndRerank": {
+                  "sort": { "$hybrid": "some text" }
+                }
+              }
+              """);
+
+      assertThatCode(
+              () ->
+                  new FindAndRerankOperationBuilder(commandContext)
+                      .withCommand(command)
+                      .withFindCommandResolver(findCommandResolver)
+                      .build())
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void succeedsWhenSortHasVectorizeAndLexical() throws Exception {
+      var commandContext = commandContextWithVectorize();
+      var command =
+          command(
+              """
+              {
+                "findAndRerank": {
+                  "sort": { "$hybrid": { "$vectorize": "some text", "$lexical": "some text" } }
+                }
+              }
+              """);
+
+      assertThatCode(
+              () ->
+                  new FindAndRerankOperationBuilder(commandContext)
+                      .withCommand(command)
+                      .withFindCommandResolver(findCommandResolver)
+                      .build())
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void succeedsWhenSortHasVectorizeOnly() throws Exception {
+      var commandContext = commandContextWithVectorize();
+      var command =
+          command(
+              """
+              {
+                "findAndRerank": {
+                  "sort": { "$hybrid": { "$vectorize": "some text" } }
+                }
+              }
+              """);
+
+      assertThatCode(
+              () ->
+                  new FindAndRerankOperationBuilder(commandContext)
+                      .withCommand(command)
+                      .withFindCommandResolver(findCommandResolver)
+                      .build())
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    void succeedsWhenSortHasVectorWithRerankOptions() throws Exception {
+      var commandContext = commandContext();
+      var command =
+          command(
+              """
+              {
+                "findAndRerank": {
+                  "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3] } },
+                  "options": {
+                    "rerankOn": "body",
+                    "rerankQuery": "some text"
+                  }
+                }
+              }
+              """);
+
+      assertThatCode(
+              () ->
+                  new FindAndRerankOperationBuilder(commandContext)
+                      .withCommand(command)
+                      .withFindCommandResolver(findCommandResolver)
+                      .build())
+          .doesNotThrowAnyException();
+    }
   }
 
   @Nested
