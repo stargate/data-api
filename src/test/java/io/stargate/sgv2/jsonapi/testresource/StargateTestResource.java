@@ -2,16 +2,23 @@ package io.stargate.sgv2.jsonapi.testresource;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.CASSANDRA_CQL_HOST_PROP;
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP;
+import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassandraPassword;
+import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassandraUsername;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -39,6 +46,17 @@ public abstract class StargateTestResource
   private GenericContainer<?> cassandraContainer;
 
   /**
+   * Database container shared by the test classes that do not need their own, see {@link
+   * #needsDedicatedContainer()}. When Quarkus restarts the application for a test class with other
+   * test resources, it stops every test resource, but this container keeps running and only its
+   * leftover keyspaces are dropped. Testcontainers removes it when the JVM exits.
+   */
+  private static GenericContainer<?> sharedCassandraContainer;
+
+  /** Keyspaces of the shared database right after it started. */
+  private static Set<CqlIdentifier> initialKeyspaces;
+
+  /**
    * Called by Quarkus to inject the DevServicesContext, allowing us to detect if we are running
    * inside a container network.
    */
@@ -53,6 +71,7 @@ public abstract class StargateTestResource
       return Collections.emptyMap();
     }
 
+    dropClosedDockerConnections();
     ImmutableMap.Builder<String, String> propsBuilder =
         containerNetworkId
             .map(id -> startWithContainerNetwork(id, false))
@@ -102,9 +121,39 @@ public abstract class StargateTestResource
 
   @Override
   public void stop() {
-    if (null != cassandraContainer && !cassandraContainer.isShouldBeReused()) {
+    // The shared container keeps running for the next test classes
+    if (null != cassandraContainer
+        && cassandraContainer != sharedCassandraContainer
+        && !cassandraContainer.isShouldBeReused()) {
+      dropClosedDockerConnections();
       cassandraContainer.stop();
     }
+  }
+
+  /**
+   * Podman closes Docker API connections that have been idle for 10 seconds, and a request on such
+   * a connection fails: Testcontainers' HTTP client retries only idempotent requests, and only
+   * once. Each failed ping removes closed connections from the pool, so that the next requests get
+   * open ones.
+   */
+  private static void dropClosedDockerConnections() {
+    for (int attempt = 1; attempt <= 3; attempt++) {
+      try {
+        DockerClientFactory.instance().client().pingCmd().exec();
+        return;
+      } catch (RuntimeException e) {
+        LOG.info(
+            "Docker ping {} failed, probably on a closed connection: {}", attempt, e.toString());
+      }
+    }
+  }
+
+  /**
+   * Whether the test class needs a database container of its own instead of the shared one, for
+   * example because it stops the database or needs a database without other collections.
+   */
+  protected boolean needsDedicatedContainer() {
+    return false;
   }
 
   public abstract int getMaxCollectionsPerDBOverride();
@@ -154,9 +203,26 @@ public abstract class StargateTestResource
   }
 
   private ImmutableMap.Builder<String, String> startWithoutContainerNetwork(boolean reuse) {
-    return startContainer(reuse, container -> container.withNetwork(network()));
+    if (needsDedicatedContainer()) {
+      return startContainer(reuse, container -> container.withNetwork(network()));
+    }
+    synchronized (StargateTestResource.class) {
+      if (sharedCassandraContainer == null) {
+        startContainer(reuse, container -> container.withNetwork(network()));
+        try (CqlSession session = openSession(cassandraContainer)) {
+          initialKeyspaces = Set.copyOf(session.getMetadata().getKeyspaces().keySet());
+        }
+        sharedCassandraContainer = cassandraContainer;
+      } else {
+        cassandraContainer = sharedCassandraContainer;
+        LOG.info("Reusing the shared database container {}", cassandraContainer.getContainerId());
+        dropKeyspacesLeftByEarlierClasses();
+      }
+    }
+    return ImmutableMap.builder();
   }
 
+  // Each application launch in a container gets a new network, so the database cannot be shared
   private ImmutableMap.Builder<String, String> startWithContainerNetwork(
       String networkId, boolean reuse) {
     return startContainer(reuse, container -> container.withNetworkMode(networkId));
@@ -167,7 +233,38 @@ public abstract class StargateTestResource
     cassandraContainer = baseCassandraContainer(reuse);
     networkConfig.accept(cassandraContainer);
     cassandraContainer.start();
+    LOG.info("Started a new database container {}", cassandraContainer.getContainerId());
     return ImmutableMap.builder();
+  }
+
+  /**
+   * Drops the keyspaces that earlier test classes left in the shared database, so the application
+   * restarts on a clean database, as it did with a new container. Failures are only logged: when a
+   * test resource fails to start, Quarkus skips all the remaining test classes.
+   */
+  private static void dropKeyspacesLeftByEarlierClasses() {
+    try (CqlSession session = openSession(sharedCassandraContainer)) {
+      var leftovers =
+          session.getMetadata().getKeyspaces().keySet().stream()
+              .filter(keyspace -> !initialKeyspaces.contains(keyspace))
+              .toList();
+      if (!leftovers.isEmpty()) {
+        LOG.info("Dropping keyspaces left in the shared database: {}", leftovers);
+        for (CqlIdentifier keyspace : leftovers) {
+          session.execute("DROP KEYSPACE IF EXISTS " + keyspace.asCql(true));
+        }
+      }
+    } catch (RuntimeException e) {
+      LOG.warn("Could not drop the keyspaces left in the shared database", e);
+    }
+  }
+
+  private static CqlSession openSession(GenericContainer<?> container) {
+    return CqlSession.builder()
+        .addContactPoint(new InetSocketAddress(container.getHost(), container.getMappedPort(9042)))
+        .withLocalDatacenter(isDse() || isHcd() ? "dc1" : "datacenter1")
+        .withAuthCredentials(getCassandraUsername(), getCassandraPassword())
+        .build();
   }
 
   protected GenericContainer<?> baseCassandraContainer(boolean reuse) {

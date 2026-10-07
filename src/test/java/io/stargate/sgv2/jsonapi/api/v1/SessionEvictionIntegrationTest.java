@@ -282,6 +282,12 @@ public class SessionEvictionIntegrationTest extends AbstractCollectionIntegratio
      */
     private static GenericContainer<?> sessionEvictionCassandraContainer;
 
+    // The test stops and restarts the database container
+    @Override
+    protected boolean needsDedicatedContainer() {
+      return true;
+    }
+
     /**
      * Overridden to enforce a fixed port binding for the Cassandra container native binary / CQL
      * port (9042).

@@ -39,6 +39,12 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractKeyspaceInte
       // Default per-Collection index count is now 10 without vector but with Lexical
       return COLLECTIONS_TO_CREATE * 10;
     }
+
+    // The limit counts the indexes of the whole database, so the test needs an empty one
+    @Override
+    protected boolean needsDedicatedContainer() {
+      return true;
+    }
   }
 
   @Test
