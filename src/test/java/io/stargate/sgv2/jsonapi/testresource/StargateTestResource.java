@@ -18,7 +18,6 @@ import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -71,7 +70,6 @@ public abstract class StargateTestResource
       return Collections.emptyMap();
     }
 
-    dropClosedDockerConnections();
     ImmutableMap.Builder<String, String> propsBuilder =
         containerNetworkId
             .map(id -> startWithContainerNetwork(id, false))
@@ -125,26 +123,7 @@ public abstract class StargateTestResource
     if (null != cassandraContainer
         && cassandraContainer != sharedCassandraContainer
         && !cassandraContainer.isShouldBeReused()) {
-      dropClosedDockerConnections();
       cassandraContainer.stop();
-    }
-  }
-
-  /**
-   * Podman closes Docker API connections that have been idle for 10 seconds, and a request on such
-   * a connection fails: Testcontainers' HTTP client retries only idempotent requests, and only
-   * once. Each failed ping removes closed connections from the pool, so that the next requests get
-   * open ones.
-   */
-  private static void dropClosedDockerConnections() {
-    for (int attempt = 1; attempt <= 3; attempt++) {
-      try {
-        DockerClientFactory.instance().client().pingCmd().exec();
-        return;
-      } catch (RuntimeException e) {
-        LOG.info(
-            "Docker ping {} failed, probably on a closed connection: {}", attempt, e.toString());
-      }
     }
   }
 
