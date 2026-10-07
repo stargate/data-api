@@ -95,4 +95,21 @@ class FindAndRerankLimitsTest {
         .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
         .body("errors[0].message", containsString("limit should be greater than `0`"));
   }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"5.0", "5e0"})
+  void explainsRejectionOfWholeValuedFloatingPointNumbers(String value) {
+    given()
+        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, "test-token")
+        .contentType(ContentType.JSON)
+        .body("{\"findAndRerank\": {\"options\": {\"limit\": %s}}}".formatted(value))
+        .when()
+        .post(CollectionResource.BASE_PATH, "test_keyspace", "test_collection")
+        .then()
+        .statusCode(200)
+        .body("$", responseIsError())
+        .body("errors[0].family", is("REQUEST"))
+        .body("errors[0].message", containsString("options.limit"))
+        .body("errors[0].message", containsString("floating-point number"));
+  }
 }
