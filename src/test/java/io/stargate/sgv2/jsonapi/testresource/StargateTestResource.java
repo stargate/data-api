@@ -48,7 +48,8 @@ public abstract class StargateTestResource
    * Database container shared by the test classes that do not need their own, see {@link
    * #needsDedicatedContainer()}. When Quarkus restarts the application for a test class with other
    * test resources, it stops every test resource, but this container keeps running and only its
-   * leftover keyspaces are dropped. Testcontainers removes it when the JVM exits.
+   * leftover keyspaces are dropped. If they cannot be dropped, a new container replaces it.
+   * Testcontainers removes the container when the JVM exits.
    */
   private static GenericContainer<?> sharedCassandraContainer;
 
@@ -186,6 +187,13 @@ public abstract class StargateTestResource
       return startContainer(reuse, container -> container.withNetwork(network()));
     }
     synchronized (StargateTestResource.class) {
+      if (sharedCassandraContainer != null && !dropKeyspacesLeftByEarlierClasses()) {
+        LOG.warn(
+            "Replacing the shared database container {}",
+            sharedCassandraContainer.getContainerId());
+        sharedCassandraContainer.stop();
+        sharedCassandraContainer = null;
+      }
       if (sharedCassandraContainer == null) {
         startContainer(reuse, container -> container.withNetwork(network()));
         try (CqlSession session = openSession(cassandraContainer)) {
@@ -195,7 +203,6 @@ public abstract class StargateTestResource
       } else {
         cassandraContainer = sharedCassandraContainer;
         LOG.info("Reusing the shared database container {}", cassandraContainer.getContainerId());
-        dropKeyspacesLeftByEarlierClasses();
       }
     }
     return ImmutableMap.builder();
@@ -218,10 +225,12 @@ public abstract class StargateTestResource
 
   /**
    * Drops the keyspaces that earlier test classes left in the shared database, so the application
-   * restarts on a clean database, as it did with a new container. Failures are only logged: when a
-   * test resource fails to start, Quarkus skips all the remaining test classes.
+   * restarts on a clean database, as it did with a new container.
+   *
+   * @return {@code false} if the keyspaces could not be dropped, for example because the database
+   *     is not reachable
    */
-  private static void dropKeyspacesLeftByEarlierClasses() {
+  private static boolean dropKeyspacesLeftByEarlierClasses() {
     try (CqlSession session = openSession(sharedCassandraContainer)) {
       var leftovers =
           session.getMetadata().getKeyspaces().keySet().stream()
@@ -233,8 +242,10 @@ public abstract class StargateTestResource
           session.execute("DROP KEYSPACE IF EXISTS " + keyspace.asCql(true));
         }
       }
+      return true;
     } catch (RuntimeException e) {
       LOG.warn("Could not drop the keyspaces left in the shared database", e);
+      return false;
     }
   }
 
