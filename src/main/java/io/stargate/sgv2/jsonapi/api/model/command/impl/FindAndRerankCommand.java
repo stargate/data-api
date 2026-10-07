@@ -141,10 +141,14 @@ public record FindAndRerankCommand(
   private static int integerLimit(JsonParser jsonParser, JsonNode value, String path)
       throws JsonMappingException {
     if (!value.isIntegralNumber() || !value.canConvertToInt()) {
+      String valueDescription =
+          value.isFloatingPointNumber()
+              ? "%s (floating-point number)".formatted(value)
+              : value.toString();
       throw new JsonMappingException(
           jsonParser,
           "%s must be an integer between %d and %d (inclusive), got %s"
-              .formatted(path, Integer.MIN_VALUE, Integer.MAX_VALUE, value));
+              .formatted(path, Integer.MIN_VALUE, Integer.MAX_VALUE, valueDescription));
     }
     return value.intValue();
   }
