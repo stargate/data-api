@@ -35,6 +35,7 @@ class FindAndRerankCommandLimitsTest {
             "0.5",
             "5.9",
             "50.9",
+            "5.0",
             "3000000000",
             "-3000000000",
             "4294967306",
@@ -54,6 +55,26 @@ class FindAndRerankCommandLimitsTest {
                         "{\"hybridLimits\": {\"$vector\": 10, \"$lexical\": %s}}".formatted(value),
                         "options.hybridLimits.$lexical",
                         value)));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"5e0", "\"5\"", "true", "[]"})
+  void rejectsNonIntegerValues(String value) {
+    for (String options :
+        new String[] {
+          "{\"limit\": %s}".formatted(value),
+          "{\"hybridLimits\": %s}".formatted(value),
+          "{\"hybridLimits\": {\"$vector\": %s, \"$lexical\": 10}}".formatted(value),
+          "{\"hybridLimits\": {\"$vector\": 10, \"$lexical\": %s}}".formatted(value)
+        }) {
+      var error =
+          assertThrows(
+              JsonMappingException.class,
+              () ->
+                  objectMapper.readValue(commandWithOptions(options), FindAndRerankCommand.class));
+
+      assertThat(error).hasMessageContaining("must be an integer");
+    }
   }
 
   @ParameterizedTest
