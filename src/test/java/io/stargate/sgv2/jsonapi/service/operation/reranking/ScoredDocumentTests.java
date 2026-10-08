@@ -270,47 +270,23 @@ public class ScoredDocumentTests {
     var docWithNumber = baseDocument().put(VECTOR_EMBEDDING_TEXT_FIELD, 1);
     var numberField =
         ScoredDocument.create(1, Rank.RankSource.VECTOR, docWithNumber, VECTORIZE_LOCATOR);
-    assertThat(numberField.passage())
-        .as("passage is present and correct when field is a number")
-        .isPresent()
-        .hasValue("1");
+    assertThat(numberField.passage()).as("passage missing when field is a number").isEmpty();
 
     var docWithBoolean = baseDocument().put(VECTOR_EMBEDDING_TEXT_FIELD, true);
     var booleanField =
         ScoredDocument.create(1, Rank.RankSource.VECTOR, docWithBoolean, VECTORIZE_LOCATOR);
-    assertThat(booleanField.passage())
-        .as("passage is present and correct when field is a boolean")
-        .isPresent()
-        .hasValue("true");
+    assertThat(booleanField.passage()).as("passage missing when field is a boolean").isEmpty();
 
-    var docWithObjectPassage = baseDocument();
-    docWithObjectPassage.putObject(VECTOR_EMBEDDING_TEXT_FIELD);
-    assertThatThrownBy(
-            () ->
-                ScoredDocument.create(
-                    1, Rank.RankSource.VECTOR, docWithObjectPassage, VECTORIZE_LOCATOR))
-        .as("Cannot use object as passage node")
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage(
-            "Passage field %s is present but not null or a valueNode _id=%s , passageField=%s"
-                .formatted(
-                    VECTOR_EMBEDDING_TEXT_FIELD,
-                    ID_1,
-                    docWithObjectPassage.get(VECTOR_EMBEDDING_TEXT_FIELD)));
+    var docWithObject = baseDocument();
+    docWithObject.putObject(VECTOR_EMBEDDING_TEXT_FIELD).put("text", PASSAGE);
+    var objectField =
+        ScoredDocument.create(1, Rank.RankSource.VECTOR, docWithObject, VECTORIZE_LOCATOR);
+    assertThat(objectField.passage()).as("passage missing when field is an object").isEmpty();
 
-    var docWithArrayPassage = baseDocument();
-    docWithArrayPassage.putArray(VECTOR_EMBEDDING_TEXT_FIELD);
-    assertThatThrownBy(
-            () ->
-                ScoredDocument.create(
-                    1, Rank.RankSource.VECTOR, docWithArrayPassage, VECTORIZE_LOCATOR))
-        .as("Cannot use array as passage node")
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage(
-            "Passage field %s is present but not null or a valueNode _id=%s , passageField=%s"
-                .formatted(
-                    VECTOR_EMBEDDING_TEXT_FIELD,
-                    ID_1,
-                    docWithArrayPassage.get(VECTOR_EMBEDDING_TEXT_FIELD)));
+    var docWithArray = baseDocument();
+    docWithArray.putArray(VECTOR_EMBEDDING_TEXT_FIELD).add(PASSAGE);
+    var arrayField =
+        ScoredDocument.create(1, Rank.RankSource.VECTOR, docWithArray, VECTORIZE_LOCATOR);
+    assertThat(arrayField.passage()).as("passage missing when field is an array").isEmpty();
   }
 }
