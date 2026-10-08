@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -23,6 +24,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
 
   private final CQLSessionCache singleton;
+  private final Optional<UserAgent> slaUserAgent;
 
   @Inject
   public CqlSessionCacheSupplier(
@@ -53,11 +55,14 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
             dbConfig.cassandraPort(),
             () -> schemaObjectCacheSupplier.get().getSchemaChangeListener());
 
+    slaUserAgent =
+        operationsConfig.slaUserAgent().filter(value -> !value.isBlank()).map(UserAgent::new);
+
     singleton =
         new CQLSessionCache(
             dbConfig.sessionCacheMaxSize(),
             Duration.ofSeconds(dbConfig.sessionCacheTtlSeconds()),
-            operationsConfig.slaUserAgent().map(UserAgent::new).orElse(null),
+            slaUserAgent.orElse(null),
             Duration.ofSeconds(dbConfig.slaSessionCacheTtlSeconds()),
             credentialsFactory,
             sessionFactory,
@@ -69,5 +74,10 @@ public class CqlSessionCacheSupplier implements Supplier<CQLSessionCache> {
   @Override
   public CQLSessionCache get() {
     return singleton;
+  }
+
+  /** Gets the configured User-Agent that selects the shorter SLA session-cache TTL. */
+  public Optional<UserAgent> slaUserAgent() {
+    return slaUserAgent;
   }
 }
