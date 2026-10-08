@@ -161,6 +161,19 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
       assertThat(executeCqlStatement(createTable.build())).isTrue();
     }
 
+    // Regression test for #2462: a counter column must report apiSupport.filter == true in the
+    // table description, because counters ARE filterable via ALLOW FILTERING (they just cannot be
+    // indexed). Filtering succeeds with a MISSING_INDEX warning (see filterCounter() below).
+    @Test
+    @Order(2)
+    public final void listTablesReportsCounterFilterable() {
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .listTables(true)
+          .wasSuccessful()
+          .hasTableColumnApiSupport(TABLE_COUNTER, "counter", false, false, true, true);
+    }
+
     // In Cassandra, you cannot use an INSERT statement directly for counters.
     // Instead, counter columns require a special kind of update operation.
     // Counters in Cassandra are designed to increment or decrement a value,
@@ -206,17 +219,33 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
               "The operation was not supported by the columns: counter(counter).");
     }
 
-    // TODO filter on counter, INVALID_FILTER_COLUMN_VALUES
+    // #2462: counters are filterable via ALLOW FILTERING. Counters cannot be inserted through the
+    // API, so seed a value with raw CQL (UPDATE ... counter = counter + N), then confirm the filter
+    // binds the value, returns the row, and emits a MISSING_INDEX warning (counters can't be
+    // indexed).
     @Test
     @Order(4)
     public final void filterCounter() {
+      // keyspace/table are case-sensitive identifiers, so quote them in the raw CQL.
+      var ksCql =
+          CqlIdentifierUtil.cqlIdentifierToCQL(
+              CqlIdentifierUtil.cqlIdentifierFromUserInput(keyspaceName));
+      var tableCql =
+          CqlIdentifierUtil.cqlIdentifierToCQL(
+              CqlIdentifierUtil.cqlIdentifierFromUserInput(TABLE_COUNTER));
+      assertThat(
+              executeCqlStatement(
+                  SimpleStatement.newInstance(
+                      "UPDATE %s.%s SET counter = counter + 5 WHERE id = '1'"
+                          .formatted(ksCql, tableCql))))
+          .isTrue();
+
       assertTableCommand(keyspaceName, TABLE_COUNTER)
           .templated()
-          .findOne(ImmutableMap.of("counter", 1), null)
-          .hasSingleApiError(
-              FilterException.Code.INVALID_FILTER_COLUMN_VALUES,
-              FilterException.class,
-              "Only values that are supported by the column data type can be included");
+          .findOne(ImmutableMap.of("counter", 5), null)
+          .hasNoErrors()
+          .hasSingleWarning(WarningException.Code.MISSING_INDEX)
+          .body("data.document.id", is("1"));
     }
   }
 
