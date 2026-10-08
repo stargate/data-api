@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.provider.ModelInputType;
 import io.stargate.sgv2.jsonapi.service.provider.ModelProvider;
 import io.stargate.sgv2.jsonapi.service.provider.ProviderBillingFilter;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties.TruncateOption;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -60,17 +61,6 @@ public class NvidiaRerankingProvider extends RerankingProvider {
 
   private final NvidiaRerankingClient nvidiaClient;
 
-  /**
-   * Nvidia Reranking Service supports truncation or error behavior when the passage is too long.
-   *
-   * <p>The Data API uses {@code NONE} as the default, which means the reranking request will error
-   * out if there is a query and passage pair that exceeds the allowed token size of 8192.
-   *
-   * <p>See:
-   * https://docs.nvidia.com/nim/nemo-retriever/text-reranking/latest/using-reranking.html#token-limits-truncation
-   */
-  private static final String TRUNCATE_PASSAGE = "NONE";
-
   public NvidiaRerankingProvider(
       RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig) {
     super(ModelProvider.NVIDIA, modelConfig);
@@ -102,7 +92,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
             modelName(),
             new NvidiaRerankingRequest.TextWrapper(query),
             passages.stream().map(NvidiaRerankingRequest.TextWrapper::new).toList(),
-            TRUNCATE_PASSAGE);
+            modelConfig.properties().truncate());
 
     final long callStartNano = System.nanoTime();
     return retryHTTPCall(
@@ -156,7 +146,7 @@ public class NvidiaRerankingProvider extends RerankingProvider {
    * <p>..
    */
   public record NvidiaRerankingRequest(
-      String model, TextWrapper query, List<TextWrapper> passages, String truncate) {
+      String model, TextWrapper query, List<TextWrapper> passages, TruncateOption truncate) {
 
     /**
      * query and passage string needs to be wrapped in with text key for request to the Nvidia
