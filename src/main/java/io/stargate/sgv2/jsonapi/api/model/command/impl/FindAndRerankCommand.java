@@ -41,7 +41,7 @@ public record FindAndRerankCommand(
     implements ReadCommand, Filterable, Projectable, Windowable {
 
   public FindAndRerankCommand {
-    sortClause = (sortClause == null) ? FindAndRerankSort.NO_ARG_SORT : sortClause;
+    sortClause = (sortClause == null) ? FindAndRerankSort.noArgSort() : sortClause;
   }
 
   // NOTE: is not VectorSortable because it has its own sort clause.
