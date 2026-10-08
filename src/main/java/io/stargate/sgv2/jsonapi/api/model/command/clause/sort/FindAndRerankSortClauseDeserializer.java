@@ -22,7 +22,8 @@ import java.util.*;
 /**
  * {@link StdDeserializer} for the {@link FindAndRerankSort}.
  *
- * <p>Note: There is no validation, this is handled when resolving the command to an operation.
+ * <p>Checks the JSON structure and mutually exclusive vector keys. Semantic validation is handled
+ * when resolving the command to an operation.
  */
 public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAndRerankSort> {
 
@@ -71,8 +72,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
    * Deserialize the sort clause from an object node.
    *
    * @param sort The sort clause as an object node, no check for nulls.
-   * @return The {@link FindAndRerankSort} that reflects the request without validation, e.g.
-   *     checking that a vectorize or vector sort is provided but not both.
+   * @return The {@link FindAndRerankSort} that reflects the request after structural validation.
    */
   private static FindAndRerankSort deserialize(JsonParser jsonParser, ObjectNode sort)
       throws JsonMappingException {
@@ -104,6 +104,12 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       JsonParser jsonParser, ObjectNode hybridObject) throws JsonMappingException {
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
+    if (hybridObject.has(VECTOR_EMBEDDING_FIELD) && hybridObject.has(VECTOR_EMBEDDING_TEXT_FIELD)) {
+      throw new JsonMappingException(
+          jsonParser,
+          "$vector and $vectorize cannot be used together in a $hybrid sort",
+          jsonParser.currentLocation());
+    }
     CommandFeatures commandFeatures = CommandFeatures.of(CommandFeature.HYBRID);
 
     var vectorizeText =
