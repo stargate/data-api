@@ -96,45 +96,53 @@ public interface CollectionReadOperation extends CollectionOperation {
             })
         .onItem()
         .transform(
-            rSet -> {
-              int remaining = rSet.remaining();
-              List<ReadDocument> documents = new ArrayList<>(remaining);
-              Iterator<Row> rowIterator = rSet.currentPage().iterator();
-              while (--remaining >= 0 && rowIterator.hasNext()) {
-                Row row = rowIterator.next();
-                ReadDocument document;
-                try {
-                  // TODO: Use the field name, not the ordinal for the field this is too brittle
-                  JsonNode root = readDocument ? objectMapper.readTree(row.getString(2)) : null;
-                  if (root != null) {
-                    // create metrics
-                    // TODO Use the column names!
-                    jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
-                        tenant, commandName, row.getString(2).length());
-
-                    if (projection.doIncludeSimilarityScore()) {
-                      float score = row.getFloat(3); // similarity_score
-                      projection.applyProjection(root, score);
-                    } else {
-                      projection.applyProjection(root);
-                    }
-                  }
-                  document =
-                      ReadDocument.from(
-                          getDocumentId(row.getTupleValue(0)), // key
-                          row.getUuid(1), // tx_id
-                          root);
-                } catch (JacksonException e) {
-                  throw parsingExceptionToApiException(e);
-                }
-                documents.add(document);
-              }
-              return new FindResponse(documents, extractPageStateFromResultSet(rSet));
-            })
+            rSet ->
+                parseDocumentPage(
+                    rSet,
+                    readDocument,
+                    objectMapper,
+                    projection,
+                    Integer.MAX_VALUE,
+                    tenant,
+                    commandName,
+                    jsonProcessingMetricsReporter))
         .collect()
         .asList()
         .onItem()
         .transform(list -> applyLimitToFindResponses(list, limit));
+  }
+
+  default FindResponse parseDocumentPage(
+      AsyncResultSet rSet,
+      boolean readDocument,
+      ObjectMapper objectMapper,
+      DocumentProjector projection,
+      int maxDocuments,
+      Tenant tenant,
+      String commandName,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+    int remaining = Math.min(rSet.remaining(), maxDocuments);
+    List<ReadDocument> documents = new ArrayList<>(remaining);
+    Iterator<Row> rowIterator = rSet.currentPage().iterator();
+    while (--remaining >= 0 && rowIterator.hasNext()) {
+      Row row = rowIterator.next();
+      try {
+        JsonNode root = readDocument ? objectMapper.readTree(row.getString(2)) : null;
+        if (root != null) {
+          jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
+              tenant, commandName, row.getString(2).length());
+          if (projection.doIncludeSimilarityScore()) {
+            projection.applyProjection(root, row.getFloat(3));
+          } else {
+            projection.applyProjection(root);
+          }
+        }
+        documents.add(ReadDocument.from(getDocumentId(row.getTupleValue(0)), row.getUuid(1), root));
+      } catch (JacksonException e) {
+        throw parsingExceptionToApiException(e);
+      }
+    }
+    return new FindResponse(documents, extractPageStateFromResultSet(rSet));
   }
 
   /**
@@ -207,42 +215,34 @@ public interface CollectionReadOperation extends CollectionOperation {
       boolean vectorSearch,
       Tenant tenant,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      boolean sequentialQueries) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
     final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
-    return Multi.createFrom()
-        .items(queries.stream())
-        .onItem()
-        .transformToMultiAndMerge(
-            q ->
-                Multi.createBy()
-                    .repeating()
-                    .uni(
-                        () -> new AtomicReference<String>(null),
-                        stateRef -> {
-                          if (vectorSearch) {
-                            return queryExecutor
-                                .executeVectorSearch(
-                                    dataApiRequestInfo,
-                                    q,
-                                    Optional.ofNullable(stateRef.get()),
-                                    pageSize)
-                                .onItem()
-                                .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
-                          } else {
-                            return queryExecutor
-                                .executeRead(
-                                    dataApiRequestInfo,
-                                    q,
-                                    Optional.ofNullable(stateRef.get()),
-                                    pageSize)
-                                .onItem()
-                                .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
-                          }
-                        })
-                    // Read document while pageState exists, limit for read is set at updateLimit
-                    // +1
-                    .whilst(resultSet -> extractPageStateFromResultSet(resultSet) != null))
+    var pages =
+        Multi.createFrom()
+            .items(queries.stream())
+            .onItem()
+            .transformToMulti(
+                q ->
+                    Multi.createBy()
+                        .repeating()
+                        .uni(
+                            () -> new AtomicReference<String>(null),
+                            stateRef -> {
+                              var pagingState = Optional.ofNullable(stateRef.get());
+                              Uni<AsyncResultSet> result =
+                                  vectorSearch
+                                      ? queryExecutor.executeVectorSearch(
+                                          dataApiRequestInfo, q, pagingState, pageSize)
+                                      : queryExecutor.executeRead(
+                                          dataApiRequestInfo, q, pagingState, pageSize);
+                              return result.invoke(
+                                  rs -> stateRef.set(extractPageStateFromResultSet(rs)));
+                            })
+                        // Sorted reads scan all pages before applying the result limit.
+                        .whilst(resultSet -> extractPageStateFromResultSet(resultSet) != null));
+    return (sequentialQueries ? pages.concatenate() : pages.merge())
         .onItem()
         .transformToUniAndMerge(
             resultSet -> {

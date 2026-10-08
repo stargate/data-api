@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionCandidateReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
@@ -85,8 +86,9 @@ public class FindCommandResolverTest {
 
       assertThat(resolver.resolveCollectionCandidateCommand(context, command))
           .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              read -> {
+              CollectionCandidateReadOperation.class,
+              candidate -> {
+                var read = candidate.readOperation();
                 assertThat(read.limit()).isEqualTo(100);
                 assertThat(read.pageSize()).isEqualTo(100);
                 assertThat(read.vector()).containsExactly(0.1f, 0.2f, 0.3f);
@@ -112,8 +114,9 @@ public class FindCommandResolverTest {
 
       assertThat(resolver.resolveCollectionCandidateCommand(commandContext, command))
           .isInstanceOfSatisfying(
-              FindCollectionOperation.class,
-              read -> {
+              CollectionCandidateReadOperation.class,
+              candidate -> {
+                var read = candidate.readOperation();
                 assertThat(read.limit()).isEqualTo(25);
                 assertThat(read.pageSize()).isEqualTo(25);
               });
@@ -123,6 +126,59 @@ public class FindCommandResolverTest {
               FindCollectionOperation.class,
               read -> {
                 assertThat(read.limit()).isEqualTo(25);
+                assertThat(read.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+              });
+    }
+
+    @Test
+    void sortedCandidateReadRetainsLimitAboveOrdinaryPageSize() throws Exception {
+      var command =
+          objectMapper.readValue(
+              """
+              {"find": {"sort": {"age": 1}, "options": {"limit": 60}}}
+              """,
+              FindCommand.class);
+
+      assertThat(resolver.resolveCollectionCandidateCommand(commandContext, command))
+          .isInstanceOfSatisfying(
+              CollectionCandidateReadOperation.class,
+              candidate -> {
+                var read = candidate.readOperation();
+                assertThat(read.limit()).isEqualTo(60);
+                assertThat(read.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
+                assertThat(read.maxSortReadLimit())
+                    .isEqualTo(operationsConfig.maxDocumentSortCount());
+              });
+      assertThat(resolver.resolveCollectionCommand(commandContext, command))
+          .isInstanceOfSatisfying(
+              FindCollectionOperation.class,
+              read -> {
+                assertThat(read.limit()).isEqualTo(operationsConfig.defaultPageSize());
+              });
+    }
+
+    @Test
+    void unsortedCandidateReadRetainsLimitAboveOrdinaryPageSize() throws Exception {
+      var command =
+          objectMapper.readValue(
+              """
+              {"find": {"options": {"limit": 60}}}
+              """,
+              FindCommand.class);
+
+      assertThat(resolver.resolveCollectionCandidateCommand(commandContext, command))
+          .isInstanceOfSatisfying(
+              CollectionCandidateReadOperation.class,
+              candidate -> {
+                var read = candidate.readOperation();
+                assertThat(read.limit()).isEqualTo(60);
+                assertThat(read.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+              });
+      assertThat(resolver.resolveCollectionCommand(commandContext, command))
+          .isInstanceOfSatisfying(
+              FindCollectionOperation.class,
+              read -> {
+                assertThat(read.limit()).isEqualTo(60);
                 assertThat(read.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
               });
     }

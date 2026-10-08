@@ -364,6 +364,10 @@ public record FindCollectionOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
+    return executeRead(() -> getDocuments(dataApiRequestInfo, queryExecutor, pageState(), null));
+  }
+
+  Uni<Supplier<CommandResult>> executeRead(Supplier<Uni<FindResponse>> read) {
     final boolean vectorEnabled = commandContext().schemaObject().vectorConfig().vectorEnabled();
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
@@ -372,9 +376,7 @@ public record FindCollectionOperation(
                   errVars(commandContext().schemaObject())));
     }
 
-    // get FindResponse
-    return getDocuments(dataApiRequestInfo, queryExecutor, pageState(), null)
-        // map the response to result
+    return read.get()
         .map(
             docs -> {
               // TODO: why is this here and not higher up where it can happen for any command
@@ -409,23 +411,7 @@ public record FindCollectionOperation(
     // COUNT is not supported
     switch (readType) {
       case SORTED_DOCUMENT -> {
-        List<SimpleStatement> queries = buildSortedSelectQueries(additionalIdFilter);
-        return findOrderDocument(
-            dataApiRequestInfo,
-            queryExecutor,
-            queries,
-            pageSize,
-            objectMapper(),
-            new ChainedComparator(orderBy(), objectMapper()),
-            orderBy().size(),
-            skip(),
-            limit(),
-            maxSortReadLimit(),
-            projection(),
-            vector() != null,
-            commandContext.requestContext().tenant(),
-            commandContext.commandName(),
-            commandContext.jsonProcessingMetricsReporter());
+        return getSortedDocuments(dataApiRequestInfo, queryExecutor, additionalIdFilter, false);
       }
       case DOCUMENT, KEY -> {
         List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
@@ -451,6 +437,34 @@ public record FindCollectionOperation(
                     "Unsupported find operation read type `%s`".formatted(readType)));
       }
     }
+  }
+
+  Uni<FindResponse> getSortedDocuments(
+      RequestContext dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      IDCollectionFilter additionalIdFilter,
+      boolean sequentialQueries) {
+    List<SimpleStatement> queries = buildSortedSelectQueries(additionalIdFilter);
+    return Uni.createFrom()
+        .deferred(
+            () ->
+                findOrderDocument(
+                    dataApiRequestInfo,
+                    queryExecutor,
+                    queries,
+                    pageSize,
+                    objectMapper(),
+                    new ChainedComparator(orderBy(), objectMapper()),
+                    orderBy().size(),
+                    skip(),
+                    limit(),
+                    maxSortReadLimit(),
+                    projection(),
+                    vector() != null,
+                    commandContext.requestContext().tenant(),
+                    commandContext.commandName(),
+                    commandContext.jsonProcessingMetricsReporter(),
+                    sequentialQueries));
   }
 
   /**
@@ -497,7 +511,7 @@ public record FindCollectionOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<SimpleStatement> buildSelectQueries(IDCollectionFilter additionalIdFilter) {
+  List<SimpleStatement> buildSelectQueries(IDCollectionFilter additionalIdFilter) {
     final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(dbLogicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
