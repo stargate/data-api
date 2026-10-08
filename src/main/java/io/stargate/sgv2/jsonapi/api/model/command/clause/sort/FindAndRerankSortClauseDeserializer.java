@@ -59,7 +59,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
 
     return switch (deserializationContext.readTree(jsonParser)) {
       case NullNode ignored -> // this is {"sort" : null}
-          FindAndRerankSort.NO_ARG_SORT;
+          FindAndRerankSort.noArgSort();
       case ObjectNode objectNode -> deserialize(jsonParser, objectNode);
       default ->
           throw new JsonMappingException(
@@ -79,7 +79,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
 
     // { "sort" : { } }
     if (sort.isEmpty()) {
-      return FindAndRerankSort.NO_ARG_SORT;
+      return FindAndRerankSort.noArgSort();
     }
 
     var hybridMatch = MATCH_HYBRID_FIELD.matchAndThrow(sort, jsonParser, ERROR_CONTEXT);
@@ -87,11 +87,15 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     return switch (hybridMatch.matched().get(HYBRID_FIELD)) {
       case TextNode textNode -> {
         // using the same text for vectorize and for lexical, no vector
+        // the lexical text was not explicitly set, so it is skipped if there is no lexical index
         var normalizedText = normalizedText(textNode.asText().trim());
-        // NOTE: commandFeatures flags are used to determine user intent, changing
-        // impacts FindAndRerankOperationBuilder
         yield new FindAndRerankSort(
-            normalizedText, normalizedText, null, CommandFeatures.of(CommandFeature.HYBRID));
+            LegMode.HYBRID,
+            false,
+            normalizedText,
+            normalizedText,
+            null,
+            CommandFeatures.of(CommandFeature.HYBRID));
       }
       case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
       case JsonNode node ->
@@ -104,6 +108,8 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       JsonParser jsonParser, ObjectNode hybridObject) throws JsonMappingException {
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
+    // NOTE: commandFeatures are only for metrics, the resolver decides what to run from the
+    // legMode, explicitLexical and the sort values
     CommandFeatures commandFeatures = CommandFeatures.of(CommandFeature.HYBRID);
 
     var vectorizeText =
@@ -135,6 +141,9 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   TextNode.class);
         };
 
+    // the user wrote the $lexical key, even if the value is null or blank, any other type of value
+    // throws below
+    var explicitLexical = sortMatch.matched().get(LEXICAL_CONTENT_FIELD) != null;
     var lexicalText =
         switch (sortMatch.matched().get(LEXICAL_CONTENT_FIELD)) {
           case null -> {
@@ -145,15 +154,11 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           case NullNode ignored -> {
             // explict setting to null is allowed
             // { "sort" : { "$hybrid" : { "$lexical" : null,
-            // NOTE: commandFeatures flags are used to determine user intent, changing
-            // impacts FindAndRerankOperationBuilder
             commandFeatures.addFeature(CommandFeature.LEXICAL);
             yield null;
           }
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$lexical" : "cheese",
-            // NOTE: commandFeatures flags are used to determine user intent, changing
-            // impacts FindAndRerankOperationBuilder
             commandFeatures.addFeature(CommandFeature.LEXICAL);
             yield normalizedText(textNode.asText().trim());
           }
@@ -216,7 +221,8 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   ObjectNode.class);
         };
 
-    return new FindAndRerankSort(vectorizeText, lexicalText, vector, commandFeatures);
+    return new FindAndRerankSort(
+        LegMode.HYBRID, explicitLexical, vectorizeText, lexicalText, vector, commandFeatures);
   }
 
   /**

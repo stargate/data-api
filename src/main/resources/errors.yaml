@@ -317,6 +317,26 @@ request-errors:
       
       Resend the command including the query text for reranking.
 
+  - scope:
+    code: MISSING_HYBRID_SORT_VALUE
+    title: Hybrid sort has no value
+    body: |-
+      The findAndRerank command uses a `$hybrid` sort that has no value to sort with.
+
+      The `$hybrid` sort must have a non blank text value, e.g. `{"$hybrid": "query text"}`, or a value for at least one of `$vectorize`, `$vector` or `$lexical`, e.g. `{"$hybrid": {"$lexical": "query text"}}`.
+
+      Resend the command with a value in the `$hybrid` sort.
+
+  - scope:
+    code: UNSUPPORTED_FIND_AND_RERANK_SORT
+    title: Sort not supported by findAndRerank
+    body: |-
+      The findAndRerank command does not support this sort yet.
+
+      The sort must use the `$hybrid` field, e.g. `{"$hybrid": "query text"}` or `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`.
+
+      Resend the command with a `$hybrid` sort.
+
   # ================================================================================================================
   # Family: REQUEST         Scope: SECURITY
   # ================================================================================================================
