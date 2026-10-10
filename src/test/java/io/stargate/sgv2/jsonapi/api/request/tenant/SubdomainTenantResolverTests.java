@@ -31,6 +31,8 @@ public class SubdomainTenantResolverTests {
 
   @BeforeEach
   public void initTenantFactory() {
+    // when run in the full suite, another test may leave this initialized
+    TenantFactory.reset();
     TenantFactory.initialize(DatabaseType.ASTRA);
   }
 
