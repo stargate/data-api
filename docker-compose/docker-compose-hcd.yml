@@ -91,6 +91,7 @@ services:
       - QUARKUS_LOG_LEVEL=${LOGLEVEL}
       - STARGATE_JSONAPI_OPERATIONS_VECTORIZE_ENABLED=true
       - JAVA_OPTS_APPEND=-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager
+      - STARGATE_FEATURE_FLAGS_TABLES=true
     healthcheck:
       test: curl -f http://localhost:8181/stargate/health || exit 1
       interval: 5s
