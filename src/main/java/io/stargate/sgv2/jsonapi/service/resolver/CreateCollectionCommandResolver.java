@@ -90,7 +90,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         CollectionLexicalDef.fromApiDesc(
             objectMapper,
             getOrDefault(command.options(), CreateCollectionCommand.Options::lexical, null),
-            context.versionedSchema().lexicalDef());
+            context.versionedSchema().lexicalDef(),
+            SchemaException.Code.INVALID_CREATE_COLLECTION_OPTIONS);
 
     var rerankDef =
         CollectionRerankDef.fromApiDesc(
