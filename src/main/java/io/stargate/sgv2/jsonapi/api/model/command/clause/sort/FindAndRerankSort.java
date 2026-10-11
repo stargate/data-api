@@ -8,8 +8,14 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
- * @param legMode The kind of retrieval the user asked for, decided from the keys in the sort
- *     clause. The resolver uses this, not the <code>commandFeatures</code>, to decide what to run.
+ * The sort clause of a findAndRerank command, parsed by {@link
+ * FindAndRerankSortClauseDeserializer}. The {@link
+ * io.stargate.sgv2.jsonapi.service.operation.reranking.FindAndRerankPlanner} decides which legs run
+ * from the <code>sortMode</code>, <code>explicitLexical</code> and the sort values, the <code>
+ * commandFeatures</code> are only for metrics.
+ *
+ * @param sortMode The kind of sort the user wrote, decided from the keys in the sort clause. The
+ *     planner uses this, not the <code>commandFeatures</code>, to decide what to run.
  * @param explicitLexical <code>true</code> if the user wrote the $lexical field in the $hybrid
  *     object, even when it was set to JSON null or a blank string. When the collection has no
  *     lexical index, an explicit $lexical with a value is an error, while lexical text that came
@@ -35,7 +41,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
               {"$sort" : {"$hybrid" : {"$vector" : [1,2,3] , "$lexical": "lexical sort" }}}
       """)
 public record FindAndRerankSort(
-    LegMode legMode,
+    SortMode sortMode,
     boolean explicitLexical,
     String vectorizeSort,
     String lexicalSort,
@@ -44,23 +50,29 @@ public record FindAndRerankSort(
     implements Recordable {
 
   public FindAndRerankSort {
-    Objects.requireNonNull(legMode, "legMode must not be null");
-  }
+    Objects.requireNonNull(sortMode, "sortMode must not be null");
+    Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
 
-  /**
-   * Creates a {@link LegMode#HYBRID} sort where the $lexical field was not explicitly set.
-   *
-   * @param vectorizeSort See the record docs.
-   * @param lexicalSort See the record docs.
-   * @param vectorSort See the record docs.
-   * @param commandFeatures See the record docs.
-   */
-  public FindAndRerankSort(
-      String vectorizeSort,
-      String lexicalSort,
-      float[] vectorSort,
-      CommandFeatures commandFeatures) {
-    this(LegMode.HYBRID, false, vectorizeSort, lexicalSort, vectorSort, commandFeatures);
+    // a FILTER sort has no sort values, otherwise the planner would check them against the
+    // collection and could fail with a schema error rather than UNSUPPORTED_FIND_AND_RERANK_SORT
+    if (sortMode == SortMode.FILTER) {
+      if (explicitLexical) {
+        throw new IllegalArgumentException("explicitLexical must be false when sortMode is FILTER");
+      }
+      if (vectorizeSort != null) {
+        throw new IllegalArgumentException(
+            "vectorizeSort must be null when sortMode is FILTER, vectorizeSort=" + vectorizeSort);
+      }
+      if (lexicalSort != null) {
+        throw new IllegalArgumentException(
+            "lexicalSort must be null when sortMode is FILTER, lexicalSort=" + lexicalSort);
+      }
+      if (vectorSort != null) {
+        throw new IllegalArgumentException(
+            "vectorSort must be null when sortMode is FILTER, vectorSort.length="
+                + vectorSort.length);
+      }
+    }
   }
 
   /**
@@ -71,13 +83,14 @@ public record FindAndRerankSort(
    * not be shared between requests.
    */
   public static FindAndRerankSort noArgSort() {
-    return new FindAndRerankSort(LegMode.FILTER, false, null, null, null, CommandFeatures.create());
+    return new FindAndRerankSort(
+        SortMode.FILTER, false, null, null, null, CommandFeatures.create());
   }
 
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
     return dataRecorder
-        .append("legMode", legMode)
+        .append("sortMode", sortMode)
         .append("explicitLexical", explicitLexical)
         .append("vectorizeSort", vectorizeSort)
         .append("lexicalSort", lexicalSort)
@@ -94,7 +107,7 @@ public record FindAndRerankSort(
   @Override
   public boolean equals(Object obj) {
     return (obj instanceof FindAndRerankSort other)
-        && legMode == other.legMode
+        && sortMode == other.sortMode
         && explicitLexical == other.explicitLexical
         && Objects.equals(vectorizeSort, other.vectorizeSort)
         && Objects.equals(lexicalSort, other.lexicalSort)
@@ -106,7 +119,7 @@ public record FindAndRerankSort(
   @Override
   public int hashCode() {
     return Objects.hash(
-        legMode,
+        sortMode,
         explicitLexical,
         vectorizeSort,
         lexicalSort,

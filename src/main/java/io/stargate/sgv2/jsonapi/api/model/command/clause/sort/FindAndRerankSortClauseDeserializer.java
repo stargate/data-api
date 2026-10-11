@@ -71,8 +71,9 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
    * Deserialize the sort clause from an object node.
    *
    * @param sort The sort clause as an object node, no check for nulls.
-   * @return The {@link FindAndRerankSort} that reflects the request without validation, e.g.
-   *     checking that a vectorize or vector sort is provided but not both.
+   * @return The {@link FindAndRerankSort} that reflects the request without validation. For example
+   *     a sort with both <code>$vectorize</code> and <code>$vector</code> keeps both values, and
+   *     the planner then reads with <code>$vectorize</code> (GH #2616 is to reject it).
    */
   private static FindAndRerankSort deserialize(JsonParser jsonParser, ObjectNode sort)
       throws JsonMappingException {
@@ -90,7 +91,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
         // the lexical text was not explicitly set, so it is skipped if there is no lexical index
         var normalizedText = normalizedText(textNode.asText().trim());
         yield new FindAndRerankSort(
-            LegMode.HYBRID,
+            SortMode.HYBRID,
             false,
             normalizedText,
             normalizedText,
@@ -108,8 +109,8 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       JsonParser jsonParser, ObjectNode hybridObject) throws JsonMappingException {
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
-    // NOTE: commandFeatures are only for metrics, the resolver decides what to run from the
-    // legMode, explicitLexical and the sort values
+    // NOTE: commandFeatures are only for metrics, the FindAndRerankPlanner decides what to run
+    // from the sortMode, explicitLexical and the sort values
     CommandFeatures commandFeatures = CommandFeatures.of(CommandFeature.HYBRID);
 
     var vectorizeText =
@@ -143,9 +144,10 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
 
     // the user wrote the $lexical key, even if the value is null or blank, any other type of value
     // throws below
-    var explicitLexical = sortMatch.matched().get(LEXICAL_CONTENT_FIELD) != null;
+    var lexicalNode = sortMatch.matched().get(LEXICAL_CONTENT_FIELD);
+    var explicitLexical = lexicalNode != null;
     var lexicalText =
-        switch (sortMatch.matched().get(LEXICAL_CONTENT_FIELD)) {
+        switch (lexicalNode) {
           case null -> {
             // undefined in the object, up to the resolver to check if valid
             // { "sort" : { "$hybrid" : { }}
@@ -222,7 +224,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
         };
 
     return new FindAndRerankSort(
-        LegMode.HYBRID, explicitLexical, vectorizeText, lexicalText, vector, commandFeatures);
+        SortMode.HYBRID, explicitLexical, vectorizeText, lexicalText, vector, commandFeatures);
   }
 
   /**

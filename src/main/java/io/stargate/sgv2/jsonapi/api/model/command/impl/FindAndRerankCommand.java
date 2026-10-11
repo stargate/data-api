@@ -179,7 +179,7 @@ public record FindAndRerankCommand(
     }
 
     // Range validation against dynamic OperationsConfig bounds happens later in
-    // FindAndRerankOperationBuilder.build(); the deserializer only handles JSON shape.
+    // FindAndRerankPlanner.plan(); the deserializer only handles JSON shape.
     private HybridLimits deserialize(JsonParser jsonParser, NumericNode limitsNumber) {
       var limit = limitsNumber.asInt();
       return new HybridLimits(

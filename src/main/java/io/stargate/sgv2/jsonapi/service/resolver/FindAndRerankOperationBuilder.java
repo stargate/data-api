@@ -63,13 +63,10 @@ class FindAndRerankOperationBuilder {
     Objects.requireNonNull(command, "command cannot be null");
 
     // the planner validates the request and decides what to run, it throws if the request cannot
-    // run. The legMode and explicitLexical come from the parsed sort, not the command features.
-    var sort = command.sortClause();
+    // run. It decides from the sort mode and values in the parsed sort, not the command features.
     var plan =
         FindAndRerankPlanner.plan(
-            sort.legMode(),
-            sort.explicitLexical(),
-            sort,
+            command.sortClause(),
             command.options(),
             commandContext.schemaObject(),
             operationsConfig,
