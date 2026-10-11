@@ -35,7 +35,7 @@ public class RerankingQuery implements Recordable {
   }
 
   /**
-   * Creates a new RerankingQuery from the values in the users command. The query from the options
+   * Creates a new RerankingQuery from the values in the user's command. The query from the options
    * is used before the <code>$vectorize</code> text.
    *
    * <p>Throws {@link RequestException.Code#MISSING_RERANK_QUERY_TEXT} if both values are null or
@@ -45,7 +45,7 @@ public class RerankingQuery implements Recordable {
    * @param vectorizeQuery The text of the <code>$vectorize</code> sort, may be null.
    * @return Constructed RerankingQuery, with the source indicating where the query came from.
    */
-  public static RerankingQuery create(String optionsQuery, String vectorizeQuery) {
+  static RerankingQuery create(String optionsQuery, String vectorizeQuery) {
 
     if (optionsQuery != null && !optionsQuery.isBlank()) {
       return new RerankingQuery(optionsQuery, Source.OPTIONS);

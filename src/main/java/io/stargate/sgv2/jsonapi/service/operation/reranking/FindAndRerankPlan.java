@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 import java.util.Objects;
 
@@ -21,7 +23,8 @@ public record FindAndRerankPlan(
     CollectionRerankDef.RerankServiceDef rerankServiceDef,
     RerankingQuery rerankingQuery,
     PathMatchLocator passageLocator,
-    int limit) {
+    int limit)
+    implements Recordable {
 
   public FindAndRerankPlan {
     Objects.requireNonNull(legs, "legs must not be null");
@@ -34,5 +37,22 @@ public record FindAndRerankPlan(
     Objects.requireNonNull(rerankServiceDef, "rerankServiceDef must not be null");
     Objects.requireNonNull(rerankingQuery, "rerankingQuery must not be null");
     Objects.requireNonNull(passageLocator, "passageLocator must not be null");
+  }
+
+  @Override
+  public String toString() {
+    return PrettyPrintable.print(this);
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    // only the provider and model of the service, not its authentication or parameters
+    return dataRecorder
+        .append("legs", Recordable.copyOf(legs))
+        .append("rerankServiceDef.provider", rerankServiceDef.provider())
+        .append("rerankServiceDef.modelName", rerankServiceDef.modelName())
+        .append("rerankingQuery", rerankingQuery)
+        .append("passageLocator.path", passageLocator.path())
+        .append("limit", limit);
   }
 }

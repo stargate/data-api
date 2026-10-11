@@ -21,11 +21,11 @@ import java.util.Optional;
  * @param vectorizeDefinition The vectorize service of the collection.
  * @param readLimit The maximum number of documents to read.
  */
-public record VectorizeLeg(
+record VectorizeLeg(
     String vectorizeText, int dimension, VectorizeDefinition vectorizeDefinition, int readLimit)
     implements RerankLeg {
 
-  public VectorizeLeg {
+  VectorizeLeg {
     Objects.requireNonNull(vectorizeText, "vectorizeText must not be null");
     Objects.requireNonNull(vectorizeDefinition, "vectorizeDefinition must not be null");
   }
@@ -33,11 +33,6 @@ public record VectorizeLeg(
   @Override
   public Rank.RankSource rankSource() {
     return Rank.RankSource.VECTOR;
-  }
-
-  @Override
-  public boolean needsVectorize() {
-    return true;
   }
 
   @Override
@@ -66,5 +61,15 @@ public record VectorizeLeg(
         includeScores,
         includeSortVector,
         deferredVectorize);
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return dataRecorder
+        .append("vectorizeText", vectorizeText)
+        .append("dimension", dimension)
+        .append("vectorizeDefinition.provider", vectorizeDefinition.provider())
+        .append("vectorizeDefinition.modelName", vectorizeDefinition.modelName())
+        .append("readLimit", readLimit);
   }
 }

@@ -73,21 +73,23 @@ class FindAndRerankOperationBuilder {
             commandContext.rerankingProviderFactory().getRerankingConfig());
 
     // Step 1 - we need a reranking task and the deferrable actions to do the intermediate reads
-    // Making one deferrable per leg here, in the plan order, so we can associate them with the
-    // read that will fill them
-    List<RerankingTask.DeferredCommandWithSource> deferredReads =
+    // Making one deferrable per leg here, in the plan order, and keeping it with its leg so the
+    // read built for the leg fills it
+    var legReads =
         plan.legs().stream()
             .map(
                 leg ->
-                    new RerankingTask.DeferredCommandWithSource(
-                        leg.rankSource(), new DeferredCommandResult()))
+                    new LegAndDeferredRead(
+                        leg,
+                        new RerankingTask.DeferredCommandWithSource(
+                            leg.rankSource(), new DeferredCommandResult())))
             .toList();
 
-    var rerankTasksAndDeferrables = rerankTasks(plan, deferredReads);
+    var rerankTasksAndDeferrables = rerankTasks(plan, legReads);
 
     // Step 2 - we need to read the data from the collections, we are wrapping the old collections
     // in the new tasks so we do not change the collection code
-    var readTasksAndDeferrables = readTasks(plan, deferredReads);
+    var readTasksAndDeferrables = readTasks(legReads);
 
     // Step 3 - we may need an embedding task, lets get one of those :)
     var embeddingActions =
@@ -120,9 +122,10 @@ class FindAndRerankOperationBuilder {
   }
 
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
-      rerankTasks(
-          FindAndRerankPlan plan,
-          List<RerankingTask.DeferredCommandWithSource> deferredCommandResults) {
+      rerankTasks(FindAndRerankPlan plan, List<LegAndDeferredRead> legReads) {
+
+    // one deferred read per leg, in the plan order
+    var deferredReads = legReads.stream().map(LegAndDeferredRead::deferredRead).toList();
 
     var rerankServiceDef = plan.rerankServiceDef();
     RerankingProvider rerankingProvider =
@@ -147,7 +150,7 @@ class FindAndRerankOperationBuilder {
             plan.rerankingQuery(),
             plan.passageLocator(),
             command.buildProjector(),
-            deferredCommandResults,
+            deferredReads,
             plan.limit());
 
     // there is only 1 task, but making it clear that we want sequential for this step
@@ -166,13 +169,13 @@ class FindAndRerankOperationBuilder {
     return new TaskGroupAndDeferrables<>(
         taskGroup,
         rerankAccumulator,
-        deferredCommandResults.stream()
+        deferredReads.stream()
             .map(RerankingTask.DeferredCommandWithSource::deferredRead)
             .collect(java.util.stream.Collectors.toUnmodifiableList()));
   }
 
   private TaskGroupAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> readTasks(
-      FindAndRerankPlan plan, List<RerankingTask.DeferredCommandWithSource> deferredReads) {
+      List<LegAndDeferredRead> legReads) {
 
     // we can run these tasks in parallel
     TaskGroup<IntermediateCollectionReadTask, CollectionSchemaObject> taskGroup =
@@ -196,17 +199,19 @@ class FindAndRerankOperationBuilder {
     List<Deferrable> deferrables = new ArrayList<>();
 
     // one read per leg, the position of the read task is the index of the leg in the plan
-    for (int i = 0; i < plan.legs().size(); i++) {
-      var leg = plan.legs().get(i);
+    for (int i = 0; i < legReads.size(); i++) {
+      var legRead = legReads.get(i);
       var innerRead =
-          leg.buildInnerRead(command.filterDefinition(), includeScores, includeSortVector);
+          legRead
+              .leg()
+              .buildInnerRead(command.filterDefinition(), includeScores, includeSortVector);
 
       // this is the action the read should call when done, to pass the command result into the
       // next tasks
       var deferredReadAction =
           DeferredAction.filtered(
                   DeferredCommandResultAction.class,
-                  Deferrable.deferred(deferredReads.get(i).deferredRead()))
+                  Deferrable.deferred(legRead.deferredRead().deferredRead()))
               .getFirst();
 
       // The intermediate task will set the sort when we give it the deferred vectorize
@@ -219,12 +224,17 @@ class FindAndRerankOperationBuilder {
               innerRead.findCommand(),
               innerRead.deferredVectorize(),
               deferredReadAction));
-      if (leg.needsVectorize()) {
-        deferrables.add(innerRead.deferredVectorize());
-      }
+      deferrables.addAll(innerRead.deferrables());
     }
 
     // No accumulator, this will be wrapped in an intermediate composite task
     return new TaskGroupAndDeferrables<>(taskGroup, null, deferrables);
   }
+
+  /**
+   * A leg of the plan and the deferred read that the read task built for the leg fills. Built once
+   * in {@link #build()}, so the reranking task and the read tasks cannot pair them up differently.
+   */
+  private record LegAndDeferredRead(
+      RerankLeg leg, RerankingTask.DeferredCommandWithSource deferredRead) {}
 }

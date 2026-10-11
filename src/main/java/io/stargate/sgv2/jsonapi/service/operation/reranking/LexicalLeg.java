@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.reranking;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -14,20 +13,15 @@ import java.util.Optional;
  * @param lexicalQuery The text to search for.
  * @param readLimit The maximum number of documents to read.
  */
-public record LexicalLeg(String lexicalQuery, int readLimit) implements RerankLeg {
+record LexicalLeg(String lexicalQuery, int readLimit) implements RerankLeg {
 
-  public LexicalLeg {
+  LexicalLeg {
     Objects.requireNonNull(lexicalQuery, "lexicalQuery must not be null");
   }
 
   @Override
   public Rank.RankSource rankSource() {
     return Rank.RankSource.BM25;
-  }
-
-  @Override
-  public boolean needsVectorize() {
-    return false;
   }
 
   @Override
@@ -45,8 +39,17 @@ public record LexicalLeg(String lexicalQuery, int readLimit) implements RerankLe
       FilterDefinition filterDefinition, boolean includeScores, boolean includeSortVector) {
 
     // never include the similarity, a BM25 read has no similarity to return
-    var sortClause = new SortClause(List.of(SortExpression.collectionLexicalSort(lexicalQuery)));
     return InnerRead.create(
-        filterDefinition, sortClause, readLimit, false, includeSortVector, null);
+        filterDefinition,
+        SortClause.immutable(SortExpression.collectionLexicalSort(lexicalQuery)),
+        readLimit,
+        false,
+        includeSortVector,
+        null);
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return dataRecorder.append("lexicalQuery", lexicalQuery).append("readLimit", readLimit);
   }
 }
