@@ -21,8 +21,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -498,7 +500,7 @@ class FindAndRerankOperationBuilderTest {
         "failsWhenHybridSortHasNoValue()",
         commandContext,
         command,
-        RequestException.Code.MISSING_HYBRID_SORT_VALUE);
+        SortException.Code.MISSING_HYBRID_SORT_VALUE);
   }
 
   @Test
@@ -522,7 +524,7 @@ class FindAndRerankOperationBuilderTest {
         "failsWhenSortIsNotHybrid()",
         commandContext,
         command,
-        RequestException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT);
+        SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT);
   }
 
   private void assertMissingRerankOn(
@@ -547,11 +549,11 @@ class FindAndRerankOperationBuilderTest {
       String context,
       CommandContext<CollectionSchemaObject> commandContext,
       FindAndRerankCommand command,
-      RequestException.Code code) {
+      ErrorCode<?> code) {
 
     var ex =
         assertThrowsExactly(
-            RequestException.class,
+            code.template().constructor().getDeclaringClass(),
             () ->
                 new FindAndRerankOperationBuilder(commandContext)
                     .withCommand(command)

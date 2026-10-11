@@ -136,7 +136,7 @@ class FindAndRerankOperationBuilderBehaviorTest {
             Collection.V_LX_RR,
             // changed by the leg refactor (was HTTP 500): no $hybrid value gives
             // MISSING_HYBRID_SORT_VALUE
-            error(RequestException.Code.MISSING_HYBRID_SORT_VALUE)),
+            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
         row(
             "G03",
             "{'$hybrid': '   '}",
@@ -144,7 +144,7 @@ class FindAndRerankOperationBuilderBehaviorTest {
             Collection.V_LX_RR,
             // changed by the leg refactor (was HTTP 500): no $hybrid value gives
             // MISSING_HYBRID_SORT_VALUE
-            error(RequestException.Code.MISSING_HYBRID_SORT_VALUE)),
+            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
         row(
             "R07",
             "{'$hybrid': ''}",
@@ -160,7 +160,7 @@ class FindAndRerankOperationBuilderBehaviorTest {
             Collection.V_LX_RR,
             // changed by the leg refactor (was HTTP 500): no $hybrid value gives
             // MISSING_HYBRID_SORT_VALUE
-            error(RequestException.Code.MISSING_HYBRID_SORT_VALUE)),
+            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
         row(
             "R09",
             "{'$hybrid': {'$lexical': null}}",
@@ -168,7 +168,7 @@ class FindAndRerankOperationBuilderBehaviorTest {
             Collection.VZ_RR,
             // changed by the leg refactor (was HTTP 500): MISSING_HYBRID_SORT_VALUE, not
             // LEXICAL_NOT_ENABLED_FOR_COLLECTION
-            error(RequestException.Code.MISSING_HYBRID_SORT_VALUE)),
+            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
         row(
             "G02",
             "{'$hybrid': {'$lexical': ''}}",
@@ -176,7 +176,7 @@ class FindAndRerankOperationBuilderBehaviorTest {
             Collection.V_LX_RR,
             // changed by the leg refactor (was HTTP 500): no $hybrid value gives
             // MISSING_HYBRID_SORT_VALUE
-            error(RequestException.Code.MISSING_HYBRID_SORT_VALUE)),
+            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
         row(
             "R11",
             "{'$hybrid': {'$vectorize': null}}",
@@ -184,7 +184,7 @@ class FindAndRerankOperationBuilderBehaviorTest {
             Collection.LX_RR,
             // changed by the leg refactor (was HTTP 500): no $hybrid value gives
             // MISSING_HYBRID_SORT_VALUE
-            error(RequestException.Code.MISSING_HYBRID_SORT_VALUE)),
+            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
 
         // ---- vector / vectorize legs ----
         row(
@@ -347,7 +347,7 @@ class FindAndRerankOperationBuilderBehaviorTest {
             Collection.V_LX_RR,
             // changed by the leg refactor (was HTTP 500): FILTER mode gives
             // UNSUPPORTED_FIND_AND_RERANK_SORT
-            error(RequestException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT)),
+            error(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT)),
         row(
             "R32",
             "null",
@@ -355,7 +355,7 @@ class FindAndRerankOperationBuilderBehaviorTest {
             Collection.VZ_RR,
             // changed by the leg refactor (was HTTP 500): FILTER mode gives
             // UNSUPPORTED_FIND_AND_RERANK_SORT
-            error(RequestException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT)),
+            error(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT)),
         row(
             "R33",
             NO_SORT,
@@ -363,7 +363,7 @@ class FindAndRerankOperationBuilderBehaviorTest {
             Collection.LX_RR,
             // changed by the leg refactor (was HTTP 500): FILTER mode gives
             // UNSUPPORTED_FIND_AND_RERANK_SORT
-            error(RequestException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT)),
+            error(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT)),
         row(
             "R34",
             "{}",
@@ -554,7 +554,7 @@ class FindAndRerankOperationBuilderBehaviorTest {
             Collection.V_LX_RR,
             // changed by the leg refactor (was UNSUPPORTED_PROJECTION_PARAM):
             // MISSING_HYBRID_SORT_VALUE now comes before the projection error
-            error(RequestException.Code.MISSING_HYBRID_SORT_VALUE)),
+            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
         row(
             "O16",
             "{'$hybrid': {'$lexical': 'cows'}}",

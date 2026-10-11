@@ -96,10 +96,10 @@ public class FindAndRerankPlanner {
     // {} or {"$hybrid": ""}) first gets any rerankQuery / rerankOn error
     // (MISSING_RERANK_QUERY_TEXT, MISSING_RERANK_ON, or an invalid rerankOn path)
     if (legMode != LegMode.HYBRID) {
-      throw RequestException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
+      throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
     }
     if (legs.isEmpty()) {
-      throw RequestException.Code.MISSING_HYBRID_SORT_VALUE.get();
+      throw SortException.Code.MISSING_HYBRID_SORT_VALUE.get();
     }
 
     int limit =

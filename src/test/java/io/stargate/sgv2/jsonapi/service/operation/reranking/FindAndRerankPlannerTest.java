@@ -532,8 +532,8 @@ public class FindAndRerankPlannerTest {
     @MethodSource("noHybridValueCases")
     void noHybridValue(String request, boolean explicitLexical, CollectionSchemaObject collection) {
       assertPlanFails(
-          RequestException.class,
-          RequestException.Code.MISSING_HYBRID_SORT_VALUE,
+          SortException.class,
+          SortException.Code.MISSING_HYBRID_SORT_VALUE,
           () ->
               plan(
                   LegMode.HYBRID,
@@ -559,8 +559,8 @@ public class FindAndRerankPlannerTest {
           };
 
       assertPlanFails(
-          RequestException.class,
-          RequestException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT,
+          SortException.class,
+          SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT,
           () -> plan(legMode, false, sort, RERANK_OPTIONS, VECTORIZE_LEXICAL));
     }
 
