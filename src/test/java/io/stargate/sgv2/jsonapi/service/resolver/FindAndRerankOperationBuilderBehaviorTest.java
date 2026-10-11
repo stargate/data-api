@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.TestConstants.rerankingModelConfig;
+import static io.stargate.sgv2.jsonapi.TestConstants.rerankingProvidersConfig;
+import static io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.assertReadTasks;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
@@ -7,6 +10,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
@@ -16,61 +20,77 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.ProjectionException;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.Rank;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
-import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
-import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Behavior baseline for {@link FindAndRerankOperationBuilder#build()}: pins the outcome (success or
- * error code) for many request shapes and collection configs.
+ * Behavior baseline for {@link FindAndRerankOperationBuilder#build()}: pins the outcome for many
+ * request shapes and collection configs. A row either builds an operation, and then pins the reads
+ * it runs (rank source and limit, in order) and the hybrid limits on the command context, or it
+ * pins the error code.
  *
- * <p>The rows were recorded on the builder before the leg refactor, and every row must keep its
- * expectation through the refactor. The only rows that changed are the ones marked "changed by the
- * leg refactor". Most of them are the two approved behavior changes: lexical-only <code>$hybrid
- * </code> requests run one lexical leg (issue #2577), and requests whose sort has no value to
- * search with get an explicit error. Before the refactor these rows threw an {@link
- * IllegalArgumentException}, which the API returned as an HTTP 500. One more row also changed (O15,
- * was UNSUPPORTED_PROJECTION_PARAM): when the sort has no value to search with, the new error now
- * comes before the projection error. This applies to both new errors, MISSING_HYBRID_SORT_VALUE and
- * UNSUPPORTED_FIND_AND_RERANK_SORT, but only O15 pins it.
+ * <p>Some rows pin behaviour that is easy to change by accident:
+ *
+ * <ul>
+ *   <li>A <code>$hybrid</code> sort with only <code>$lexical</code> runs one lexical read (R26,
+ *       R27, G17).
+ *   <li>A <code>$hybrid</code> sort with no value fails with MISSING_HYBRID_SORT_VALUE (R05, G03,
+ *       R08, R09, G02, R11), and a request with no sort fails with UNSUPPORTED_FIND_AND_RERANK_SORT
+ *       (R31, R32, R33).
+ *   <li>Those two sort errors come before the projection is checked, only O15 pins this for both.
+ *   <li>The rerank query and rerankOn errors come before those two sort errors (R07, R34, G09, G10,
+ *       R35, G21, O18).
+ * </ul>
  *
  * <p>The row ids are stable labels for the test report, they carry no meaning of their own and gaps
  * are expected.
  *
- * <p>JSON in the rows uses single quotes to stay readable, they are replaced with double quotes
- * before parsing.
+ * <p>JSON in the rows uses single quotes to stay readable, the command is parsed with {@link
+ * JsonReadFeature#ALLOW_SINGLE_QUOTES}.
  */
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 class FindAndRerankOperationBuilderBehaviorTest {
+
+  private static final String RERANK_OPTIONS = "{'rerankQuery': 'q', 'rerankOn': 'body'}";
+  private static final String NO_SORT = null;
+  private static final String NO_OPTIONS = null;
+  private static final String VECTOR_JSON = "[0.1, 0.2, 0.3]";
+  private static final String BAD_PROJECTION = "{'$foo': 1}";
+
+  /** The collection configs used by the rows, named like the ones in FindAndRerankPlannerTest. */
+  private enum Collection {
+    /** vector + vectorize + lexical + rerank */
+    VECTORIZE_LEXICAL,
+    /** vector + vectorize + rerank, no lexical index */
+    VECTORIZE_NO_LEXICAL,
+    /** vector (no vectorize) + lexical + rerank */
+    VECTOR_LEXICAL,
+    /** Same schema as VECTOR_LEXICAL, but the providers config says the collection model is EOL. */
+    VECTOR_LEXICAL_EOL_MODEL,
+    /** lexical + rerank, no vector */
+    LEXICAL_NO_VECTOR,
+    /** vector (no vectorize), no lexical, rerank disabled */
+    VECTOR_NO_RERANK,
+    /** no vector, no lexical, rerank disabled */
+    NOTHING_NO_RERANK
+  }
 
   // @QuarkusTest needed for error template initialization and the OperationsConfig bounds
   @InjectMock protected RequestContext dataApiRequestInfo;
@@ -80,527 +100,512 @@ class FindAndRerankOperationBuilderBehaviorTest {
 
   private final TestConstants TEST_CONSTANTS = new TestConstants();
 
-  private static final String RERANK_MODEL = "nvidia/llama-3.2-nv-rerankqa-1b-v2";
-
-  /** The collection configs used by the rows. */
-  enum Collection {
-    /** vector + vectorize + lexical + rerank, built in this test. */
-    VZ_LX_RR,
-    /** vector + vectorize + rerank, no lexical index. */
-    VZ_RR,
-    /** vector (no vectorize) + lexical + rerank. */
-    V_LX_RR,
-    /** Same schema as V_LX_RR, but the providers config says the collection model is EOL. */
-    V_LX_RR_EOL_MODEL,
-    /** lexical + rerank, no vector. */
-    LX_RR,
-    /** vector (no vectorize), no lexical, rerank disabled. */
-    V_NORR,
-    /** no vector, no lexical, rerank disabled. */
-    PLAIN_NORR
-  }
-
-  private static final String Q_ON = "{'rerankQuery': 'q', 'rerankOn': 'body'}";
-  private static final String NO_SORT = null;
-  private static final String NO_OPTIONS = null;
-  private static final String VEC = "[0.1, 0.2, 0.3]";
-  private static final String BAD_PROJECTION = "{'$foo': 1}";
-
   static Stream<Row> rows() {
     return Stream.of(
         // ---- $hybrid text ----
-        row("R01", "{'$hybrid': 'cheese'}", Q_ON, Collection.VZ_LX_RR, success()),
-        row("R02", "{'$hybrid': 'cheese'}", NO_OPTIONS, Collection.VZ_RR, success()),
+        row(
+            "R01",
+            "{'$hybrid': 'cheese'}",
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_LEXICAL,
+            success(lexicalRead(), vectorRead())),
+        row(
+            "R02",
+            "{'$hybrid': 'cheese'}",
+            NO_OPTIONS,
+            Collection.VECTORIZE_NO_LEXICAL,
+            success(vectorRead())),
         row(
             "R03",
             "{'$hybrid': 'cheese'}",
-            Q_ON,
-            Collection.V_LX_RR,
-            error(SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION)),
+            RERANK_OPTIONS,
+            Collection.VECTOR_LEXICAL,
+            failure(SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION)),
         row(
             "G05",
             "{'$hybrid': 'cheese'}",
-            Q_ON,
-            Collection.LX_RR,
-            error(SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION)),
+            RERANK_OPTIONS,
+            Collection.LEXICAL_NO_VECTOR,
+            failure(SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION)),
         row(
             "G16",
             "{'$hybrid': 'cheese'}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'includeScores': true}",
-            Collection.VZ_LX_RR,
-            success()),
+            Collection.VECTORIZE_LEXICAL,
+            success(lexicalRead(), vectorRead())),
         row(
             "R05",
             "{'$hybrid': ''}",
-            Q_ON,
-            Collection.V_LX_RR,
-            // changed by the leg refactor (was HTTP 500): no $hybrid value gives
-            // MISSING_HYBRID_SORT_VALUE
-            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
+            RERANK_OPTIONS,
+            Collection.VECTOR_LEXICAL,
+            // a $hybrid sort with no value
+            failure(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
         row(
             "G03",
             "{'$hybrid': '   '}",
-            Q_ON,
-            Collection.V_LX_RR,
-            // changed by the leg refactor (was HTTP 500): no $hybrid value gives
-            // MISSING_HYBRID_SORT_VALUE
-            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
+            RERANK_OPTIONS,
+            Collection.VECTOR_LEXICAL,
+            // a $hybrid sort with no value
+            failure(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
         row(
             "R07",
             "{'$hybrid': ''}",
             "{'rerankOn': 'body'}",
-            Collection.V_LX_RR,
-            error(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
 
         // ---- $hybrid object with no value ----
         row(
             "R08",
             "{'$hybrid': {}}",
-            Q_ON,
-            Collection.V_LX_RR,
-            // changed by the leg refactor (was HTTP 500): no $hybrid value gives
-            // MISSING_HYBRID_SORT_VALUE
-            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
+            RERANK_OPTIONS,
+            Collection.VECTOR_LEXICAL,
+            // a $hybrid sort with no value
+            failure(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
         row(
             "R09",
             "{'$hybrid': {'$lexical': null}}",
-            Q_ON,
-            Collection.VZ_RR,
-            // changed by the leg refactor (was HTTP 500): MISSING_HYBRID_SORT_VALUE, not
-            // LEXICAL_NOT_ENABLED_FOR_COLLECTION
-            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_NO_LEXICAL,
+            // an explicit null $lexical has no value, so the missing lexical index is not an error
+            failure(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
         row(
             "G02",
             "{'$hybrid': {'$lexical': ''}}",
-            Q_ON,
-            Collection.V_LX_RR,
-            // changed by the leg refactor (was HTTP 500): no $hybrid value gives
-            // MISSING_HYBRID_SORT_VALUE
-            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
+            RERANK_OPTIONS,
+            Collection.VECTOR_LEXICAL,
+            // a $hybrid sort with no value
+            failure(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
         row(
             "R11",
             "{'$hybrid': {'$vectorize': null}}",
-            Q_ON,
-            Collection.LX_RR,
-            // changed by the leg refactor (was HTTP 500): no $hybrid value gives
-            // MISSING_HYBRID_SORT_VALUE
-            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
+            RERANK_OPTIONS,
+            Collection.LEXICAL_NO_VECTOR,
+            // a $hybrid sort with no value
+            failure(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
 
         // ---- vector / vectorize legs ----
         row(
             "R13",
             "{'$hybrid': {'$vectorize': 'cheese'}}",
             NO_OPTIONS,
-            Collection.VZ_RR,
-            success()),
+            Collection.VECTORIZE_NO_LEXICAL,
+            success(vectorRead())),
         row(
             "G04",
             "{'$hybrid': {'$vectorize': 'cheese'}}",
-            Q_ON,
-            Collection.LX_RR,
-            error(SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION)),
+            RERANK_OPTIONS,
+            Collection.LEXICAL_NO_VECTOR,
+            failure(SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION)),
         row(
             "G14",
             "{'$hybrid': {'$vectorize': 'cheese'}}",
-            Q_ON,
-            Collection.PLAIN_NORR,
-            error(SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION)),
+            RERANK_OPTIONS,
+            Collection.NOTHING_NO_RERANK,
+            failure(SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION)),
         row(
             "R15",
-            "{'$hybrid': {'$vector': " + VEC + "}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + "}}",
             NO_OPTIONS,
-            Collection.LX_RR,
-            error(SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION)),
-        row("R16", "{'$hybrid': {'$vector': " + VEC + "}}", Q_ON, Collection.V_LX_RR, success()),
+            Collection.LEXICAL_NO_VECTOR,
+            failure(SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION)),
+        row(
+            "R16",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + "}}",
+            RERANK_OPTIONS,
+            Collection.VECTOR_LEXICAL,
+            success(vectorRead())),
         row(
             "G12",
-            "{'$hybrid': {'$vector': " + VEC + "}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + "}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'limit': 5}",
             "{'a': 1}",
             null,
-            Collection.V_LX_RR,
-            success()),
+            Collection.VECTOR_LEXICAL,
+            success(vectorRead())),
         row(
             "G15",
-            "{'$hybrid': {'$vector': " + VEC + "}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + "}}",
             "{'rerankOn': 'body'}",
-            Collection.V_LX_RR,
-            error(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
         row(
             "R19",
-            "{'$hybrid': {'$vectorize': 'cheese', '$vector': " + VEC + "}}",
+            "{'$hybrid': {'$vectorize': 'cheese', '$vector': " + VECTOR_JSON + "}}",
             NO_OPTIONS,
-            Collection.VZ_RR,
-            success()),
+            Collection.VECTORIZE_NO_LEXICAL,
+            success(vectorRead())),
         row(
             "R20",
-            "{'$hybrid': {'$vectorize': 'cheese', '$vector': " + VEC + "}}",
-            Q_ON,
-            Collection.V_LX_RR,
-            error(SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION)),
+            "{'$hybrid': {'$vectorize': 'cheese', '$vector': " + VECTOR_JSON + "}}",
+            RERANK_OPTIONS,
+            Collection.VECTOR_LEXICAL,
+            failure(SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION)),
 
         // ---- two legs, explicit $lexical ----
         row(
             "R21",
             "{'$hybrid': {'$vectorize': 'cheese', '$lexical': 'cows'}}",
             NO_OPTIONS,
-            Collection.VZ_LX_RR,
-            success()),
+            Collection.VECTORIZE_LEXICAL,
+            success(lexicalRead(), vectorRead())),
         row(
             "G18",
             "{'$hybrid': {'$vectorize': 'cheese', '$lexical': 'cows'}}",
             "{'rerankOn': 'body'}",
-            Collection.VZ_LX_RR,
-            success()),
+            Collection.VECTORIZE_LEXICAL,
+            success(lexicalRead(), vectorRead())),
         row(
             "R22",
             "{'$hybrid': {'$vectorize': 'cheese', '$lexical': 'cows'}}",
             NO_OPTIONS,
-            Collection.VZ_RR,
-            error(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION)),
+            Collection.VECTORIZE_NO_LEXICAL,
+            failure(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION)),
         row(
             "R23",
             "{'$hybrid': {'$vectorize': 'cheese', '$lexical': null}}",
             NO_OPTIONS,
-            Collection.VZ_RR,
-            success()),
+            Collection.VECTORIZE_NO_LEXICAL,
+            success(vectorRead())),
         row(
             "G01",
             "{'$hybrid': {'$vectorize': 'cheese', '$lexical': ''}}",
             NO_OPTIONS,
-            Collection.VZ_RR,
-            success()),
+            Collection.VECTORIZE_NO_LEXICAL,
+            success(vectorRead())),
         row(
             "G19",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': null}}",
-            Q_ON,
-            Collection.VZ_RR,
-            success()),
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': null}}",
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_NO_LEXICAL,
+            success(vectorRead())),
         row(
             "R24",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 100, '$lexical': 25}}",
-            Collection.V_LX_RR,
-            success(100, 25)),
+            Collection.VECTOR_LEXICAL,
+            success(100, 25, lexicalRead(25), vectorRead(100))),
         row(
             "G23",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': 30}",
-            Collection.V_LX_RR,
-            success(30, 30)),
+            Collection.VECTOR_LEXICAL,
+            success(30, 30, lexicalRead(30), vectorRead(30))),
 
         // ---- lexical-only $hybrid ----
         row(
             "R26",
             "{'$hybrid': {'$lexical': 'cows'}}",
-            Q_ON,
-            Collection.V_LX_RR,
-            // changed by the leg refactor (was HTTP 500): lexical-only $hybrid runs one lexical
-            // leg (issue #2577)
-            success()),
+            RERANK_OPTIONS,
+            Collection.VECTOR_LEXICAL,
+            // a lexical-only $hybrid runs one lexical read
+            success(lexicalRead())),
         row(
             "R27",
             "{'$hybrid': {'$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 50, '$lexical': 20}}",
-            Collection.LX_RR,
-            // changed by the leg refactor (was HTTP 500): lexical-only $hybrid runs one lexical
-            // leg (issue #2577)
-            success(50, 20)),
+            Collection.LEXICAL_NO_VECTOR,
+            // a lexical-only $hybrid runs one lexical read
+            success(50, 20, lexicalRead(20))),
         row(
             "G17",
             "{'$hybrid': {'$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'includeScores': true}",
-            Collection.LX_RR,
-            // changed by the leg refactor (was HTTP 500): lexical-only $hybrid runs one lexical
-            // leg (issue #2577)
-            success()),
+            Collection.LEXICAL_NO_VECTOR,
+            // a lexical-only $hybrid runs one lexical read
+            success(lexicalRead())),
         row(
             "R28",
             "{'$hybrid': {'$lexical': 'cows'}}",
             "{'rerankOn': 'body'}",
-            Collection.LX_RR,
-            error(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
+            Collection.LEXICAL_NO_VECTOR,
+            failure(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
         row(
             "R29",
             "{'$hybrid': {'$lexical': 'cows'}}",
             "{'rerankQuery': 'q'}",
-            Collection.LX_RR,
-            error(RequestException.Code.MISSING_RERANK_ON)),
+            Collection.LEXICAL_NO_VECTOR,
+            failure(RequestException.Code.MISSING_RERANK_ON)),
         row(
             "R30",
             "{'$hybrid': {'$lexical': 'cows'}}",
-            Q_ON,
-            Collection.VZ_RR,
-            error(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION)),
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_NO_LEXICAL,
+            failure(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION)),
         row(
             "G06",
             "{'$hybrid': {'$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 500, '$lexical': 10}}",
-            Collection.LX_RR,
-            error(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$vector")),
+            Collection.LEXICAL_NO_VECTOR,
+            failure(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$vector")),
 
         // ---- no sort value: {}, null, missing ----
         row(
             "R31",
             "{}",
-            Q_ON,
-            Collection.V_LX_RR,
-            // changed by the leg refactor (was HTTP 500): FILTER mode gives
-            // UNSUPPORTED_FIND_AND_RERANK_SORT
-            error(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT)),
+            RERANK_OPTIONS,
+            Collection.VECTOR_LEXICAL,
+            // no $hybrid sort
+            failure(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT)),
         row(
             "R32",
             "null",
-            Q_ON,
-            Collection.VZ_RR,
-            // changed by the leg refactor (was HTTP 500): FILTER mode gives
-            // UNSUPPORTED_FIND_AND_RERANK_SORT
-            error(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT)),
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_NO_LEXICAL,
+            // no $hybrid sort
+            failure(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT)),
         row(
             "R33",
             NO_SORT,
-            Q_ON,
-            Collection.LX_RR,
-            // changed by the leg refactor (was HTTP 500): FILTER mode gives
-            // UNSUPPORTED_FIND_AND_RERANK_SORT
-            error(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT)),
+            RERANK_OPTIONS,
+            Collection.LEXICAL_NO_VECTOR,
+            // no $hybrid sort
+            failure(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT)),
         row(
             "R34",
             "{}",
             "{'rerankQuery': 'q'}",
-            Collection.V_LX_RR,
-            error(RequestException.Code.MISSING_RERANK_ON)),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.MISSING_RERANK_ON)),
         row(
             "G09",
             "{}",
             "{'rerankOn': 'body'}",
-            Collection.V_LX_RR,
-            error(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
         row(
             "G10",
             "null",
             NO_OPTIONS,
-            Collection.VZ_RR,
-            error(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
+            Collection.VECTORIZE_NO_LEXICAL,
+            failure(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
         // the whole command is {"findAndRerank": {}}, mirrors the HCD-only IT failOnEmptyRequest
         row(
             "R35",
             NO_SORT,
             NO_OPTIONS,
-            Collection.V_LX_RR,
-            error(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
         row(
             "R37",
             "{}",
-            Q_ON,
-            Collection.PLAIN_NORR,
-            error(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND)),
+            RERANK_OPTIONS,
+            Collection.NOTHING_NO_RERANK,
+            failure(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND)),
         row(
             "G20",
             NO_SORT,
             NO_OPTIONS,
-            Collection.PLAIN_NORR,
-            error(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND)),
+            Collection.NOTHING_NO_RERANK,
+            failure(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND)),
 
         // ---- options ----
         row(
             "R38",
             "{'$hybrid': {'$vectorize': 'cheese'}}",
             "{'rerankQuery': '   ', 'rerankOn': '  '}",
-            Collection.VZ_RR,
-            success()),
+            Collection.VECTORIZE_NO_LEXICAL,
+            success(vectorRead())),
         row(
             "G07",
             "{'$hybrid': {'$vectorize': 'cheese'}}",
             "{'hybridLimits': 30}",
-            Collection.VZ_RR,
-            success(30, 30)),
+            Collection.VECTORIZE_NO_LEXICAL,
+            success(30, 30, vectorRead(30))),
         row(
             "R42",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': 0}",
-            Collection.V_LX_RR,
-            error(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$vector")),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$vector")),
         row(
             "R43",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': 101}",
-            Collection.V_LX_RR,
-            error(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$vector")),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$vector")),
         row(
             "R44",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 50, '$lexical': 101}}",
-            Collection.V_LX_RR,
-            error(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$lexical")),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$lexical")),
         row(
             "R45",
-            "{'$hybrid': {'$vector': " + VEC + "}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + "}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 10, '$lexical': 0}}",
-            Collection.V_LX_RR,
-            error(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$lexical")),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$lexical")),
         row(
             "R46",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'includeScores': true, 'includeSortVector': true}",
-            Collection.V_LX_RR,
-            success()),
+            Collection.VECTOR_LEXICAL,
+            success(lexicalRead(), vectorRead())),
 
         // ---- rerank service override ----
         row(
             "R47",
-            "{'$hybrid': {'$vector': " + VEC + "}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + "}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'rerank': {'provider': 'nvidia', 'modelName': '"
-                + RERANK_MODEL
+                + TestConstants.RERANK_MODEL
                 + "'}}",
-            Collection.V_NORR,
-            success()),
+            Collection.VECTOR_NO_RERANK,
+            success(vectorRead())),
         row(
             "R48",
-            "{'$hybrid': {'$vector': " + VEC + "}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + "}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'rerank': {}}",
-            Collection.V_NORR,
-            error(RequestException.Code.INVALID_RERANK_OVERRIDE)),
+            Collection.VECTOR_NO_RERANK,
+            failure(RequestException.Code.INVALID_RERANK_OVERRIDE)),
         row(
             "G11",
             "{'$hybrid': {'$vectorize': 'cheese'}}",
             "{'rerank': {'provider': 'unknown', 'modelName': 'some-model'}}",
-            Collection.VZ_RR,
-            error(RequestException.Code.INVALID_RERANK_OVERRIDE)),
+            Collection.VECTORIZE_NO_LEXICAL,
+            failure(RequestException.Code.INVALID_RERANK_OVERRIDE)),
 
         // ---- order of errors ----
         row(
             "O02",
-            "{'$hybrid': {'$vector': " + VEC + "}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + "}}",
             "{'rerankQuery': 'q'}",
-            Collection.V_NORR,
-            error(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND)),
+            Collection.VECTOR_NO_RERANK,
+            failure(RequestException.Code.UNSUPPORTED_RERANKING_COMMAND)),
         row(
             "O03",
-            "{'$hybrid': {'$vector': " + VEC + "}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + "}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': 101}",
-            Collection.V_NORR,
-            error(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$vector")),
+            Collection.VECTOR_NO_RERANK,
+            failure(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$vector")),
         row(
             "O04",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             NO_OPTIONS,
-            Collection.VZ_RR,
-            error(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION)),
+            Collection.VECTORIZE_NO_LEXICAL,
+            failure(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION)),
         row(
             "O05",
             "{'$hybrid': {'$vectorize': 'cheese'}}",
             "{'rerankQuery': 'q', 'hybridLimits': 0}",
-            Collection.V_LX_RR,
-            error(SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION)),
+            Collection.VECTOR_LEXICAL,
+            failure(SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION)),
         row(
             "O07",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             NO_OPTIONS,
-            Collection.PLAIN_NORR,
-            error(SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION)),
+            Collection.NOTHING_NO_RERANK,
+            failure(SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION)),
         row(
             "O08",
             "{'$hybrid': {'$lexical': 'cows'}}",
-            Q_ON,
-            Collection.PLAIN_NORR,
-            error(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION)),
+            RERANK_OPTIONS,
+            Collection.NOTHING_NO_RERANK,
+            failure(SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION)),
         row(
             "O09",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': 0, 'rerank': {}}",
-            Collection.V_LX_RR,
-            error(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$vector")),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.COMMAND_FIELD_VALUE_INVALID, "hybridLimits.$vector")),
         row(
             "O10",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             "{'rerank': {}}",
-            Collection.V_LX_RR,
-            error(RequestException.Code.INVALID_RERANK_OVERRIDE)),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.INVALID_RERANK_OVERRIDE)),
         row(
             "O11",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             NO_OPTIONS,
-            Collection.V_LX_RR_EOL_MODEL,
-            error(SchemaException.Code.END_OF_LIFE_AI_MODEL)),
+            Collection.VECTOR_LEXICAL_EOL_MODEL,
+            failure(SchemaException.Code.END_OF_LIFE_AI_MODEL)),
         row(
             "O12",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             "{'hybridLimits': 20}",
-            Collection.V_LX_RR,
-            error(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
         row(
             "O13",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
             "{'rerankQuery': 'q'}",
             null,
             BAD_PROJECTION,
-            Collection.V_LX_RR,
-            error(RequestException.Code.MISSING_RERANK_ON)),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.MISSING_RERANK_ON)),
         row(
             "O14",
-            "{'$hybrid': {'$vector': " + VEC + ", '$lexical': 'cows'}}",
-            Q_ON,
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + ", '$lexical': 'cows'}}",
+            RERANK_OPTIONS,
             null,
             BAD_PROJECTION,
-            Collection.V_LX_RR,
-            error(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM)),
+            Collection.VECTOR_LEXICAL,
+            failure(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM)),
         row(
             "O15",
             "{'$hybrid': ''}",
-            Q_ON,
+            RERANK_OPTIONS,
             null,
             BAD_PROJECTION,
-            Collection.V_LX_RR,
-            // changed by the leg refactor (was UNSUPPORTED_PROJECTION_PARAM):
-            // MISSING_HYBRID_SORT_VALUE now comes before the projection error
-            error(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
+            Collection.VECTOR_LEXICAL,
+            // the sort errors come before the projection error
+            failure(SortException.Code.MISSING_HYBRID_SORT_VALUE)),
         row(
             "O16",
             "{'$hybrid': {'$lexical': 'cows'}}",
-            Q_ON,
+            RERANK_OPTIONS,
             null,
             BAD_PROJECTION,
-            Collection.LX_RR,
-            error(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM)),
+            Collection.LEXICAL_NO_VECTOR,
+            failure(ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM)),
         row(
             "G21",
             "{'$hybrid': ''}",
             "{'rerankQuery': 'q'}",
             null,
             BAD_PROJECTION,
-            Collection.V_LX_RR,
-            error(RequestException.Code.MISSING_RERANK_ON)),
+            Collection.VECTOR_LEXICAL,
+            failure(RequestException.Code.MISSING_RERANK_ON)),
         // an invalid rerankOn path fails after the rerank query check, before the projection error
         // and before the no $hybrid value error
         row(
             "O17",
-            "{'$hybrid': {'$vector': " + VEC + "}}",
+            "{'$hybrid': {'$vector': " + VECTOR_JSON + "}}",
             "{'rerankQuery': 'q', 'rerankOn': 'a&b'}",
             null,
             BAD_PROJECTION,
-            Collection.V_LX_RR,
-            error(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH)),
+            Collection.VECTOR_LEXICAL,
+            failure(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH)),
         row(
             "O18",
             "{'$hybrid': ''}",
             "{'rerankQuery': 'q', 'rerankOn': 'a&b'}",
             null,
             BAD_PROJECTION,
-            Collection.V_LX_RR,
-            error(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH)));
+            Collection.VECTOR_LEXICAL,
+            failure(UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH)));
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("rows")
   void buildOutcome(Row row) throws Exception {
     var commandContext = commandContext(row.collection());
-    var command = objectMapper.readValue(row.commandJson(), FindAndRerankCommand.class);
+    var command =
+        objectMapper
+            .readerFor(FindAndRerankCommand.class)
+            .with(JsonReadFeature.ALLOW_SINGLE_QUOTES)
+            .<FindAndRerankCommand>readValue(row.commandJson());
 
     switch (row.expected()) {
       case Success success -> {
         var operation = builder(commandContext, command).build();
-        assertThat(operation).as(row.id()).isNotNull();
+        assertThat(
+                assertReadTasks(operation).stream()
+                    .map(read -> new ExpectedRead(read.rankSource(), read.limit()))
+                    .toList())
+            .as(row.id() + " reads, in order")
+            .containsExactlyElementsOf(success.reads());
         assertThat(commandContext.getHybridLimits().vectorLimit())
             .as(row.id() + " hybridLimits.$vector on the command context")
             .isEqualTo(success.vectorLimit());
@@ -608,13 +613,15 @@ class FindAndRerankOperationBuilderBehaviorTest {
             .as(row.id() + " hybridLimits.$lexical on the command context")
             .isEqualTo(success.lexicalLimit());
       }
-      case Throws error -> {
+      case Failure failure -> {
         var ex =
             assertThrowsExactly(
-                error.exceptionClass(), () -> builder(commandContext, command).build(), row.id());
-        assertThat(ex.code).as(row.id()).isEqualTo(error.code());
-        if (error.messageFragment() != null) {
-          assertThat(ex.getMessage()).as(row.id()).contains(error.messageFragment());
+                failure.code().template().constructor().getDeclaringClass(),
+                () -> builder(commandContext, command).build(),
+                row.id());
+        assertThat(ex.code).as(row.id()).isEqualTo(failure.code().name());
+        if (failure.messageFragment() != null) {
+          assertThat(ex.getMessage()).as(row.id()).contains(failure.messageFragment());
         }
       }
     }
@@ -628,49 +635,50 @@ class FindAndRerankOperationBuilderBehaviorTest {
   }
 
   // ===========================================================================================
-  // Rows
+  // Fixtures
   // ===========================================================================================
 
-  /**
-   * One request shape against one collection config.
-   *
-   * @param sort the sort JSON, or null when the command has no sort key
-   * @param options the options JSON, or null when the command has no options key
-   * @param filter the filter JSON, or null when the command has no filter key
-   * @param projection the projection JSON, or null when the command has no projection key
-   */
-  record Row(
-      String id,
-      String sort,
-      String options,
-      String filter,
-      String projection,
-      Collection collection,
-      Expected expected) {
-
-    String commandJson() {
-      var members = new ArrayList<String>();
-      if (filter != null) {
-        members.add("'filter': " + filter);
-      }
-      if (sort != null) {
-        members.add("'sort': " + sort);
-      }
-      if (projection != null) {
-        members.add("'projection': " + projection);
-      }
-      if (options != null) {
-        members.add("'options': " + options);
-      }
-      return ("{'findAndRerank': {" + String.join(", ", members) + "}}").replace('\'', '"');
-    }
-
-    @Override
-    public String toString() {
-      return "%s: sort=%s, options=%s, filter=%s, projection=%s on %s -> %s"
-          .formatted(id, sort, options, filter, projection, collection, expected);
-    }
+  private CollectionSchemaObject schema(Collection collection) {
+    return switch (collection) {
+      case VECTORIZE_LEXICAL -> TEST_CONSTANTS.VECTORIZE_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
+      case VECTORIZE_NO_LEXICAL -> TEST_CONSTANTS.VECTORIZE_RERANK_COLLECTION_SCHEMA_OBJECT;
+      case VECTOR_LEXICAL, VECTOR_LEXICAL_EOL_MODEL ->
+          TEST_CONSTANTS.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
+      case LEXICAL_NO_VECTOR -> TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT;
+      case VECTOR_NO_RERANK -> TEST_CONSTANTS.VECTOR_COLLECTION_SCHEMA_OBJECT;
+      case NOTHING_NO_RERANK -> TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT_LEGACY;
+    };
   }
+
+  private CommandContext<CollectionSchemaObject> commandContext(Collection collection) {
+    var schemaObject = schema(collection);
+    var commandContext =
+        TEST_CONSTANTS.collectionContext(CommandName.FIND_AND_RERANK, schemaObject);
+
+    // a real providers config, so rerank overrides are validated the same way as in production
+    var modelStatus =
+        collection == Collection.VECTOR_LEXICAL_EOL_MODEL
+            ? ApiModelSupport.SupportStatus.END_OF_LIFE
+            : ApiModelSupport.SupportStatus.SUPPORTED;
+    when(commandContext.rerankingProviderFactory().getRerankingConfig())
+        .thenReturn(
+            rerankingProvidersConfig(
+                "nvidia", true, rerankingModelConfig(TestConstants.RERANK_MODEL, modelStatus)));
+    when(commandContext.rerankingProviderFactory().create(any(), any(), any(), any(), any(), any()))
+        .thenReturn(mock(RerankingProvider.class));
+
+    if (schemaObject.vectorConfig().getFirstVectorColumnWithVectorizeDefinition().isPresent()) {
+      when(commandContext
+              .embeddingProviderFactory()
+              .create(any(), any(), any(), any(), anyInt(), any(), any(), any()))
+          .thenReturn(mock(EmbeddingProvider.class));
+    }
+    return commandContext;
+  }
+
+  // ===========================================================================================
+  // Rows
+  // ===========================================================================================
 
   private static Row row(
       String id, String sort, String options, Collection collection, Expected expected) {
@@ -688,125 +696,97 @@ class FindAndRerankOperationBuilderBehaviorTest {
     return new Row(id, sort, options, filter, projection, collection, expected);
   }
 
-  sealed interface Expected permits Success, Throws {}
-
-  /** build() returns an operation, and the hybrid limits copied onto the command context. */
-  record Success(int vectorLimit, int lexicalLimit) implements Expected {}
-
-  /** build() throws an API exception with this code, and optionally this message fragment. */
-  record Throws(Class<? extends APIException> exceptionClass, String code, String messageFragment)
-      implements Expected {}
-
-  private static Expected success() {
+  /** build() returns an operation with these reads, and the default hybrid limits. */
+  private static Expected success(ExpectedRead... reads) {
     var defaults = FindAndRerankCommand.HybridLimits.DEFAULT;
-    return new Success(defaults.vectorLimit(), defaults.lexicalLimit());
+    return new Success(defaults.vectorLimit(), defaults.lexicalLimit(), List.of(reads));
   }
 
-  private static Expected success(int vectorLimit, int lexicalLimit) {
-    return new Success(vectorLimit, lexicalLimit);
+  /** build() returns an operation with these reads, and these hybrid limits. */
+  private static Expected success(int vectorLimit, int lexicalLimit, ExpectedRead... reads) {
+    return new Success(vectorLimit, lexicalLimit, List.of(reads));
   }
 
-  private static Expected error(RequestException.Code code) {
-    return new Throws(RequestException.class, code.name(), null);
+  private static Expected failure(ErrorCode<?> code) {
+    return new Failure(code, null);
   }
 
-  private static Expected error(RequestException.Code code, String messageFragment) {
-    return new Throws(RequestException.class, code.name(), messageFragment);
+  private static Expected failure(ErrorCode<?> code, String messageFragment) {
+    return new Failure(code, messageFragment);
   }
 
-  private static Expected error(SortException.Code code) {
-    return new Throws(SortException.class, code.name(), null);
+  /** A lexical read with the default lexical limit. */
+  private static ExpectedRead lexicalRead() {
+    return lexicalRead(FindAndRerankCommand.HybridLimits.DEFAULT.lexicalLimit());
   }
 
-  private static Expected error(SchemaException.Code code) {
-    return new Throws(SchemaException.class, code.name(), null);
+  private static ExpectedRead lexicalRead(int limit) {
+    return new ExpectedRead(Rank.RankSource.BM25, limit);
   }
 
-  private static Expected error(ProjectionException.Code code) {
-    return new Throws(ProjectionException.class, code.name(), null);
+  /** A vector or vectorize read with the default vector limit. */
+  private static ExpectedRead vectorRead() {
+    return vectorRead(FindAndRerankCommand.HybridLimits.DEFAULT.vectorLimit());
   }
 
-  private static Expected error(UpdateException.Code code) {
-    return new Throws(UpdateException.class, code.name(), null);
-  }
-
-  // ===========================================================================================
-  // Fixtures
-  // ===========================================================================================
-
-  private CollectionSchemaObject schema(Collection collection) {
-    return switch (collection) {
-      case VZ_LX_RR -> vectorizeLexicalRerankSchema();
-      case VZ_RR -> TEST_CONSTANTS.VECTORIZE_RERANK_COLLECTION_SCHEMA_OBJECT;
-      case V_LX_RR, V_LX_RR_EOL_MODEL ->
-          TEST_CONSTANTS.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
-      case LX_RR -> TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT;
-      case V_NORR -> TEST_CONSTANTS.VECTOR_COLLECTION_SCHEMA_OBJECT;
-      case PLAIN_NORR -> TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT_LEGACY;
-    };
-  }
-
-  /** TestConstants has no schema with both a vectorize service and a lexical index. */
-  private CollectionSchemaObject vectorizeLexicalRerankSchema() {
-    return new CollectionSchemaObject(
-        TEST_CONSTANTS.COLLECTION_IDENTIFIER,
-        IdConfig.defaultIdConfig(),
-        VectorConfig.fromColumnDefinitions(
-            List.of(
-                new VectorColumnDefinition(
-                    DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                    -1,
-                    SimilarityFunction.COSINE,
-                    EmbeddingSourceModel.OTHER,
-                    new VectorizeDefinition("custom", "custom", null, null)))),
-        null,
-        CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
-        CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
-            new CollectionRerankDef(
-                true,
-                new CollectionRerankDef.RerankServiceDef("nvidia", RERANK_MODEL, null, null))));
+  private static ExpectedRead vectorRead(int limit) {
+    return new ExpectedRead(Rank.RankSource.VECTOR, limit);
   }
 
   /**
-   * A real providers config (not a mock) so that rerank overrides are validated the same way as in
-   * production, a mock has no providers and would reject every override.
+   * One request shape against one collection config.
+   *
+   * @param sort the sort JSON, or null when the command has no sort key
+   * @param options the options JSON, or null when the command has no options key
+   * @param filter the filter JSON, or null when the command has no filter key
+   * @param projection the projection JSON, or null when the command has no projection key
    */
-  private static RerankingProvidersConfig providersConfig(ApiModelSupport.SupportStatus status) {
-    var model =
-        new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
-            RERANK_MODEL,
-            new ApiModelSupport.ApiModelSupportImpl(status, Optional.empty()),
-            false,
-            "https://example.com/rerank",
-            new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-                .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10));
-    return new RerankingProvidersConfigImpl(
-        Map.of(
-            "nvidia",
-            new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(
-                false, "nvidia", true, Map.of(), List.of(model))));
-  }
+  private record Row(
+      String id,
+      String sort,
+      String options,
+      String filter,
+      String projection,
+      Collection collection,
+      Expected expected) {
 
-  private CommandContext<CollectionSchemaObject> commandContext(Collection collection) {
-    var schemaObject = schema(collection);
-    var commandContext =
-        TEST_CONSTANTS.collectionContext(CommandName.FIND_AND_RERANK, schemaObject);
-
-    var modelStatus =
-        collection == Collection.V_LX_RR_EOL_MODEL
-            ? ApiModelSupport.SupportStatus.END_OF_LIFE
-            : ApiModelSupport.SupportStatus.SUPPORTED;
-    when(commandContext.rerankingProviderFactory().getRerankingConfig())
-        .thenReturn(providersConfig(modelStatus));
-    when(commandContext.rerankingProviderFactory().create(any(), any(), any(), any(), any(), any()))
-        .thenReturn(mock(RerankingProvider.class));
-
-    if (schemaObject.vectorConfig().getFirstVectorColumnWithVectorizeDefinition().isPresent()) {
-      when(commandContext
-              .embeddingProviderFactory()
-              .create(any(), any(), any(), any(), anyInt(), any(), any(), any()))
-          .thenReturn(mock(EmbeddingProvider.class));
+    /** The command JSON, with single quotes. */
+    String commandJson() {
+      var members = new ArrayList<String>();
+      if (filter != null) {
+        members.add("'filter': " + filter);
+      }
+      if (sort != null) {
+        members.add("'sort': " + sort);
+      }
+      if (projection != null) {
+        members.add("'projection': " + projection);
+      }
+      if (options != null) {
+        members.add("'options': " + options);
+      }
+      return "{'findAndRerank': {" + String.join(", ", members) + "}}";
     }
-    return commandContext;
+
+    @Override
+    public String toString() {
+      return "%s: sort=%s, options=%s, filter=%s, projection=%s on %s -> %s"
+          .formatted(id, sort, options, filter, projection, collection, expected);
+    }
   }
+
+  private sealed interface Expected permits Success, Failure {}
+
+  /**
+   * build() returns an operation with these reads, and copies these hybrid limits onto the command
+   * context.
+   */
+  private record Success(int vectorLimit, int lexicalLimit, List<ExpectedRead> reads)
+      implements Expected {}
+
+  /** build() throws the API exception for this code, and optionally with this message fragment. */
+  private record Failure(ErrorCode<?> code, String messageFragment) implements Expected {}
+
+  /** A read task of the operation: the rank source of the deferred read it fills, and its limit. */
+  private record ExpectedRead(Rank.RankSource rankSource, int limit) {}
 }

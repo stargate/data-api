@@ -1,5 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.TestConstants.rerankingModelConfig;
+import static io.stargate.sgv2.jsonapi.TestConstants.rerankingProvidersConfig;
+import static io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.assertReadTasks;
+import static io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.innerTaskGroups;
+import static io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.privateField;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -17,39 +22,26 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTask;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.DeferredVectorize;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.IntermediateCollectionReadTask;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.Rank;
-import io.stargate.sgv2.jsonapi.service.operation.reranking.RerankingTask;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
-import io.stargate.sgv2.jsonapi.service.schema.EmbeddingSourceModel;
-import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
+import io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.ReadTaskSnapshot;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -65,34 +57,6 @@ class FindAndRerankOperationBuilderTest {
   @Inject FindCommandResolver findCommandResolver;
 
   private final TestConstants TEST_CONSTANTS = new TestConstants();
-
-  // Reusable request properties for model configs
-  private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-          .RequestPropertiesImpl
-      REQUEST_PROPERTIES =
-          new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10);
-
-  private static RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig(
-      String name, ApiModelSupport.SupportStatus status) {
-    return new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
-        name,
-        new ApiModelSupport.ApiModelSupportImpl(status, Optional.empty()),
-        false,
-        "https://example.com/rerank",
-        REQUEST_PROPERTIES);
-  }
-
-  private static RerankingProvidersConfig configWithProvider(
-      String providerName,
-      boolean enabled,
-      List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig> models) {
-    return new RerankingProvidersConfigImpl(
-        Map.of(
-            providerName,
-            new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(
-                false, providerName, enabled, Map.of(), models)));
-  }
 
   /** Helper that calls the centralized validation with the override error code. */
   private static void validateOverride(
@@ -334,7 +298,11 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    assertMissingRerankOn("failsWhenMissingRerankOnAndNotVectorizeSort()", commandContext, command);
+    assertBuildFails(
+        "failsWhenMissingRerankOnAndNotVectorizeSort()",
+        commandContext,
+        command,
+        RequestException.Code.MISSING_RERANK_ON);
   }
 
   @Test
@@ -354,7 +322,11 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    assertMissingRerankOn("failsWhenBlankRerankOnAndNotVectorizeSort()", commandContext, command);
+    assertBuildFails(
+        "failsWhenBlankRerankOnAndNotVectorizeSort()",
+        commandContext,
+        command,
+        RequestException.Code.MISSING_RERANK_ON);
   }
 
   @Test
@@ -389,10 +361,10 @@ class FindAndRerankOperationBuilderTest {
     assertThat(innerTaskGroups(operation))
         .as("read group and rerank group, no embedding group")
         .hasSize(2);
-    assertThat(readTasks(operation))
+    assertThat(assertReadTasks(operation))
         .as("one lexical read at position 0")
         .containsExactly(
-            new ReadTaskDesc(
+            new ReadTaskSnapshot(
                 0, List.of("$lexical"), 20, false, false, false, Rank.RankSource.BM25));
     assertThat(commandContext.getHybridLimits().lexicalLimit()).isEqualTo(20);
   }
@@ -425,15 +397,18 @@ class FindAndRerankOperationBuilderTest {
 
     // read task position = leg index: the lexical read is 0, the vector read is 1. Only the vector
     // read includes the similarity, and each read has the limit of its leg.
-    assertThat(readTasks(operation))
+    assertThat(assertReadTasks(operation))
         .containsExactly(
-            new ReadTaskDesc(0, List.of("$lexical"), 15, false, true, false, Rank.RankSource.BM25),
-            new ReadTaskDesc(1, List.of("$vector"), 40, true, true, false, Rank.RankSource.VECTOR));
+            new ReadTaskSnapshot(
+                0, List.of("$lexical"), 15, false, true, false, Rank.RankSource.BM25),
+            new ReadTaskSnapshot(
+                1, List.of("$vector"), 40, true, true, false, Rank.RankSource.VECTOR));
   }
 
   @Test
   void buildsEmbeddingGroupAndPairsDeferredsForVectorizeAndLexical() throws Exception {
-    var commandContext = commandContext(vectorizeLexicalRerankSchema());
+    var commandContext =
+        commandContext(TEST_CONSTANTS.VECTORIZE_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT);
     var command =
         command(
             """
@@ -452,16 +427,25 @@ class FindAndRerankOperationBuilderTest {
 
     var groups = innerTaskGroups(operation);
     assertThat(groups).as("embedding group, read group and rerank group").hasSize(3);
+    // one vectorize leg, so one group key and one embedding task
     assertThat(groups.getFirst())
         .as("the first group only embeds")
-        .isNotEmpty()
+        .hasSize(1)
         .allSatisfy(task -> assertThat(task).isInstanceOf(EmbeddingTask.class));
+
+    // the embedding task must complete the deferred vectorize of the read that waits for it
+    var vectorizeRead = (IntermediateCollectionReadTask) groups.get(1).get(1);
+    var deferredVectorize = (DeferredVectorize) privateField(vectorizeRead, "deferredVectorize");
+    assertThat((List<?>) privateField(groups.getFirst().getFirst(), "embeddingActions"))
+        .as("embedding task embeds for the vectorize read")
+        .singleElement()
+        .isSameAs(deferredVectorize.deferredAction());
 
     // the vectorize read has no sort until the embedding is ready
     var defaultLimits = FindAndRerankCommand.HybridLimits.DEFAULT;
-    assertThat(readTasks(operation))
+    assertThat(assertReadTasks(operation))
         .containsExactly(
-            new ReadTaskDesc(
+            new ReadTaskSnapshot(
                 0,
                 List.of("$lexical"),
                 defaultLimits.lexicalLimit(),
@@ -469,7 +453,7 @@ class FindAndRerankOperationBuilderTest {
                 false,
                 false,
                 Rank.RankSource.BM25),
-            new ReadTaskDesc(
+            new ReadTaskSnapshot(
                 1,
                 List.of(),
                 defaultLimits.vectorLimit(),
@@ -527,24 +511,6 @@ class FindAndRerankOperationBuilderTest {
         SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT);
   }
 
-  private void assertMissingRerankOn(
-      String context,
-      CommandContext<CollectionSchemaObject> commandContext,
-      FindAndRerankCommand command) {
-
-    var ex =
-        assertThrowsExactly(
-            RequestException.class,
-            () ->
-                new FindAndRerankOperationBuilder(commandContext)
-                    .withCommand(command)
-                    .withFindCommandResolver(findCommandResolver)
-                    .build(),
-            context);
-
-    assertThat(ex.code).as(context).isEqualTo(RequestException.Code.MISSING_RERANK_ON.name());
-  }
-
   private void assertBuildFails(
       String context,
       CommandContext<CollectionSchemaObject> commandContext,
@@ -564,93 +530,6 @@ class FindAndRerankOperationBuilderTest {
     assertThat(ex.code).as(context).isEqualTo(code.name());
   }
 
-  /**
-   * What the builder put on a read task, at build time.
-   *
-   * @param position The position of the task.
-   * @param sortPaths The sort paths of the inner find, empty for a vectorize read until the vector
-   *     is ready.
-   * @param limit The limit of the inner find.
-   * @param includeSimilarity The <code>includeSimilarity</code> option of the inner find.
-   * @param includeSortVector The <code>includeSortVector</code> option of the inner find.
-   * @param hasDeferredVectorize True if the read waits for a vectorize.
-   * @param rankSource The rank source of the deferred read the task fills.
-   */
-  private record ReadTaskDesc(
-      int position,
-      List<String> sortPaths,
-      int limit,
-      boolean includeSimilarity,
-      boolean includeSortVector,
-      boolean hasDeferredVectorize,
-      Rank.RankSource rankSource) {}
-
-  /**
-   * The inner task groups of the operation, in the order they run. The task tree is private, so
-   * this reads it with reflection: the operation runs one composite task per group.
-   */
-  private static List<List<?>> innerTaskGroups(Operation<CollectionSchemaObject> operation)
-      throws ReflectiveOperationException {
-    var groups = new ArrayList<List<?>>();
-    for (var compositeTask : (List<?>) privateField(operation, "taskGroup")) {
-      groups.add((List<?>) privateField(compositeTask, "innerTaskGroup"));
-    }
-    return groups;
-  }
-
-  /**
-   * The read tasks of the operation, in the order they were added to their group. Also checks that
-   * there is one read task per deferred read of the reranking task, and that the read task at
-   * position i fills the deferred read at index i.
-   */
-  private static List<ReadTaskDesc> readTasks(Operation<CollectionSchemaObject> operation)
-      throws ReflectiveOperationException {
-    var deferredReads = rerankDeferredReads(operation);
-    var readTasks = new ArrayList<ReadTaskDesc>();
-    for (var group : innerTaskGroups(operation)) {
-      for (var task : group) {
-        if (task instanceof IntermediateCollectionReadTask readTask) {
-          var deferredRead = deferredReads.get(readTask.position());
-          assertThat(privateField(readTask, "commandResultAction"))
-              .as("read task %s fills the deferred read at the same index", readTask.position())
-              .isSameAs(deferredRead.deferredRead().deferredAction());
-
-          var findCommand = (FindCommand) privateField(readTask, "findCommand");
-          readTasks.add(
-              new ReadTaskDesc(
-                  readTask.position(),
-                  findCommand.sortDefinition().getSortExpressionPaths(),
-                  findCommand.options().limit(),
-                  findCommand.options().includeSimilarity(),
-                  findCommand.options().includeSortVector(),
-                  privateField(readTask, "deferredVectorize") != null,
-                  deferredRead.rankSource()));
-        }
-      }
-    }
-    assertThat(readTasks).as("one read task per deferred read").hasSameSizeAs(deferredReads);
-    return readTasks;
-  }
-
-  /** The deferred reads of the reranking task, which is the only task in the last group. */
-  @SuppressWarnings("unchecked")
-  private static List<RerankingTask.DeferredCommandWithSource> rerankDeferredReads(
-      Operation<CollectionSchemaObject> operation) throws ReflectiveOperationException {
-    var lastGroup = innerTaskGroups(operation).getLast();
-    assertThat(lastGroup).as("rerank group").hasSize(1);
-    var rerankTask = lastGroup.getFirst();
-    assertThat(rerankTask).isInstanceOf(RerankingTask.class);
-    return (List<RerankingTask.DeferredCommandWithSource>)
-        privateField(rerankTask, "deferredReads");
-  }
-
-  private static Object privateField(Object target, String name)
-      throws ReflectiveOperationException {
-    var field = target.getClass().getDeclaredField(name);
-    field.setAccessible(true);
-    return field.get(target);
-  }
-
   private FindAndRerankCommand command(String json) throws Exception {
     return objectMapper.readValue(json, FindAndRerankCommand.class);
   }
@@ -664,28 +543,6 @@ class FindAndRerankOperationBuilderTest {
         withLexical
             ? TEST_CONSTANTS.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT
             : TEST_CONSTANTS.VECTORIZE_RERANK_COLLECTION_SCHEMA_OBJECT);
-  }
-
-  /** TestConstants has no schema with both a vectorize service and a lexical index. */
-  private CollectionSchemaObject vectorizeLexicalRerankSchema() {
-    return new CollectionSchemaObject(
-        TEST_CONSTANTS.COLLECTION_IDENTIFIER,
-        IdConfig.defaultIdConfig(),
-        VectorConfig.fromColumnDefinitions(
-            List.of(
-                new VectorColumnDefinition(
-                    DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                    -1,
-                    SimilarityFunction.COSINE,
-                    EmbeddingSourceModel.OTHER,
-                    new VectorizeDefinition("custom", "custom", null, null)))),
-        null,
-        CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
-        CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
-            new CollectionRerankDef(
-                true,
-                new CollectionRerankDef.RerankServiceDef(
-                    "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
   }
 
   private CommandContext<CollectionSchemaObject> commandContext(
@@ -723,10 +580,10 @@ class FindAndRerankOperationBuilderTest {
 
     // Shared config: nvidia provider enabled with a single supported model
     private final RerankingProvidersConfig NVIDIA_SUPPORTED =
-        configWithProvider(
+        rerankingProvidersConfig(
             "nvidia",
             true,
-            List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
+            rerankingModelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED));
 
     @Test
     void shouldAcceptSupportedProviderAndModel() {
@@ -745,10 +602,10 @@ class FindAndRerankOperationBuilderTest {
     @Test
     void shouldRejectDisabledProvider() {
       var disabledConfig =
-          configWithProvider(
+          rerankingProvidersConfig(
               "nvidia",
               false,
-              List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
+              rerankingModelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED));
 
       assertThatThrownBy(() -> validateOverride(disabledConfig, "nvidia", "nvidia/rerank-v1"))
           .isInstanceOf(RequestException.class)
@@ -776,10 +633,10 @@ class FindAndRerankOperationBuilderTest {
     @Test
     void shouldRejectDeprecatedModel() {
       var config =
-          configWithProvider(
+          rerankingProvidersConfig(
               "nvidia",
               true,
-              List.of(modelConfig("nvidia/old-model", ApiModelSupport.SupportStatus.DEPRECATED)));
+              rerankingModelConfig("nvidia/old-model", ApiModelSupport.SupportStatus.DEPRECATED));
 
       assertThatThrownBy(() -> validateOverride(config, "nvidia", "nvidia/old-model"))
           .isInstanceOf(SchemaException.class)
@@ -789,10 +646,10 @@ class FindAndRerankOperationBuilderTest {
     @Test
     void shouldRejectEndOfLifeModel() {
       var config =
-          configWithProvider(
+          rerankingProvidersConfig(
               "nvidia",
               true,
-              List.of(modelConfig("nvidia/eol-model", ApiModelSupport.SupportStatus.END_OF_LIFE)));
+              rerankingModelConfig("nvidia/eol-model", ApiModelSupport.SupportStatus.END_OF_LIFE));
 
       assertThatThrownBy(() -> validateOverride(config, "nvidia", "nvidia/eol-model"))
           .isInstanceOf(SchemaException.class)
@@ -815,10 +672,10 @@ class FindAndRerankOperationBuilderTest {
       // When provider is disabled AND modelName is null, the disabled check should
       // come first — user gets "provider disabled" instead of "modelName required"
       var disabledConfig =
-          configWithProvider(
+          rerankingProvidersConfig(
               "nvidia",
               false,
-              List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
+              rerankingModelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED));
 
       assertThatThrownBy(() -> validateOverride(disabledConfig, "nvidia", null))
           .isInstanceOf(RequestException.class)
