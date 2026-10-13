@@ -59,7 +59,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
 
     return switch (deserializationContext.readTree(jsonParser)) {
       case NullNode ignored -> // this is {"sort" : null}
-          FindAndRerankSort.noArgSort();
+          FindAndRerankSort.NO_ARG_SORT;
       case ObjectNode objectNode -> deserialize(jsonParser, objectNode);
       default ->
           throw new JsonMappingException(
@@ -80,7 +80,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
 
     // { "sort" : { } }
     if (sort.isEmpty()) {
-      return FindAndRerankSort.noArgSort();
+      return FindAndRerankSort.NO_ARG_SORT;
     }
 
     var hybridMatch = MATCH_HYBRID_FIELD.matchAndThrow(sort, jsonParser, ERROR_CONTEXT);

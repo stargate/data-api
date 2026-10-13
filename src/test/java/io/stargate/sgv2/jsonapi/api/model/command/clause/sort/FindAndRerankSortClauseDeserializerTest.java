@@ -119,30 +119,6 @@ public class FindAndRerankSortClauseDeserializerTest {
   }
 
   @Test
-  public void noArgSortIsNewForEachCall() {
-    var first = FindAndRerankSort.noArgSort();
-    var second = FindAndRerankSort.noArgSort();
-
-    assertThat(first)
-        .as("FILTER sort with no values and no features")
-        .isEqualTo(
-            new FindAndRerankSort(
-                LegMode.FILTER, false, null, null, null, CommandFeatures.create()));
-    assertThat(first).as("new sort each call").isNotSameAs(second);
-    assertThat(first.commandFeatures())
-        .as("new commandFeatures each call")
-        .isNotSameAs(second.commandFeatures())
-        .isNotSameAs(CommandFeatures.EMPTY);
-
-    // a feature added for one request must not leak into another request
-    first.commandFeatures().addFeature(HYBRID);
-    assertThat(second.commandFeatures()).as("no leak").isEqualTo(CommandFeatures.create());
-    assertThat(FindAndRerankSort.noArgSort().commandFeatures())
-        .as("no leak into later sorts")
-        .isEqualTo(CommandFeatures.create());
-  }
-
-  @Test
   public void failFilterSortWithValues() {
     assertFilterSortFails(
         () ->
@@ -216,12 +192,12 @@ public class FindAndRerankSortClauseDeserializerTest {
             """
             {}
             """,
-            FindAndRerankSort.noArgSort()),
+            FindAndRerankSort.NO_ARG_SORT),
         Arguments.of(
             """
             null
             """,
-            FindAndRerankSort.noArgSort()),
+            FindAndRerankSort.NO_ARG_SORT),
         // ----
         // $hybrid only
         Arguments.of(

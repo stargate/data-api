@@ -359,7 +359,7 @@ public class FindAndRerankPlannerTest {
       assertPlanFails(
           SortException.class,
           SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT,
-          () -> plan(FindAndRerankSort.noArgSort(), RERANK_OPTIONS, VECTORIZE_LEXICAL));
+          () -> plan(FindAndRerankSort.NO_ARG_SORT, RERANK_OPTIONS, VECTORIZE_LEXICAL));
     }
 
     @ParameterizedTest
@@ -644,7 +644,7 @@ public class FindAndRerankPlannerTest {
       assertPlanFails(
           RequestException.class,
           RequestException.Code.UNSUPPORTED_RERANKING_COMMAND,
-          () -> plan(FindAndRerankSort.noArgSort(), RERANK_OPTIONS, NOTHING_NO_RERANK));
+          () -> plan(FindAndRerankSort.NO_ARG_SORT, RERANK_OPTIONS, NOTHING_NO_RERANK));
     }
 
     @Test
@@ -693,7 +693,7 @@ public class FindAndRerankPlannerTest {
       assertPlanFails(
           RequestException.class,
           RequestException.Code.MISSING_RERANK_QUERY_TEXT,
-          () -> plan(FindAndRerankSort.noArgSort(), "{'rerankOn': 'body'}", VECTOR_LEXICAL));
+          () -> plan(FindAndRerankSort.NO_ARG_SORT, "{'rerankOn': 'body'}", VECTOR_LEXICAL));
 
       // the whole command is {"findAndRerank": {}}, no sort and no options
       var command = OBJECT_MAPPER.readValue("{\"findAndRerank\": {}}", FindAndRerankCommand.class);
@@ -715,7 +715,7 @@ public class FindAndRerankPlannerTest {
       assertPlanFails(
           RequestException.class,
           RequestException.Code.MISSING_RERANK_ON,
-          () -> plan(FindAndRerankSort.noArgSort(), "{'rerankQuery': 'q'}", VECTOR_LEXICAL));
+          () -> plan(FindAndRerankSort.NO_ARG_SORT, "{'rerankQuery': 'q'}", VECTOR_LEXICAL));
     }
   }
 

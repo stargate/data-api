@@ -76,15 +76,11 @@ public record FindAndRerankSort(
   }
 
   /**
-   * Creates the sort for a request without a sort: the sort is <code>{}</code>, <code>null</code>
-   * or missing.
-   *
-   * <p>Returns a new object on every call, because the {@link CommandFeatures} are mutable and must
-   * not be shared between requests.
+   * The sort for a request without a sort: the sort is <code>{}</code>, <code>null</code> or
+   * missing.
    */
-  public static FindAndRerankSort noArgSort() {
-    return new FindAndRerankSort(LegMode.FILTER, false, null, null, null, CommandFeatures.create());
-  }
+  public static final FindAndRerankSort NO_ARG_SORT =
+      new FindAndRerankSort(LegMode.FILTER, false, null, null, null, CommandFeatures.EMPTY);
 
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
