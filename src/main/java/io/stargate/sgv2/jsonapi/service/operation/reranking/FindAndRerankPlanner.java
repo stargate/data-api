@@ -30,9 +30,7 @@ import java.util.function.Function;
  * Decides what a findAndRerank command will do: which legs to read and how many documents each one
  * reads, the reranking service, the rerank query and passage, and how many documents to return.
  *
- * <p>The planner validates the request and throws if it cannot be run. It only uses its inputs, it
- * does not call the database or any model and does not read the command context, so it can be
- * tested without Quarkus.
+ * <p>The planner validates the request and throws if it cannot be run.
  *
  * <p>The {@link LegMode} is what the user asked for, the legs are what will run. They can be
  * different, for example <code>{"$hybrid": "cheese"}</code> skips the lexical leg when the
@@ -72,9 +70,6 @@ public class FindAndRerankPlanner {
     Objects.requireNonNull(operationsConfig, "operationsConfig must not be null");
     Objects.requireNonNull(rerankingProvidersConfig, "rerankingProvidersConfig must not be null");
 
-    // NOTE: the order of the steps is the order of the errors the API returns, the first failing
-    // check wins: sort support (including a $hybrid sort without a vector source), hybridLimits,
-    // rerank service, rerank query, passage field, then the mode and $hybrid value checks.
     checkSortSupported(sort, schemaObject);
     checkHybridLimits(options, operationsConfig);
     var rerankServiceDef = resolveRerankServiceDef(options, schemaObject, rerankingProvidersConfig);
