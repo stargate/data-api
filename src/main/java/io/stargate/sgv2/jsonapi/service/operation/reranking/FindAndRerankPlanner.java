@@ -52,26 +52,6 @@ public class FindAndRerankPlanner {
    * Validates the command and decides the legs, the reranking service, the rerank query and
    * passage, and the number of documents to return.
    *
-   * <p>Throws the error of the first check that fails, in this order:
-   *
-   * <ol>
-   *   <li>The collection supports the sort values: UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION,
-   *       UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION, then LEXICAL_NOT_ENABLED_FOR_COLLECTION.
-   *   <li>The <code>hybridLimits</code> are in bounds: COMMAND_FIELD_VALUE_INVALID.
-   *   <li>The reranking service: INVALID_RERANK_OVERRIDE, UNSUPPORTED_RERANKING_COMMAND, or the
-   *       error for a model that is no longer supported.
-   *   <li>The rerank query: MISSING_RERANK_QUERY_TEXT.
-   *   <li>The passage field: MISSING_RERANK_ON, or the error for an invalid <code>rerankOn</code>
-   *       path.
-   *   <li>The sort: UNSUPPORTED_FIND_AND_RERANK_SORT when there is no <code>$hybrid</code> sort,
-   *       then MISSING_HYBRID_SORT_VALUE when no leg can run.
-   * </ol>
-   *
-   * <p>NOTE: the sort checks come after the rerank query and passage checks on purpose. A request
-   * whose sort has no value, e.g. <code>{"$hybrid": ""}</code>, got MISSING_RERANK_QUERY_TEXT or
-   * MISSING_RERANK_ON when it also lacked those options, before the sort errors existed. Checking
-   * the sort last keeps those errors.
-   *
    * @param sort The parsed sort, its {@link LegMode} decides which legs can run.
    * @param options The command options, may be <code>null</code>.
    * @param schemaObject The collection the command runs against.
@@ -92,7 +72,9 @@ public class FindAndRerankPlanner {
     Objects.requireNonNull(operationsConfig, "operationsConfig must not be null");
     Objects.requireNonNull(rerankingProvidersConfig, "rerankingProvidersConfig must not be null");
 
-    // the order of these steps is the order of the errors, see the javadoc
+    // NOTE: the order of the steps is the order of the errors the API returns, the first failing
+    // check wins: sort support, hybridLimits, rerank service, rerank query, passage field, then the
+    // mode and $hybrid value checks.
     checkSortSupported(sort, schemaObject);
     checkHybridLimits(options, operationsConfig);
     var rerankServiceDef = resolveRerankServiceDef(options, schemaObject, rerankingProvidersConfig);
@@ -112,7 +94,9 @@ public class FindAndRerankPlanner {
             firstLegDefault(legs, RerankLeg::defaultRerankQuery).orElse(null));
     var passageLocator = PathMatchLocator.forPath(passageField(options, legs));
 
-    // after the rerank query and passage checks, see the NOTE in the javadoc
+    // these come after the rerank query and passage checks, so a request with no valued sort (e.g.
+    // {} or {"$hybrid": ""}) first gets any rerankQuery / rerankOn error
+    // (MISSING_RERANK_QUERY_TEXT, MISSING_RERANK_ON, or an invalid rerankOn path)
     if (sort.legMode() != LegMode.HYBRID) {
       throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
     }
