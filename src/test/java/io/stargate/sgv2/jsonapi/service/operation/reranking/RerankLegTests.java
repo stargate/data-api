@@ -56,12 +56,12 @@ public class RerankLegTests {
 
   @ParameterizedTest(name = "includeScores={0}, includeSortVector={1}")
   @MethodSource("includeOptions")
-  void lexicalLegReadNeverIncludesSimilarity(boolean includeScores, boolean includeSortVector) {
+  void lexicalLegRead(boolean includeScores, boolean includeSortVector) {
     var read = new LexicalLeg("cows", 20).buildInnerRead(filter, includeScores, includeSortVector);
 
     assertThat(read.deferredVectorize()).isNull();
     assertThat(read.deferrables()).isEmpty();
-    assertFindCommand(read.findCommand(), 20, false, includeSortVector);
+    assertFindCommand(read.findCommand(), 20, includeScores, includeSortVector);
     assertThat(sortClause(read.findCommand()).sortExpressions())
         .containsExactly(SortExpression.collectionLexicalSort("cows"));
   }

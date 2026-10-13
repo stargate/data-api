@@ -395,12 +395,13 @@ class FindAndRerankOperationBuilderTest {
             .withFindCommandResolver(findCommandResolver)
             .build();
 
-    // read task position = leg index: the lexical read is 0, the vector read is 1. Only the vector
-    // read includes the similarity, and each read has the limit of its leg.
+    // read task position = leg index: the lexical read is 0, the vector read is 1. Both reads get
+    // includeScores as includeSimilarity, as before the planner, and each read has the limit of its
+    // leg.
     assertThat(assertReadTasks(operation))
         .containsExactly(
             new ReadTaskSnapshot(
-                0, List.of("$lexical"), 15, false, true, false, Rank.RankSource.BM25),
+                0, List.of("$lexical"), 15, true, true, false, Rank.RankSource.BM25),
             new ReadTaskSnapshot(
                 1, List.of("$vector"), 40, true, true, false, Rank.RankSource.VECTOR));
   }

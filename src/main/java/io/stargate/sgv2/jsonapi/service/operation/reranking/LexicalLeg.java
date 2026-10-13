@@ -38,12 +38,11 @@ record LexicalLeg(String lexicalQuery, int readLimit) implements RerankLeg {
   public InnerRead buildInnerRead(
       FilterDefinition filterDefinition, boolean includeScores, boolean includeSortVector) {
 
-    // never include the similarity, a BM25 read has no similarity to return
     return InnerRead.create(
         filterDefinition,
         SortClause.immutable(SortExpression.collectionLexicalSort(lexicalQuery)),
         readLimit,
-        false,
+        includeScores,
         includeSortVector,
         null);
   }

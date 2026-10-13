@@ -44,8 +44,8 @@ public sealed interface RerankLeg extends Recordable permits LexicalLeg, VectorL
    * its {@link DeferredVectorize} can only be used once.
    *
    * @param filterDefinition The filter from the findAndRerank command.
-   * @param includeScores The <code>includeScores</code> option, only legs that sort by vector ask
-   *     the read to include the similarity.
+   * @param includeScores The <code>includeScores</code> option, the inner find gets it as <code>
+   *     includeSimilarity</code>.
    * @param includeSortVector The <code>includeSortVector</code> option.
    * @return The inner read, with a new {@link DeferredVectorize} when the leg must embed text
    *     before it can read.
