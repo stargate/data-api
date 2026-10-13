@@ -97,6 +97,7 @@ public class FindAndRerankPlanner {
     // these come after the rerank query and passage checks, so a request with no valued sort (e.g.
     // {} or {"$hybrid": ""}) first gets any rerankQuery / rerankOn error
     // (MISSING_RERANK_QUERY_TEXT, MISSING_RERANK_ON, or an invalid rerankOn path)
+    // TODO: Update it when support LegMode.FILTER
     if (sort.legMode() != LegMode.HYBRID) {
       throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
     }

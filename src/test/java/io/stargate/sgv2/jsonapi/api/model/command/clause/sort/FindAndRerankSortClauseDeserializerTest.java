@@ -473,6 +473,11 @@ public class FindAndRerankSortClauseDeserializerTest {
             { "$hybrid" : 1}
             """,
             "Field $hybrid may only be of types TextNode, ObjectNode, but got: IntNode"),
+        Arguments.of(
+            """
+            { "$hybrid" : null}
+            """,
+            "Field $hybrid may only be of types TextNode, ObjectNode, but got: NullNode"),
         // ----
         // Combinations
         Arguments.of(
