@@ -22,7 +22,9 @@ import java.util.*;
 /**
  * {@link StdDeserializer} for the {@link FindAndRerankSort}.
  *
- * <p>Note: There is no validation, this is handled when resolving the command to an operation.
+ * <p>Note: There is no validation, this is handled when resolving the command to an operation. The
+ * sort records what the user wrote: the text of <code>{"$hybrid": "text"}</code> is kept as the
+ * hybrid text, the planner decides which legs read it.
  */
 public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAndRerankSort> {
 
@@ -86,18 +88,9 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     var hybridMatch = MATCH_HYBRID_FIELD.matchAndThrow(sort, jsonParser, ERROR_CONTEXT);
 
     return switch (hybridMatch.matched().get(HYBRID_FIELD)) {
-      case TextNode textNode -> {
-        // using the same text for vectorize and for lexical, no vector
-        // the lexical text was not explicitly set, so it is skipped if there is no lexical index
-        var normalizedText = normalizedText(textNode.asText().trim());
-        yield new FindAndRerankSort(
-            LegMode.HYBRID,
-            false,
-            normalizedText,
-            normalizedText,
-            null,
-            CommandFeatures.of(CommandFeature.HYBRID));
-      }
+      case TextNode textNode ->
+          FindAndRerankSort.fromHybridText(
+              normalizedText(textNode.asText().trim()), CommandFeatures.of(CommandFeature.HYBRID));
       case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
       case JsonNode node ->
           throw JsonFieldMatcher.errorForWrongType(
@@ -110,7 +103,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
     // NOTE: commandFeatures are only for metrics, the FindAndRerankPlanner decides what to run
-    // from the legMode, explicitLexical and the sort values
+    // from the legMode and the sort values
     CommandFeatures commandFeatures = CommandFeatures.of(CommandFeature.HYBRID);
 
     var vectorizeText =
@@ -142,12 +135,8 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   TextNode.class);
         };
 
-    // the user wrote the $lexical key, even if the value is null or blank, any other type of value
-    // throws below
-    var lexicalNode = sortMatch.matched().get(LEXICAL_CONTENT_FIELD);
-    var explicitLexical = lexicalNode != null;
     var lexicalText =
-        switch (lexicalNode) {
+        switch (sortMatch.matched().get(LEXICAL_CONTENT_FIELD)) {
           case null -> {
             // undefined in the object, up to the resolver to check if valid
             // { "sort" : { "$hybrid" : { }}
@@ -223,8 +212,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   ObjectNode.class);
         };
 
-    return new FindAndRerankSort(
-        LegMode.HYBRID, explicitLexical, vectorizeText, lexicalText, vector, commandFeatures);
+    return FindAndRerankSort.fromHybridObject(vectorizeText, lexicalText, vector, commandFeatures);
   }
 
   /**

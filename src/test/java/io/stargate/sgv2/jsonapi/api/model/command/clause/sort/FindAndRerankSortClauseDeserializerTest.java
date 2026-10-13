@@ -49,7 +49,7 @@ public class FindAndRerankSortClauseDeserializerTest {
     var value1 =
         new FindAndRerankSort(
             LegMode.HYBRID,
-            false,
+            null,
             "vectorize sort",
             "lexical sort",
             new float[] {1.1f, 2.2f, 3.3f},
@@ -58,7 +58,7 @@ public class FindAndRerankSortClauseDeserializerTest {
     var diffVectorize =
         new FindAndRerankSort(
             LegMode.HYBRID,
-            false,
+            null,
             "vectorize sort 2",
             "lexical sort",
             new float[] {1.1f, 2.2f, 3.3f},
@@ -66,7 +66,7 @@ public class FindAndRerankSortClauseDeserializerTest {
     var diffLexical =
         new FindAndRerankSort(
             LegMode.HYBRID,
-            false,
+            null,
             "vectorize sort",
             "lexical sort 2",
             new float[] {1.1f, 2.2f, 3.3f},
@@ -74,30 +74,34 @@ public class FindAndRerankSortClauseDeserializerTest {
     var diffVector =
         new FindAndRerankSort(
             LegMode.HYBRID,
-            false,
+            null,
             "vectorize sort",
             "lexical sort",
             new float[] {1.1f, 2.2f, 3.3f, 4.4f},
             CommandFeatures.EMPTY);
-    var diffExplicitLexical =
+    // the $hybrid text cannot be set with the object values, so compare it with other text
+    var hybridText =
+        new FindAndRerankSort(LegMode.HYBRID, "cheese", null, null, null, CommandFeatures.EMPTY);
+    var diffHybridText =
+        new FindAndRerankSort(LegMode.HYBRID, "cows", null, null, null, CommandFeatures.EMPTY);
+    // {"$hybrid": "cheese"} and {"$hybrid": {"$vectorize": "cheese", "$lexical": "cheese"}}
+    var hybridObjectSameText =
         new FindAndRerankSort(
-            LegMode.HYBRID,
-            true,
-            "vectorize sort",
-            "lexical sort",
-            new float[] {1.1f, 2.2f, 3.3f},
-            CommandFeatures.EMPTY);
+            LegMode.HYBRID, null, "cheese", "cheese", null, CommandFeatures.EMPTY);
     // a FILTER sort has no values, so compare it with a HYBRID sort that has no values
     var hybridNoValues =
-        new FindAndRerankSort(LegMode.HYBRID, false, null, null, null, CommandFeatures.EMPTY);
+        new FindAndRerankSort(LegMode.HYBRID, null, null, null, null, CommandFeatures.EMPTY);
     var filterNoValues =
-        new FindAndRerankSort(LegMode.FILTER, false, null, null, null, CommandFeatures.EMPTY);
+        new FindAndRerankSort(LegMode.FILTER, null, null, null, null, CommandFeatures.EMPTY);
 
     assertThat(value1).as("Object equals self").isEqualTo(value1);
     assertThat(value1).as("different vectorize sort").isNotEqualTo(diffVectorize);
     assertThat(value1).as("different lexical sort").isNotEqualTo(diffLexical);
     assertThat(value1).as("different vector").isNotEqualTo(diffVector);
-    assertThat(value1).as("different explicitLexical").isNotEqualTo(diffExplicitLexical);
+    assertThat(hybridText).as("different hybrid text").isNotEqualTo(diffHybridText);
+    assertThat(hybridText)
+        .as("hybrid text and hybrid object with the same text")
+        .isNotEqualTo(hybridObjectSameText);
     assertThat(hybridNoValues).as("different legMode").isNotEqualTo(filterNoValues);
 
     assertThat(value1.hashCode()).as("hash code equals self").isEqualTo(value1.hashCode());
@@ -110,9 +114,12 @@ public class FindAndRerankSortClauseDeserializerTest {
     assertThat(value1.hashCode())
         .as("hash code different vector")
         .isNotEqualTo(diffVector.hashCode());
-    assertThat(value1.hashCode())
-        .as("hash code different explicitLexical")
-        .isNotEqualTo(diffExplicitLexical.hashCode());
+    assertThat(hybridText.hashCode())
+        .as("hash code different hybrid text")
+        .isNotEqualTo(diffHybridText.hashCode());
+    assertThat(hybridText.hashCode())
+        .as("hash code hybrid text and hybrid object with the same text")
+        .isNotEqualTo(hybridObjectSameText.hashCode());
     assertThat(hybridNoValues.hashCode())
         .as("hash code different legMode")
         .isNotEqualTo(filterNoValues.hashCode());
@@ -122,23 +129,24 @@ public class FindAndRerankSortClauseDeserializerTest {
   public void failFilterSortWithValues() {
     assertFilterSortFails(
         () ->
-            new FindAndRerankSort(LegMode.FILTER, true, null, null, null, CommandFeatures.create()),
-        "explicitLexical must be false when legMode is FILTER");
+            new FindAndRerankSort(
+                LegMode.FILTER, "cheese", null, null, null, CommandFeatures.create()),
+        "hybridText must be null when legMode is FILTER, hybridText=cheese");
     assertFilterSortFails(
         () ->
             new FindAndRerankSort(
-                LegMode.FILTER, false, "cheese", null, null, CommandFeatures.create()),
+                LegMode.FILTER, null, "cheese", null, null, CommandFeatures.create()),
         "vectorizeSort must be null when legMode is FILTER, vectorizeSort=cheese");
     assertFilterSortFails(
         () ->
             new FindAndRerankSort(
-                LegMode.FILTER, false, null, "cows", null, CommandFeatures.create()),
+                LegMode.FILTER, null, null, "cows", null, CommandFeatures.create()),
         "lexicalSort must be null when legMode is FILTER, lexicalSort=cows");
     assertFilterSortFails(
         () ->
             new FindAndRerankSort(
                 LegMode.FILTER,
-                false,
+                null,
                 null,
                 null,
                 new float[] {1.1f, 2.2f},
@@ -147,23 +155,51 @@ public class FindAndRerankSortClauseDeserializerTest {
   }
 
   @Test
+  public void failHybridTextWithObjectValues() {
+    assertHybridTextFails(
+        () ->
+            new FindAndRerankSort(
+                LegMode.HYBRID, "cheese", "cheese", null, null, CommandFeatures.create()));
+    assertHybridTextFails(
+        () ->
+            new FindAndRerankSort(
+                LegMode.HYBRID, "cheese", null, "cheese", null, CommandFeatures.create()));
+    assertHybridTextFails(
+        () ->
+            new FindAndRerankSort(
+                LegMode.HYBRID,
+                "cheese",
+                null,
+                null,
+                new float[] {1.1f, 2.2f},
+                CommandFeatures.create()));
+  }
+
+  @Test
   public void failMissingLegModeOrCommandFeatures() {
     var legModeEx =
         assertThrows(
             NullPointerException.class,
-            () -> new FindAndRerankSort(null, false, null, null, null, CommandFeatures.create()));
+            () -> new FindAndRerankSort(null, null, null, null, null, CommandFeatures.create()));
     assertThat(legModeEx).hasMessage("legMode must not be null");
 
     var featuresEx =
         assertThrows(
             NullPointerException.class,
-            () -> new FindAndRerankSort(LegMode.HYBRID, false, "cheese", null, null, null));
+            () -> new FindAndRerankSort(LegMode.HYBRID, null, "cheese", null, null, null));
     assertThat(featuresEx).hasMessage("commandFeatures must not be null");
   }
 
   private static void assertFilterSortFails(Executable newSort, String expectedMessage) {
     var ex = assertThrows(IllegalArgumentException.class, newSort);
     assertThat(ex).hasMessage(expectedMessage);
+  }
+
+  private static void assertHybridTextFails(Executable newSort) {
+    var ex = assertThrows(IllegalArgumentException.class, newSort);
+    assertThat(ex)
+        .hasMessage(
+            "vectorizeSort, lexicalSort and vectorSort must be null when hybridText is set, hybridText=cheese");
   }
 
   @ParameterizedTest
@@ -206,9 +242,9 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                false,
                 "same for hybrid and lexical",
-                "same for hybrid and lexical",
+                null,
+                null,
                 null,
                 CommandFeatures.of(HYBRID))),
         Arguments.of(
@@ -216,7 +252,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             { "$hybrid" : "" }
             """,
             new FindAndRerankSort(
-                LegMode.HYBRID, false, null, null, null, CommandFeatures.of(HYBRID))),
+                LegMode.HYBRID, null, null, null, null, CommandFeatures.of(HYBRID))),
         // ----
         // maximum fields, resolver works out the valid combinations
         Arguments.of(
@@ -225,7 +261,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                true,
+                null,
                 "vectorize sort",
                 "lexical sort",
                 new float[] {1.1f, 2.2f, 3.3f},
@@ -236,7 +272,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                true,
+                null,
                 "vectorize sort",
                 "lexical sort",
                 null,
@@ -249,7 +285,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                true,
+                null,
                 "vectorize sort",
                 null,
                 null,
@@ -260,7 +296,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                true,
+                null,
                 "vectorize sort",
                 null,
                 null,
@@ -271,7 +307,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                false,
+                null,
                 "vectorize sort",
                 null,
                 null,
@@ -284,7 +320,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                true,
+                null,
                 "vectorize sort",
                 "lexical sort",
                 null,
@@ -295,7 +331,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                true,
+                null,
                 null,
                 "lexical sort",
                 null,
@@ -306,7 +342,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                true,
+                null,
                 null,
                 "lexical sort",
                 null,
@@ -317,7 +353,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                true,
+                null,
                 null,
                 "lexical sort",
                 null,
@@ -330,7 +366,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                true,
+                null,
                 "vectorize",
                 "lexical",
                 null,
@@ -341,7 +377,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                true,
+                null,
                 "vectorize",
                 "lexical",
                 new float[] {0.1f, 0.2f, 0.3f},
@@ -353,7 +389,7 @@ public class FindAndRerankSortClauseDeserializerTest {
                 .formatted(emptyVectorBase64),
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                true,
+                null,
                 "vectorize",
                 "lexical",
                 emptyVector,
@@ -365,7 +401,7 @@ public class FindAndRerankSortClauseDeserializerTest {
                 .formatted(vectorBase64),
             new FindAndRerankSort(
                 LegMode.HYBRID,
-                true,
+                null,
                 "vectorize",
                 "lexical",
                 vector,

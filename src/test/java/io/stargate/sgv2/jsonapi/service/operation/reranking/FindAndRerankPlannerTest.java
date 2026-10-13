@@ -119,7 +119,7 @@ public class FindAndRerankPlannerTest {
     @Test
     void hybridTextWithLexicalIndexRunsLexicalThenVectorizeLeg() {
       // {"$hybrid": "cheese"}
-      var plan = plan(hybridSort(false, "cheese", "cheese", null), VECTORIZE_LEXICAL);
+      var plan = plan(hybridText("cheese"), VECTORIZE_LEXICAL);
 
       assertThat(plan.legs())
           .as("lexical leg first, read limits from HybridLimits.DEFAULT")
@@ -135,15 +135,34 @@ public class FindAndRerankPlannerTest {
     @Test
     void hybridTextWithoutLexicalIndexSkipsLexicalLeg() {
       // {"$hybrid": "cheese"}
-      var plan = plan(hybridSort(false, "cheese", "cheese", null), VECTORIZE_NO_LEXICAL);
+      var plan = plan(hybridText("cheese"), VECTORIZE_NO_LEXICAL);
 
       assertThat(plan.legs()).containsExactly(VECTORIZE_CHEESE);
     }
 
     @Test
+    void hybridTextReadsEachHybridLimit() {
+      // {"$hybrid": "cheese"}
+      var plan =
+          plan(
+              hybridText("cheese"),
+              "{'hybridLimits': {'$vector': 40, '$lexical': 15}}",
+              VECTORIZE_LEXICAL);
+
+      assertThat(plan.legs())
+          .containsExactly(
+              new LexicalLeg("cheese", 15),
+              new VectorizeLeg(
+                  "cheese",
+                  VECTORIZE_COLUMN.vectorSize(),
+                  VECTORIZE_COLUMN.vectorizeDefinition(),
+                  40));
+    }
+
+    @Test
     void vectorizeOnlyRunsVectorizeLeg() {
       // {"$hybrid": {"$vectorize": "cheese"}}
-      var plan = plan(hybridSort(false, "cheese", null, null), VECTORIZE_LEXICAL);
+      var plan = plan(hybridObject("cheese", null, null), VECTORIZE_LEXICAL);
 
       assertThat(plan.legs()).containsExactly(VECTORIZE_CHEESE);
     }
@@ -151,7 +170,7 @@ public class FindAndRerankPlannerTest {
     @Test
     void vectorOnlyRunsVectorLeg() {
       // {"$hybrid": {"$vector": [0.1, 0.2, 0.3]}}
-      var plan = plan(hybridSort(false, null, null, VECTOR), RERANK_OPTIONS, VECTOR_LEXICAL);
+      var plan = plan(hybridObject(null, null, VECTOR), RERANK_OPTIONS, VECTOR_LEXICAL);
 
       assertThat(plan.legs()).containsExactly(VECTOR_LEG);
       assertQuery(plan, "q", RerankingQuery.Source.OPTIONS);
@@ -161,7 +180,7 @@ public class FindAndRerankPlannerTest {
     @Test
     void vectorizeWinsOverVector() {
       // {"$hybrid": {"$vectorize": "cheese", "$vector": [0.1, 0.2, 0.3]}}
-      var plan = plan(hybridSort(false, "cheese", null, VECTOR), VECTORIZE_LEXICAL);
+      var plan = plan(hybridObject("cheese", null, VECTOR), VECTORIZE_LEXICAL);
 
       assertThat(plan.legs()).containsExactly(VECTORIZE_CHEESE);
     }
@@ -169,7 +188,7 @@ public class FindAndRerankPlannerTest {
     @Test
     void vectorizeAndLexicalRunsLexicalThenVectorizeLeg() {
       // {"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}
-      var plan = plan(hybridSort(true, "cheese", "cows", null), VECTORIZE_LEXICAL);
+      var plan = plan(hybridObject("cheese", "cows", null), VECTORIZE_LEXICAL);
 
       assertThat(plan.legs()).containsExactly(LEXICAL_COWS, VECTORIZE_CHEESE);
       assertQuery(plan, "cheese", RerankingQuery.Source.VECTORIZE);
@@ -178,7 +197,7 @@ public class FindAndRerankPlannerTest {
     @Test
     void vectorAndLexicalRunsLexicalThenVectorLeg() {
       // {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
-      var plan = plan(hybridSort(true, null, "cows", VECTOR), RERANK_OPTIONS, VECTOR_LEXICAL);
+      var plan = plan(hybridObject(null, "cows", VECTOR), RERANK_OPTIONS, VECTOR_LEXICAL);
 
       assertThat(plan.legs()).containsExactly(LEXICAL_COWS, VECTOR_LEG);
     }
@@ -188,7 +207,7 @@ public class FindAndRerankPlannerTest {
       // {"$hybrid": {"$lexical": "cows"}}
       var plan =
           plan(
-              hybridSort(true, null, "cows", null),
+              hybridObject(null, "cows", null),
               "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 30, '$lexical': 15}}",
               VECTOR_LEXICAL);
 
@@ -203,7 +222,7 @@ public class FindAndRerankPlannerTest {
       assertThat(LEXICAL_NO_VECTOR.lexicalDef().enabled()).isTrue();
 
       // {"$hybrid": {"$lexical": "cows"}}
-      var plan = plan(hybridSort(true, null, "cows", null), RERANK_OPTIONS, LEXICAL_NO_VECTOR);
+      var plan = plan(hybridObject(null, "cows", null), RERANK_OPTIONS, LEXICAL_NO_VECTOR);
 
       assertThat(plan.legs()).containsExactly(LEXICAL_COWS);
     }
@@ -211,7 +230,7 @@ public class FindAndRerankPlannerTest {
     @Test
     void explicitNullLexicalWithoutLexicalIndexSkipsLexicalLeg() {
       // {"$hybrid": {"$vectorize": "cheese", "$lexical": null}}, not an error, there is no value
-      var plan = plan(hybridSort(true, "cheese", null, null), VECTORIZE_NO_LEXICAL);
+      var plan = plan(hybridObject("cheese", null, null), VECTORIZE_NO_LEXICAL);
 
       assertThat(plan.legs()).containsExactly(VECTORIZE_CHEESE);
     }
@@ -221,7 +240,7 @@ public class FindAndRerankPlannerTest {
       // {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
       var plan =
           plan(
-              hybridSort(true, null, "cows", VECTOR),
+              hybridObject(null, "cows", VECTOR),
               "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': 30}",
               VECTOR_LEXICAL);
 
@@ -234,7 +253,7 @@ public class FindAndRerankPlannerTest {
       // {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
       var plan =
           plan(
-              hybridSort(true, null, "cows", VECTOR),
+              hybridObject(null, "cows", VECTOR),
               "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 40, '$lexical': 15}}",
               VECTOR_LEXICAL);
 
@@ -253,15 +272,14 @@ public class FindAndRerankPlannerTest {
           assertPlanFails(
               SchemaException.class,
               SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION,
-              () ->
-                  plan(hybridSort(true, null, "cows", null), RERANK_OPTIONS, VECTORIZE_NO_LEXICAL));
+              () -> plan(hybridObject(null, "cows", null), RERANK_OPTIONS, VECTORIZE_NO_LEXICAL));
       assertThat(lexicalOnlyError.getMessage()).contains(expectedMessage);
 
       // {"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}
       assertPlanFails(
           SchemaException.class,
           SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION,
-          () -> plan(hybridSort(true, "cheese", "cows", null), VECTORIZE_NO_LEXICAL));
+          () -> plan(hybridObject("cheese", "cows", null), VECTORIZE_NO_LEXICAL));
     }
 
     @Test
@@ -270,13 +288,19 @@ public class FindAndRerankPlannerTest {
       assertPlanFails(
           SortException.class,
           SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION,
-          () -> plan(hybridSort(false, null, null, VECTOR), RERANK_OPTIONS, LEXICAL_NO_VECTOR));
+          () -> plan(hybridObject(null, null, VECTOR), RERANK_OPTIONS, LEXICAL_NO_VECTOR));
 
       // {"$hybrid": {"$vectorize": "cheese"}}
       assertPlanFails(
           SortException.class,
           SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION,
-          () -> plan(hybridSort(false, "cheese", null, null), RERANK_OPTIONS, LEXICAL_NO_VECTOR));
+          () -> plan(hybridObject("cheese", null, null), RERANK_OPTIONS, LEXICAL_NO_VECTOR));
+
+      // {"$hybrid": "cheese"}, the collection has a lexical index but the text needs vectorize
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION,
+          () -> plan(hybridText("cheese"), RERANK_OPTIONS, LEXICAL_NO_VECTOR));
     }
 
     @Test
@@ -285,13 +309,19 @@ public class FindAndRerankPlannerTest {
       assertPlanFails(
           SortException.class,
           SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION,
-          () -> plan(hybridSort(false, "cheese", null, null), RERANK_OPTIONS, VECTOR_LEXICAL));
+          () -> plan(hybridObject("cheese", null, null), RERANK_OPTIONS, VECTOR_LEXICAL));
 
       // {"$hybrid": {"$vectorize": "cheese", "$vector": [0.1, 0.2, 0.3]}}, $vector does not help
       assertPlanFails(
           SortException.class,
           SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION,
-          () -> plan(hybridSort(false, "cheese", null, VECTOR), RERANK_OPTIONS, VECTOR_LEXICAL));
+          () -> plan(hybridObject("cheese", null, VECTOR), RERANK_OPTIONS, VECTOR_LEXICAL));
+
+      // {"$hybrid": "cheese"}
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION,
+          () -> plan(hybridText("cheese"), RERANK_OPTIONS, VECTOR_LEXICAL));
     }
 
     @Test
@@ -306,7 +336,7 @@ public class FindAndRerankPlannerTest {
               RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
               () ->
                   plan(
-                      hybridSort(true, null, "cows", VECTOR),
+                      hybridObject(null, "cows", VECTOR),
                       "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': %d}"
                           .formatted(HYBRID_LIMIT_MAX + 1),
                       VECTOR_LEXICAL));
@@ -319,7 +349,7 @@ public class FindAndRerankPlannerTest {
               RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
               () ->
                   plan(
-                      hybridSort(true, null, "cows", VECTOR),
+                      hybridObject(null, "cows", VECTOR),
                       "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 50, '$lexical': %d}}"
                           .formatted(HYBRID_LIMIT_MIN - 1),
                       VECTOR_LEXICAL));
@@ -329,17 +359,15 @@ public class FindAndRerankPlannerTest {
 
     static Stream<Arguments> noHybridValueCases() {
       return Stream.of(
+          Arguments.of("{\"$hybrid\": \"\"}", hybridText(null), VECTOR_LEXICAL),
+          Arguments.of("{\"$hybrid\": \"\"} without vector", hybridText(null), LEXICAL_NO_VECTOR),
           Arguments.of(
-              "{\"$hybrid\": \"\"} or {\"$hybrid\": {}}",
-              hybridSort(false, null, null, null),
-              VECTOR_LEXICAL),
-          Arguments.of(
-              "{\"$hybrid\": {\"$lexical\": null}}",
-              hybridSort(true, null, null, null),
+              "{\"$hybrid\": {}} or {\"$hybrid\": {\"$lexical\": null}}",
+              hybridObject(null, null, null),
               VECTOR_LEXICAL),
           Arguments.of(
               "{\"$hybrid\": {\"$lexical\": null}} without lexical index",
-              hybridSort(true, null, null, null),
+              hybridObject(null, null, null),
               VECTORIZE_NO_LEXICAL));
     }
 
@@ -385,7 +413,7 @@ public class FindAndRerankPlannerTest {
     private static FindAndRerankSort singleLegSort(
         LegMode legMode, String vectorize, String lexical, float[] vector) {
       return new FindAndRerankSort(
-          legMode, false, vectorize, lexical, vector, CommandFeatures.create());
+          legMode, null, vectorize, lexical, vector, CommandFeatures.create());
     }
   }
 
@@ -397,7 +425,7 @@ public class FindAndRerankPlannerTest {
       // {"$hybrid": {"$vector": [0.1, 0.2, 0.3]}}
       var plan =
           plan(
-              hybridSort(false, null, null, VECTOR),
+              hybridObject(null, null, VECTOR),
               "{'rerankQuery': 'q', 'rerankOn': 'body', 'limit': 5}",
               VECTOR_LEXICAL);
 
@@ -408,7 +436,7 @@ public class FindAndRerankPlannerTest {
     void rerankOnReplacesVectorizeField() {
       // {"$hybrid": {"$vectorize": "cheese"}}
       var plan =
-          plan(hybridSort(false, "cheese", null, null), "{'rerankOn': 'body'}", VECTORIZE_LEXICAL);
+          plan(hybridObject("cheese", null, null), "{'rerankOn': 'body'}", VECTORIZE_LEXICAL);
 
       assertQuery(plan, "cheese", RerankingQuery.Source.VECTORIZE);
       assertPassage(plan, "body");
@@ -419,7 +447,7 @@ public class FindAndRerankPlannerTest {
       // {"$hybrid": {"$vectorize": "cheese"}}
       var plan =
           plan(
-              hybridSort(false, "cheese", null, null),
+              hybridObject("cheese", null, null),
               "{'rerankQuery': '   ', 'rerankOn': '  '}",
               VECTORIZE_LEXICAL);
 
@@ -433,9 +461,7 @@ public class FindAndRerankPlannerTest {
       assertPlanFails(
           RequestException.class,
           RequestException.Code.MISSING_RERANK_QUERY_TEXT,
-          () ->
-              plan(
-                  hybridSort(true, null, "cows", null), "{'rerankOn': 'body'}", LEXICAL_NO_VECTOR));
+          () -> plan(hybridObject(null, "cows", null), "{'rerankOn': 'body'}", LEXICAL_NO_VECTOR));
     }
 
     @Test
@@ -444,9 +470,7 @@ public class FindAndRerankPlannerTest {
       assertPlanFails(
           RequestException.class,
           RequestException.Code.MISSING_RERANK_ON,
-          () ->
-              plan(
-                  hybridSort(true, null, "cows", null), "{'rerankQuery': 'q'}", LEXICAL_NO_VECTOR));
+          () -> plan(hybridObject(null, "cows", null), "{'rerankQuery': 'q'}", LEXICAL_NO_VECTOR));
     }
   }
 
@@ -458,7 +482,7 @@ public class FindAndRerankPlannerTest {
       // {"$hybrid": {"$vector": [0.1, 0.2, 0.3]}}
       var plan =
           plan(
-              hybridSort(false, null, null, VECTOR),
+              hybridObject(null, null, VECTOR),
               "{'rerankQuery': 'q', 'rerankOn': 'body', 'rerank': {'provider': 'nvidia', 'modelName': '%s'}}"
                   .formatted(TestConstants.RERANK_MODEL),
               VECTOR_NO_RERANK);
@@ -474,7 +498,7 @@ public class FindAndRerankPlannerTest {
       // {"$hybrid": {"$vector": [0.1, 0.2, 0.3]}}
       var plan =
           plan(
-              hybridSort(false, null, null, VECTOR),
+              hybridObject(null, null, VECTOR),
               "{'rerankQuery': 'q', 'rerankOn': 'body', 'rerank': {'provider': 'nvidia', 'modelName': '%s'}}"
                   .formatted(OTHER_RERANK_MODEL),
               VECTOR_LEXICAL);
@@ -492,7 +516,7 @@ public class FindAndRerankPlannerTest {
           RequestException.Code.INVALID_RERANK_OVERRIDE,
           () ->
               plan(
-                  hybridSort(false, null, null, VECTOR),
+                  hybridObject(null, null, VECTOR),
                   "{'rerankQuery': 'q', 'rerankOn': 'body', 'rerank': {}}",
                   VECTOR_LEXICAL));
     }
@@ -503,7 +527,7 @@ public class FindAndRerankPlannerTest {
       assertPlanFails(
           RequestException.class,
           RequestException.Code.UNSUPPORTED_RERANKING_COMMAND,
-          () -> plan(hybridSort(false, null, null, VECTOR), RERANK_OPTIONS, VECTOR_NO_RERANK));
+          () -> plan(hybridObject(null, null, VECTOR), RERANK_OPTIONS, VECTOR_NO_RERANK));
     }
 
     @Test
@@ -514,7 +538,7 @@ public class FindAndRerankPlannerTest {
           SchemaException.Code.END_OF_LIFE_AI_MODEL,
           () ->
               FindAndRerankPlanner.plan(
-                  hybridSort(false, null, null, VECTOR),
+                  hybridObject(null, null, VECTOR),
                   options(RERANK_OPTIONS),
                   VECTOR_LEXICAL,
                   OPERATIONS_CONFIG,
@@ -535,13 +559,28 @@ public class FindAndRerankPlannerTest {
       assertPlanFails(
           SortException.class,
           SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION,
-          () -> plan(hybridSort(false, null, null, VECTOR), LEXICAL_NO_VECTOR));
+          () -> plan(hybridObject(null, null, VECTOR), LEXICAL_NO_VECTOR));
     }
 
     @Test
     void vectorBeforeVectorizeBeforeLexicalIndex() {
       // {"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}
-      var sort = hybridSort(true, "cheese", "cows", null);
+      var sort = hybridObject("cheese", "cows", null);
+
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION,
+          () -> plan(sort, RERANK_OPTIONS, NOTHING_NO_RERANK));
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION,
+          () -> plan(sort, RERANK_OPTIONS, VECTOR_NO_RERANK));
+    }
+
+    @Test
+    void hybridTextVectorBeforeVectorize() {
+      // {"$hybrid": "cheese"}
+      var sort = hybridText("cheese");
 
       assertPlanFails(
           SortException.class,
@@ -561,7 +600,7 @@ public class FindAndRerankPlannerTest {
           SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION,
           () ->
               plan(
-                  hybridSort(true, null, "cows", null),
+                  hybridObject(null, "cows", null),
                   "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': 0}",
                   NOTHING_NO_RERANK));
     }
@@ -575,7 +614,7 @@ public class FindAndRerankPlannerTest {
               RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
               () ->
                   plan(
-                      hybridSort(true, null, "cows", null),
+                      hybridObject(null, "cows", null),
                       "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 500, '$lexical': 0}}",
                       LEXICAL_NO_VECTOR));
       assertThat(ex.getMessage()).contains(invalidLimit("hybridLimits.$vector", 500));
@@ -590,7 +629,7 @@ public class FindAndRerankPlannerTest {
               RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
               () ->
                   plan(
-                      hybridSort(false, null, null, VECTOR),
+                      hybridObject(null, null, VECTOR),
                       "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 10, '$lexical': 0}}",
                       VECTOR_LEXICAL));
       assertThat(ex.getMessage()).contains(invalidLimit("hybridLimits.$lexical", 0));
@@ -605,7 +644,7 @@ public class FindAndRerankPlannerTest {
               RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
               () ->
                   plan(
-                      hybridSort(false, null, null, VECTOR),
+                      hybridObject(null, null, VECTOR),
                       "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': %d}"
                           .formatted(HYBRID_LIMIT_MAX + 1),
                       VECTOR_NO_RERANK));
@@ -619,7 +658,7 @@ public class FindAndRerankPlannerTest {
               RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
               () ->
                   plan(
-                      hybridSort(false, null, null, VECTOR),
+                      hybridObject(null, null, VECTOR),
                       "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': %d, 'rerank': {}}"
                           .formatted(HYBRID_LIMIT_MIN - 1),
                       VECTOR_LEXICAL));
@@ -633,9 +672,7 @@ public class FindAndRerankPlannerTest {
       assertPlanFails(
           RequestException.class,
           RequestException.Code.UNSUPPORTED_RERANKING_COMMAND,
-          () ->
-              plan(
-                  hybridSort(false, null, null, VECTOR), "{'rerankQuery': 'q'}", VECTOR_NO_RERANK));
+          () -> plan(hybridObject(null, null, VECTOR), "{'rerankQuery': 'q'}", VECTOR_NO_RERANK));
     }
 
     @Test
@@ -653,14 +690,13 @@ public class FindAndRerankPlannerTest {
       assertPlanFails(
           RequestException.class,
           RequestException.Code.MISSING_RERANK_QUERY_TEXT,
-          () ->
-              plan(hybridSort(true, null, "cows", VECTOR), "{'hybridLimits': 20}", VECTOR_LEXICAL));
+          () -> plan(hybridObject(null, "cows", VECTOR), "{'hybridLimits': 20}", VECTOR_LEXICAL));
     }
 
     @Test
     void rerankQueryAndPassageBeforeNoHybridValue() {
       // {"$hybrid": ""}
-      var sort = hybridSort(false, null, null, null);
+      var sort = hybridText(null);
 
       assertPlanFails(
           RequestException.class,
@@ -681,9 +717,7 @@ public class FindAndRerankPlannerTest {
               UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_PATH,
               () ->
                   plan(
-                      hybridSort(false, null, null, null),
-                      "{'rerankQuery': 'q', 'rerankOn': 'a&b'}",
-                      VECTOR_LEXICAL));
+                      hybridText(null), "{'rerankQuery': 'q', 'rerankOn': 'a&b'}", VECTOR_LEXICAL));
       assertThat(ex.getMessage()).contains("a&b");
     }
 
@@ -759,15 +793,20 @@ public class FindAndRerankPlannerTest {
   }
 
   /**
-   * The values the parser gives for a <code>$hybrid</code> sort, with a new set of features.
+   * The value the parser gives for <code>{"$hybrid": "text"}</code>, with a new set of features.
    *
-   * @param explicitLexical True when the request has the <code>$lexical</code> key, even with a
-   *     null or blank value.
+   * @param text The trimmed text, <code>null</code> when the text is blank.
    */
-  private static FindAndRerankSort hybridSort(
-      boolean explicitLexical, String vectorize, String lexical, float[] vector) {
-    return new FindAndRerankSort(
-        LegMode.HYBRID, explicitLexical, vectorize, lexical, vector, CommandFeatures.create());
+  private static FindAndRerankSort hybridText(String text) {
+    return FindAndRerankSort.fromHybridText(text, CommandFeatures.create());
+  }
+
+  /**
+   * The values the parser gives for a <code>$hybrid</code> object, with a new set of features. A
+   * value is <code>null</code> when the request does not have its key, or the key is null or blank.
+   */
+  private static FindAndRerankSort hybridObject(String vectorize, String lexical, float[] vector) {
+    return FindAndRerankSort.fromHybridObject(vectorize, lexical, vector, CommandFeatures.create());
   }
 
   /** Parses the options, the JSON uses single quotes to stay readable. */

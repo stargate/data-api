@@ -114,14 +114,17 @@ public class FindAndRerankPlanner {
 
   /**
    * Check that the collection supports the sorts that have a value (vector / vectorize / lexical),
-   * throw if it does not.
+   * throw if it does not. The text of <code>{"$hybrid": "text"}</code> needs vectorize, but not a
+   * lexical index.
    */
   private static void checkSortSupported(
       FindAndRerankSort sort, CollectionSchemaObject schemaObject) {
 
+    // the $hybrid text is always read with vectorize
+    var needsVectorize = sort.hybridText() != null || sort.vectorizeSort() != null;
+
     var vectorConfig = schemaObject.vectorConfig();
-    if ((sort.vectorSort() != null || sort.vectorizeSort() != null)
-        && !vectorConfig.vectorEnabled()) {
+    if ((needsVectorize || sort.vectorSort() != null) && !vectorConfig.vectorEnabled()) {
       throw SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION.get(errVars(schemaObject));
     }
 
@@ -131,13 +134,13 @@ public class FindAndRerankPlanner {
             .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
             .map(VectorColumnDefinition::vectorizeDefinition)
             .isPresent();
-    if (sort.vectorizeSort() != null && !vectorizeEnabled) {
+    if (needsVectorize && !vectorizeEnabled) {
       throw SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION.get(errVars(schemaObject));
     }
 
-    // The index is only required if the user explicitly asked for lexical,
-    // they could also have used $hybrid and it expanded into the lexical sort.
-    if (sort.lexicalSort() != null && sort.explicitLexical()) {
+    // only a $lexical value needs the index, the lexical leg for the $hybrid text is skipped
+    // without one
+    if (sort.lexicalSort() != null) {
       throwIfNoLexicalIndex(schemaObject);
     }
   }
@@ -219,10 +222,13 @@ public class FindAndRerankPlanner {
   }
 
   /**
-   * The legs for a <code>$hybrid</code> sort: at most one lexical leg, when there is <code>$lexical
-   * </code> text and a lexical index, then one vectorize leg, or a vector leg when there is no
-   * <code>$vectorize</code> text. So in a two-leg request read task 0 is lexical and read task 1 is
-   * vector / vectorize.
+   * The legs for a <code>$hybrid</code> sort: at most one lexical leg, then one vectorize or vector
+   * leg. So in a two-leg request read task 0 is lexical and read task 1 is vector / vectorize.
+   *
+   * <p>The text of <code>{"$hybrid": "text"}</code> is read by a vectorize leg, and by a lexical
+   * leg when the collection has a lexical index. The <code>$hybrid</code> object runs a lexical leg
+   * when there is <code>$lexical</code> text, then a vectorize leg, or a vector leg when there is
+   * no <code>$vectorize</code> text.
    */
   private static List<RerankLeg> hybridLegs(
       FindAndRerankSort sort,
@@ -236,37 +242,46 @@ public class FindAndRerankPlanner {
             FindAndRerankCommand.HybridLimits.DEFAULT);
     var legs = new ArrayList<RerankLeg>(2);
 
-    if (sort.lexicalSort() != null) {
+    if (sort.hybridText() != null) {
       if (schemaObject.lexicalDef().enabled()) {
-        legs.add(new LexicalLeg(sort.lexicalSort(), hybridLimits.lexicalLimit()));
-      } else if (sort.explicitLexical()) {
-        // should have been caught in checkSortSupported(), sanity check
-        throwIfNoLexicalIndex(schemaObject);
+        legs.add(new LexicalLeg(sort.hybridText(), hybridLimits.lexicalLimit()));
       }
-      // otherwise the lexical text came from {"$hybrid": "text"}, it is skipped without an index
+      legs.add(vectorizeLeg(sort.hybridText(), schemaObject, hybridLimits));
+      return legs;
+    }
+
+    if (sort.lexicalSort() != null) {
+      // should have been caught in checkSortSupported(), sanity check
+      throwIfNoLexicalIndex(schemaObject);
+      legs.add(new LexicalLeg(sort.lexicalSort(), hybridLimits.lexicalLimit()));
     }
 
     // $vectorize wins when the sort has both $vectorize and $vector, as it did before the planner
     // TODO: GH #2616 - reject a sort that has both $vectorize and $vector
     if (sort.vectorizeSort() != null) {
-      // cannot be empty, checkSortSupported() has already thrown
-      // UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION when there is no $vectorize column. If the steps
-      // in plan() are reordered this orElseThrow() fails with an HTTP 500.
-      var vectorColumn =
-          schemaObject
-              .vectorConfig()
-              .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
-              .orElseThrow();
-      legs.add(
-          new VectorizeLeg(
-              sort.vectorizeSort(),
-              vectorColumn.vectorSize(),
-              vectorColumn.vectorizeDefinition(),
-              hybridLimits.vectorLimit()));
+      legs.add(vectorizeLeg(sort.vectorizeSort(), schemaObject, hybridLimits));
     } else if (sort.vectorSort() != null) {
       legs.add(new VectorLeg(sort.vectorSort(), hybridLimits.vectorLimit()));
     }
     return legs;
+  }
+
+  /** A vectorize leg for the text, using the vector column and service of the collection. */
+  private static VectorizeLeg vectorizeLeg(
+      String vectorizeText,
+      CollectionSchemaObject schemaObject,
+      FindAndRerankCommand.HybridLimits hybridLimits) {
+
+    // cannot be empty, checkSortSupported() has already thrown
+    // UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION when there is no $vectorize column. If the steps
+    // in plan() are reordered this orElseThrow() fails with an HTTP 500.
+    var vectorColumn =
+        schemaObject.vectorConfig().getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
+    return new VectorizeLeg(
+        vectorizeText,
+        vectorColumn.vectorSize(),
+        vectorColumn.vectorizeDefinition(),
+        hybridLimits.vectorLimit());
   }
 
   /**
