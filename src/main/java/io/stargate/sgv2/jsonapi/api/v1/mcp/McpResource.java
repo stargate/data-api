@@ -131,7 +131,7 @@ public class McpResource {
                 contextBuilderSupplier
                     .getBuilder(keyspaceSchemaObject)
                     .withCommandName(command.getClass().getSimpleName())
-                    .withRequestContext(createRequestContext())
+                    .withRequestContext(requestContext)
                     .build());
   }
 
@@ -225,14 +225,32 @@ public class McpResource {
     return contextUni
         .flatMap(
             context -> {
+              Uni<CommandResult> resultUni;
               if (!context.apiFeatures().isFeatureEnabled(ApiFeature.MCP)) {
-                return Uni.createFrom()
-                    .item(
-                        CommandResult.statusOnlyBuilder(context.requestTracing())
-                            .addThrowable(SchemaException.Code.MCP_FEATURE_NOT_ENABLED.get())
-                            .build());
+                resultUni =
+                    Uni.createFrom()
+                        .item(
+                            CommandResult.statusOnlyBuilder(context.requestTracing())
+                                .addThrowable(SchemaException.Code.MCP_FEATURE_NOT_ENABLED.get())
+                                .build());
+              } else {
+                resultUni = meteredCommandProcessor.processCommand(context, command);
               }
-              return meteredCommandProcessor.processCommand(context, command);
+              // Same as the HTTP resources: closing removes this request's values from the
+              // logging context, and must happen however the call ends.
+              return resultUni
+                  .onTermination()
+                  .invoke(
+                      () -> {
+                        try {
+                          context.close();
+                        } catch (Exception e) {
+                          LOGGER.error(
+                              "Error closing the command context for requestContext={}",
+                              context.requestContext(),
+                              e);
+                        }
+                      });
             })
         .map(CommandResult::toToolResponse);
   }
