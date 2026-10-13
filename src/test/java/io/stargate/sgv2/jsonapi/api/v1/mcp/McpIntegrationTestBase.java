@@ -176,16 +176,23 @@ public abstract class McpIntegrationTestBase {
     };
   }
 
+  private static void assertServerInfoOnly(ToolResponse response) {
+    assertThat(response._meta()).containsOnlyKeys(MetaKey.SERVER_INFO);
+    var serverInfo = (JsonObject) response._meta().get(MetaKey.SERVER_INFO);
+    assertThat(serverInfo.getString("name")).isEqualTo("Stargate DATA API");
+    assertThat(serverInfo.getString("version")).isNotBlank();
+  }
+
   /**
-   * Assert error response structure is valid (no meta_ and content), then apply additional
-   * assertions on the error JsonArray extracted from structuredContent.
+   * Assert error response structure is valid (server metadata and no text content), then apply
+   * additional assertions on the error JsonArray extracted from structuredContent.
    *
    * @param errorsAssertions additional assertions to run on the error JsonArray
    */
   protected Consumer<ToolResponse> assertErrorOnly(Consumer<JsonArray> errorsAssertions) {
     return response -> {
       assertThat(response.content()).isEmpty();
-      assertThat(response._meta()).isEmpty();
+      assertServerInfoOnly(response);
       assertTrue(response.isError());
       assertThat(response.structuredContent()).isNotNull();
 
@@ -198,8 +205,8 @@ public abstract class McpIntegrationTestBase {
   }
 
   /**
-   * Assert data only response is valid (no meta_, content and error), then apply additional
-   * assertions on the structuredContent holds the data.
+   * Assert data only response is valid (server metadata, no text content or error), then apply
+   * additional assertions on the structuredContent holds the data.
    *
    * @param dataAssertions additional assertions to run on the data JsonObject
    */
@@ -207,7 +214,7 @@ public abstract class McpIntegrationTestBase {
     return response -> {
       assertFalse(response.isError());
       assertThat(response.content()).isEmpty();
-      assertThat(response._meta()).isEmpty();
+      assertServerInfoOnly(response);
       assertNotNull(response.structuredContent());
 
       var data = (JsonObject) response.structuredContent();
