@@ -63,7 +63,7 @@ class FindAndRerankOperationBuilder {
     Objects.requireNonNull(command, "command cannot be null");
 
     // the planner validates the request and decides what to run, it throws if the request cannot
-    // run. It decides from the sort mode and values in the parsed sort, not the command features.
+    // run. It decides from the leg mode and values in the parsed sort, not the command features.
     var plan =
         FindAndRerankPlanner.plan(
             command.sortClause(),

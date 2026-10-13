@@ -12,7 +12,7 @@ import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortMode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.LegMode;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.config.IntConfigWithBounds;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
@@ -359,6 +360,32 @@ public class FindAndRerankPlannerTest {
           SortException.class,
           SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT,
           () -> plan(FindAndRerankSort.noArgSort(), RERANK_OPTIONS, VECTORIZE_LEXICAL));
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = LegMode.class,
+        names = {"VECTORIZE", "VECTOR", "LEXICAL"})
+    void failSingleLegModes(LegMode legMode) {
+      // the parser does not produce these modes yet (GH #2602), the sort has the value for the mode
+      var sort =
+          switch (legMode) {
+            case VECTORIZE -> singleLegSort(legMode, "cheese", null, null);
+            case VECTOR -> singleLegSort(legMode, null, null, VECTOR);
+            case LEXICAL -> singleLegSort(legMode, null, "cows", null);
+            case HYBRID, FILTER -> throw new IllegalArgumentException("not a single leg mode");
+          };
+
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT,
+          () -> plan(sort, RERANK_OPTIONS, VECTORIZE_LEXICAL));
+    }
+
+    private static FindAndRerankSort singleLegSort(
+        LegMode legMode, String vectorize, String lexical, float[] vector) {
+      return new FindAndRerankSort(
+          legMode, false, vectorize, lexical, vector, CommandFeatures.create());
     }
   }
 
@@ -732,7 +759,7 @@ public class FindAndRerankPlannerTest {
   private static FindAndRerankSort hybridSort(
       boolean explicitLexical, String vectorize, String lexical, float[] vector) {
     return new FindAndRerankSort(
-        SortMode.HYBRID, explicitLexical, vectorize, lexical, vector, CommandFeatures.create());
+        LegMode.HYBRID, explicitLexical, vectorize, lexical, vector, CommandFeatures.create());
   }
 
   /** Parses the options, the JSON uses single quotes to stay readable. */

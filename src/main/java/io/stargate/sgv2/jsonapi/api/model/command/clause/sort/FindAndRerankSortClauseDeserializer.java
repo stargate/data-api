@@ -91,7 +91,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
         // the lexical text was not explicitly set, so it is skipped if there is no lexical index
         var normalizedText = normalizedText(textNode.asText().trim());
         yield new FindAndRerankSort(
-            SortMode.HYBRID,
+            LegMode.HYBRID,
             false,
             normalizedText,
             normalizedText,
@@ -110,7 +110,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
     // NOTE: commandFeatures are only for metrics, the FindAndRerankPlanner decides what to run
-    // from the sortMode, explicitLexical and the sort values
+    // from the legMode, explicitLexical and the sort values
     CommandFeatures commandFeatures = CommandFeatures.of(CommandFeature.HYBRID);
 
     var vectorizeText =
@@ -224,7 +224,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
         };
 
     return new FindAndRerankSort(
-        SortMode.HYBRID, explicitLexical, vectorizeText, lexicalText, vector, commandFeatures);
+        LegMode.HYBRID, explicitLexical, vectorizeText, lexicalText, vector, commandFeatures);
   }
 
   /**

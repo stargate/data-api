@@ -7,7 +7,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortMode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.LegMode;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.config.IntConfigWithBounds;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -34,7 +34,7 @@ import java.util.function.Function;
  * does not call the database or any model and does not read the command context, so it can be
  * tested without Quarkus.
  *
- * <p>The {@link SortMode} is what the user asked for, the legs are what will run. They can be
+ * <p>The {@link LegMode} is what the user asked for, the legs are what will run. They can be
  * different, for example <code>{"$hybrid": "cheese"}</code> skips the lexical leg when the
  * collection has no lexical index.
  */
@@ -72,7 +72,7 @@ public class FindAndRerankPlanner {
    * MISSING_RERANK_ON when it also lacked those options, before the sort errors existed. Checking
    * the sort last keeps those errors.
    *
-   * @param sort The parsed sort, its {@link SortMode} decides which legs can run.
+   * @param sort The parsed sort, its {@link LegMode} decides which legs can run.
    * @param options The command options, may be <code>null</code>.
    * @param schemaObject The collection the command runs against.
    * @param operationsConfig Config for the bounds of <code>hybridLimits</code> and the default
@@ -97,12 +97,12 @@ public class FindAndRerankPlanner {
     checkHybridLimits(options, operationsConfig);
     var rerankServiceDef = resolveRerankServiceDef(options, schemaObject, rerankingProvidersConfig);
 
-    // TODO: GH #2603 - FILTER has no legs and fails below with UNSUPPORTED_FIND_AND_RERANK_SORT,
-    // until the planner can build a leg that reads with only the filter
+    // TODO: GH #2602, GH #2603 - the single leg modes and FILTER have no legs yet and fail below
+    // with UNSUPPORTED_FIND_AND_RERANK_SORT, until the planner can build their legs
     List<RerankLeg> legs =
-        switch (sort.sortMode()) {
+        switch (sort.legMode()) {
           case HYBRID -> hybridLegs(sort, options, schemaObject);
-          case FILTER -> List.of();
+          case VECTORIZE, VECTOR, LEXICAL, FILTER -> List.of();
         };
 
     // only the vectorize leg has a default query, so the leg default is the vectorize query
@@ -113,7 +113,7 @@ public class FindAndRerankPlanner {
     var passageLocator = PathMatchLocator.forPath(passageField(options, legs));
 
     // after the rerank query and passage checks, see the NOTE in the javadoc
-    if (sort.sortMode() != SortMode.HYBRID) {
+    if (sort.legMode() != LegMode.HYBRID) {
       throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
     }
     if (legs.isEmpty()) {
