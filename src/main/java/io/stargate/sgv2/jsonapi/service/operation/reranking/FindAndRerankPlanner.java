@@ -288,7 +288,7 @@ public class FindAndRerankPlanner {
 
     // cannot be empty, checkSortSupported() has already thrown
     // UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION when there is no $vectorize column. If the steps
-    // in plan() are reordered this orElseThrow() fails with an HTTP 500.
+    // in plan() are reordered this orElseThrow() fails with UNEXPECTED_SERVER_ERROR.
     var vectorColumn =
         schemaObject.vectorConfig().getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
     return new VectorizeLeg(
