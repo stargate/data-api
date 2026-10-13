@@ -49,8 +49,10 @@ import org.junit.jupiter.params.provider.MethodSource;
  * <p>Some rows pin behaviour that is easy to change by accident:
  *
  * <ul>
- *   <li>A <code>$hybrid</code> sort with only <code>$lexical</code> runs one lexical read (R26,
- *       R27, G17).
+ *   <li>A <code>$hybrid</code> sort with a <code>$lexical</code> value but no <code>$vectorize
+ *       </code> or <code>$vector</code> value fails with MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT
+ *       (R26, R27, G17, G24, G25, G26). It fails after the lexical index check (R30, O08), and
+ *       before the hybridLimits, rerank query, rerankOn and projection errors (G06, R28, R29, O16).
  *   <li>A <code>$hybrid</code> sort with no value fails with MISSING_HYBRID_SORT_VALUE (R05, G03,
  *       R08, R09, G02, R11), and a request with no sort fails with UNSUPPORTED_FIND_AND_RERANK_SORT
  *       (R31, R32, R33).
@@ -306,34 +308,73 @@ class FindAndRerankOperationBuilderBehaviorTest {
             "{'$hybrid': {'$lexical': 'cows'}}",
             RERANK_OPTIONS,
             Collection.VECTOR_LEXICAL,
-            // a lexical-only $hybrid runs one lexical read
-            success(lexicalRead())),
+            // a $hybrid sort needs a $vectorize or $vector value
+            failure(
+                SortException.class,
+                SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT)),
         row(
             "R27",
             "{'$hybrid': {'$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 50, '$lexical': 20}}",
             Collection.LEXICAL_NO_VECTOR,
-            // a lexical-only $hybrid runs one lexical read
-            success(50, 20, lexicalRead(20))),
+            // a $hybrid sort needs a $vectorize or $vector value
+            failure(
+                SortException.class,
+                SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT)),
         row(
             "G17",
             "{'$hybrid': {'$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'includeScores': true}",
             Collection.LEXICAL_NO_VECTOR,
-            // a lexical-only $hybrid runs one lexical read
-            success(lexicalRead())),
+            // a $hybrid sort needs a $vectorize or $vector value
+            failure(
+                SortException.class,
+                SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT)),
+        row(
+            "G24",
+            "{'$hybrid': {'$lexical': 'cows', '$vector': null}}",
+            RERANK_OPTIONS,
+            Collection.VECTOR_LEXICAL,
+            // a null $vector is not a value
+            failure(
+                SortException.class,
+                SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT)),
+        row(
+            "G25",
+            "{'$hybrid': {'$lexical': 'cows', '$vectorize': null}}",
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_LEXICAL,
+            // a null $vectorize is not a value
+            failure(
+                SortException.class,
+                SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT)),
+        row(
+            "G26",
+            "{'$hybrid': {'$lexical': 'cows', '$vectorize': '   '}}",
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_LEXICAL,
+            // a blank $vectorize is not a value
+            failure(
+                SortException.class,
+                SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT)),
         row(
             "R28",
             "{'$hybrid': {'$lexical': 'cows'}}",
             "{'rerankOn': 'body'}",
             Collection.LEXICAL_NO_VECTOR,
-            failure(RequestException.class, RequestException.Code.MISSING_RERANK_QUERY_TEXT)),
+            // the sort is checked before the rerank query
+            failure(
+                SortException.class,
+                SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT)),
         row(
             "R29",
             "{'$hybrid': {'$lexical': 'cows'}}",
             "{'rerankQuery': 'q'}",
             Collection.LEXICAL_NO_VECTOR,
-            failure(RequestException.class, RequestException.Code.MISSING_RERANK_ON)),
+            // the sort is checked before rerankOn
+            failure(
+                SortException.class,
+                SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT)),
         row(
             "R30",
             "{'$hybrid': {'$lexical': 'cows'}}",
@@ -346,10 +387,10 @@ class FindAndRerankOperationBuilderBehaviorTest {
             "{'$hybrid': {'$lexical': 'cows'}}",
             "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 500, '$lexical': 10}}",
             Collection.LEXICAL_NO_VECTOR,
+            // the sort is checked before hybridLimits
             failure(
-                RequestException.class,
-                RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
-                "hybridLimits.$vector")),
+                SortException.class,
+                SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT)),
 
         // ---- no sort value: {}, null, missing ----
         row(
@@ -593,8 +634,10 @@ class FindAndRerankOperationBuilderBehaviorTest {
             null,
             BAD_PROJECTION,
             Collection.LEXICAL_NO_VECTOR,
+            // the sort errors come before the projection error
             failure(
-                ProjectionException.class, ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM)),
+                SortException.class,
+                SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT)),
         row(
             "G21",
             "{'$hybrid': ''}",

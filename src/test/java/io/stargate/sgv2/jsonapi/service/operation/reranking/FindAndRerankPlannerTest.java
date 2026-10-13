@@ -203,28 +203,22 @@ public class FindAndRerankPlannerTest {
     }
 
     @Test
-    void lexicalOnlyReadsLexicalHybridLimit() {
-      // {"$hybrid": {"$lexical": "cows"}}
-      var plan =
-          plan(
-              hybridObject(null, "cows", null),
-              "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 30, '$lexical': 15}}",
-              VECTOR_LEXICAL);
-
-      assertThat(plan.legs()).containsExactly(new LexicalLeg("cows", 15));
-      assertQuery(plan, "q", RerankingQuery.Source.OPTIONS);
-      assertPassage(plan, "body");
-    }
-
-    @Test
-    void lexicalOnlyWithoutVectorRunsLexicalLeg() {
+    void failLexicalOnly() {
       assertThat(LEXICAL_NO_VECTOR.vectorConfig().vectorEnabled()).isFalse();
       assertThat(LEXICAL_NO_VECTOR.lexicalDef().enabled()).isTrue();
 
-      // {"$hybrid": {"$lexical": "cows"}}
-      var plan = plan(hybridObject(null, "cows", null), RERANK_OPTIONS, LEXICAL_NO_VECTOR);
+      // {"$hybrid": {"$lexical": "cows"}}, the parser gives the same sort when the request also has
+      // $vectorize or $vector with a null or blank value
+      var sort = hybridObject(null, "cows", null);
 
-      assertThat(plan.legs()).containsExactly(LEXICAL_COWS);
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT,
+          () -> plan(sort, RERANK_OPTIONS, VECTOR_LEXICAL));
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT,
+          () -> plan(sort, RERANK_OPTIONS, LEXICAL_NO_VECTOR));
     }
 
     @Test
@@ -456,21 +450,21 @@ public class FindAndRerankPlannerTest {
     }
 
     @Test
-    void failLexicalOnlyWithoutRerankQuery() {
-      // {"$hybrid": {"$lexical": "cows"}}
+    void failVectorWithoutRerankQuery() {
+      // {"$hybrid": {"$vector": [0.1, 0.2, 0.3]}}, the vector leg has no default query
       assertPlanFails(
           RequestException.class,
           RequestException.Code.MISSING_RERANK_QUERY_TEXT,
-          () -> plan(hybridObject(null, "cows", null), "{'rerankOn': 'body'}", LEXICAL_NO_VECTOR));
+          () -> plan(hybridObject(null, null, VECTOR), "{'rerankOn': 'body'}", VECTOR_LEXICAL));
     }
 
     @Test
-    void failLexicalOnlyWithoutRerankOn() {
-      // {"$hybrid": {"$lexical": "cows"}}
+    void failVectorWithoutRerankOn() {
+      // {"$hybrid": {"$vector": [0.1, 0.2, 0.3]}}, the vector leg has no default passage field
       assertPlanFails(
           RequestException.class,
           RequestException.Code.MISSING_RERANK_ON,
-          () -> plan(hybridObject(null, "cows", null), "{'rerankQuery': 'q'}", LEXICAL_NO_VECTOR));
+          () -> plan(hybridObject(null, null, VECTOR), "{'rerankQuery': 'q'}", VECTOR_LEXICAL));
     }
   }
 
@@ -606,17 +600,57 @@ public class FindAndRerankPlannerTest {
     }
 
     @Test
+    void lexicalIndexBeforeLexicalOnly() {
+      // {"$hybrid": {"$lexical": "cows"}}
+      assertPlanFails(
+          SchemaException.class,
+          SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION,
+          () -> plan(hybridObject(null, "cows", null), RERANK_OPTIONS, VECTORIZE_NO_LEXICAL));
+    }
+
+    @Test
+    void lexicalOnlyBeforeOptionsErrors() {
+      // {"$hybrid": {"$lexical": "cows"}}
+      var sort = hybridObject(null, "cows", null);
+
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT,
+          () ->
+              plan(
+                  sort,
+                  "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 500, '$lexical': 10}}",
+                  LEXICAL_NO_VECTOR));
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT,
+          () ->
+              plan(
+                  sort,
+                  "{'rerankQuery': 'q', 'rerankOn': 'body', 'rerank': {}}",
+                  LEXICAL_NO_VECTOR));
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT,
+          () -> plan(sort, "{'rerankOn': 'body'}", LEXICAL_NO_VECTOR));
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT,
+          () -> plan(sort, "{'rerankQuery': 'q'}", LEXICAL_NO_VECTOR));
+    }
+
+    @Test
     void hybridLimitsVectorBeforeLexical() {
-      // {"$hybrid": {"$lexical": "cows"}}, the $vector value is checked even with no vector leg
+      // {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}, both values are invalid
       var ex =
           assertPlanFails(
               RequestException.class,
               RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
               () ->
                   plan(
-                      hybridObject(null, "cows", null),
+                      hybridObject(null, "cows", VECTOR),
                       "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 500, '$lexical': 0}}",
-                      LEXICAL_NO_VECTOR));
+                      VECTOR_LEXICAL));
       assertThat(ex.getMessage()).contains(invalidLimit("hybridLimits.$vector", 500));
     }
 

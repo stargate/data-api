@@ -349,6 +349,17 @@ public class FindAndRerankSortClauseDeserializerTest {
                 CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE))),
         Arguments.of(
             """
+            { "$hybrid" : { "$vectorize" : "   ", "$lexical" : "lexical sort"} }
+            """,
+            new FindAndRerankSort(
+                LegMode.HYBRID,
+                null,
+                null,
+                "lexical sort",
+                null,
+                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE))),
+        Arguments.of(
+            """
             { "$hybrid" : {"$lexical" : "lexical sort"} }
             """,
             new FindAndRerankSort(
@@ -360,6 +371,17 @@ public class FindAndRerankSortClauseDeserializerTest {
                 CommandFeatures.of(HYBRID, LEXICAL))),
         // ----
         // $vector variations
+        Arguments.of(
+            """
+            { "$hybrid" : { "$lexical" : "lexical", "$vector" : null} }
+            """,
+            new FindAndRerankSort(
+                LegMode.HYBRID,
+                null,
+                null,
+                "lexical",
+                null,
+                CommandFeatures.of(HYBRID, LEXICAL, VECTOR))),
         Arguments.of(
             """
             { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : null} }

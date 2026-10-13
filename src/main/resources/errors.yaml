@@ -2287,9 +2287,19 @@ request-errors:
     body: |-
       The command attempted to use a `$hybrid` sort that has no value to sort with.
 
-      A `$hybrid` sort needs either non blank text, e.g. `{"$hybrid": "query text"}`, or a value for at least one of `$vectorize`, `$vector` or `$lexical`, e.g. `{"$hybrid": {"$lexical": "query text"}}`. Blank text and JSON null are not values.
+      A `$hybrid` sort needs either non blank text, e.g. `{"$hybrid": "query text"}`, or a value for `$vectorize` or `$vector`, optionally with a value for `$lexical`, e.g. `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`. Blank text and JSON null are not values.
 
       Resend the command with a value in the `$hybrid` sort.
+
+  - scope: SORT
+    code: MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT
+    title: Hybrid sort requires $vector or $vectorize
+    body: |-
+      The command attempted to use a `$hybrid` sort that has a value for `$lexical`, but no value for `$vectorize` or `$vector`.
+
+      A `$hybrid` sort always finds documents with a vector search, and also with a lexical search when it has a value for `$lexical`. The vector search uses either the `$vectorize` text, e.g. `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`, or the `$vector` value, e.g. `{"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "query text"}}`. A `$hybrid` sort that is text, e.g. `{"$hybrid": "query text"}`, uses the text for both searches. Blank text and JSON null are not values.
+
+      Resend the command with a value for `$vectorize` or `$vector` in the `$hybrid` sort.
 
   - scope: SORT
     code: SORT_CLAUSE_INVALID

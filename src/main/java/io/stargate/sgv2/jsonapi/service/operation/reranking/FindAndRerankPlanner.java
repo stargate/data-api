@@ -73,8 +73,8 @@ public class FindAndRerankPlanner {
     Objects.requireNonNull(rerankingProvidersConfig, "rerankingProvidersConfig must not be null");
 
     // NOTE: the order of the steps is the order of the errors the API returns, the first failing
-    // check wins: sort support, hybridLimits, rerank service, rerank query, passage field, then the
-    // mode and $hybrid value checks.
+    // check wins: sort support (including a $hybrid sort without a vector source), hybridLimits,
+    // rerank service, rerank query, passage field, then the mode and $hybrid value checks.
     checkSortSupported(sort, schemaObject);
     checkHybridLimits(options, operationsConfig);
     var rerankServiceDef = resolveRerankServiceDef(options, schemaObject, rerankingProvidersConfig);
@@ -116,6 +116,10 @@ public class FindAndRerankPlanner {
    * Check that the collection supports the sorts that have a value (vector / vectorize / lexical),
    * throw if it does not. The text of <code>{"$hybrid": "text"}</code> needs vectorize, but not a
    * lexical index.
+   *
+   * <p>Also check that a <code>$hybrid</code> object with a <code>$lexical</code> value has a
+   * <code>$vectorize</code> or <code>$vector</code> value, a <code>$hybrid</code> sort always has a
+   * vector or vectorize leg.
    */
   private static void checkSortSupported(
       FindAndRerankSort sort, CollectionSchemaObject schemaObject) {
@@ -142,6 +146,16 @@ public class FindAndRerankPlanner {
     // without one
     if (sort.lexicalSort() != null) {
       throwIfNoLexicalIndex(schemaObject);
+    }
+
+    // after the lexical index check, so a missing index is reported first. A sort with no value
+    // at all fails later in plan() with MISSING_HYBRID_SORT_VALUE.
+    // NOTE: reading with only $lexical will be the single leg sort {"$lexical": "text"}, GH #2602
+    if (sort.legMode() == LegMode.HYBRID
+        && sort.lexicalSort() != null
+        && sort.vectorizeSort() == null
+        && sort.vectorSort() == null) {
+      throw SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT.get();
     }
   }
 

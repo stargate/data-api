@@ -17,8 +17,9 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
  */
 public enum LegMode {
   /**
-   * A <code>$hybrid</code> sort. The planner runs a vector or vectorize leg and / or a lexical leg,
-   * depending on the values in the sort and the collection.
+   * A <code>$hybrid</code> sort. The planner always runs a vector or vectorize leg, and also a
+   * lexical leg when the sort has a <code>$lexical</code> value, or has <code>$hybrid</code> text
+   * and the collection has a lexical index.
    */
   HYBRID,
   /** A <code>$vectorize</code> sort, runs one vectorize leg. */

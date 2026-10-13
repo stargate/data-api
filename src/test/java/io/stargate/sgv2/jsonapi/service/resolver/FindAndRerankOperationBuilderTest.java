@@ -333,7 +333,7 @@ class FindAndRerankOperationBuilderTest {
   }
 
   @Test
-  void buildsOneLexicalReadForLexicalOnlyHybridWithoutVector() throws Exception {
+  void failsWhenHybridSortHasOnlyLexical() throws Exception {
     // COLLECTION_SCHEMA_OBJECT has a lexical index and reranking, but no vector
     var schemaObject = TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT;
     assertThat(schemaObject.vectorConfig().vectorEnabled()).isFalse();
@@ -355,21 +355,12 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    var operation =
-        new FindAndRerankOperationBuilder(commandContext)
-            .withCommand(command)
-            .withFindCommandResolver(findCommandResolver)
-            .build();
-
-    assertThat(innerTaskGroups(operation))
-        .as("read group and rerank group, no embedding group")
-        .hasSize(2);
-    assertThat(readTaskSnapshots(operation))
-        .as("one lexical read at position 0")
-        .containsExactly(
-            new ReadTaskSnapshot(
-                0, List.of("$lexical"), 20, false, false, false, Rank.RankSource.BM25));
-    assertThat(commandContext.getHybridLimits().lexicalLimit()).isEqualTo(20);
+    assertBuildFails(
+        "failsWhenHybridSortHasOnlyLexical()",
+        commandContext,
+        command,
+        SortException.class,
+        SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT);
   }
 
   @Test
