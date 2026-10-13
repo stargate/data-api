@@ -45,7 +45,7 @@ public class RerankingQuery implements Recordable {
    * @param vectorizeQuery The text of the <code>$vectorize</code> sort, may be null.
    * @return Constructed RerankingQuery, with the source indicating where the query came from.
    */
-  static RerankingQuery create(String optionsQuery, String vectorizeQuery) {
+  public static RerankingQuery create(String optionsQuery, String vectorizeQuery) {
 
     if (optionsQuery != null && !optionsQuery.isBlank()) {
       return new RerankingQuery(optionsQuery, Source.OPTIONS);
