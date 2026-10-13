@@ -75,7 +75,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
    * @param sort The sort clause as an object node, no check for nulls.
    * @return The {@link FindAndRerankSort} that reflects the request without validation. For example
    *     a sort with both <code>$vectorize</code> and <code>$vector</code> keeps both values, and
-   *     the planner then reads with <code>$vectorize</code> (GH #2616 is to reject it).
+   *     the planner then validates.
    */
   private static FindAndRerankSort deserialize(JsonParser jsonParser, ObjectNode sort)
       throws JsonMappingException {

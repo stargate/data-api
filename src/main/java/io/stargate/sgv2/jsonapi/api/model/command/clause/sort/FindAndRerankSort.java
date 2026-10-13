@@ -21,7 +21,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * #fromHybridObject(String, String, float[], CommandFeatures)} to create them.
  *
  * @param legMode The kind of sort the user wrote, decided from the keys in the sort clause. The
- *     planner uses this, not the <code>commandFeatures</code>, to decide what to run.
+ *     planner uses this, to decide what to run.
  * @param hybridText If <code>null</code> then the $hybrid field was not text, OR was blank text,
  *     otherwise it is the trimmed text. The planner decides which legs use it.
  * @param vectorizeSort If <code>null</code> then the $vectorize field was not present in the
