@@ -2285,9 +2285,9 @@ request-errors:
     code: MISSING_HYBRID_SORT_VALUE
     title: Hybrid sort has no value
     body: |-
-      The findAndRerank command uses a `$hybrid` sort that has no value to sort with.
+      The command attempted to use a `$hybrid` sort that has no value to sort with.
 
-      The `$hybrid` sort must have a non blank text value, e.g. `{"$hybrid": "query text"}`, or a value for at least one of `$vectorize`, `$vector` or `$lexical`, e.g. `{"$hybrid": {"$lexical": "query text"}}`.
+      A `$hybrid` sort needs either non blank text, e.g. `{"$hybrid": "query text"}`, or a value for at least one of `$vectorize`, `$vector` or `$lexical`, e.g. `{"$hybrid": {"$lexical": "query text"}}`. Blank text and JSON null are not values.
 
       Resend the command with a value in the `$hybrid` sort.
 
@@ -2328,9 +2328,9 @@ request-errors:
     code: UNSUPPORTED_FIND_AND_RERANK_SORT
     title: Hybrid sort required by findAndRerank
     body: |-
-      The findAndRerank command only supports a `$hybrid` sort, and the command did not include one.
+      The command attempted to run findAndRerank with no sort, or with an empty sort.
 
-      The sort must use the `$hybrid` field, e.g. `{"$hybrid": "query text"}` or `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`.
+      The findAndRerank command finds the documents to rerank with a `$hybrid` sort, e.g. `{"$hybrid": "query text"}` or `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`. Reranking the documents matched by the filter alone is not supported.
 
       Resend the command with a `$hybrid` sort.
 
