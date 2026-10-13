@@ -23,7 +23,7 @@ final class FindAndRerankOperationAssertions {
    * What the builder put on a read task, at build time.
    *
    * @param position The index of the leg in the plan. It is also the index of the deferred read of
-   *     the reranking task that this read task fills, {@link #assertReadTasks(Operation)} checks
+   *     the reranking task that this read task fills, {@link #readTaskSnapshots(Operation)} checks
    *     that.
    * @param sortPaths The sort paths of the inner find, empty for a vectorize read until the vector
    *     is ready.
@@ -61,7 +61,7 @@ final class FindAndRerankOperationAssertions {
    *
    * @return The read tasks of the operation, in the order they were added to their group.
    */
-  static List<ReadTaskSnapshot> assertReadTasks(Operation<CollectionSchemaObject> operation)
+  static List<ReadTaskSnapshot> readTaskSnapshots(Operation<CollectionSchemaObject> operation)
       throws ReflectiveOperationException {
     var deferredReads = assertRerankDeferredReads(operation);
     var readTasks = new ArrayList<ReadTaskSnapshot>();

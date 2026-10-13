@@ -311,7 +311,7 @@ public class FindAndRerankPlannerTest {
                           .formatted(HYBRID_LIMIT_MAX + 1),
                       VECTOR_LEXICAL));
       assertThat(vectorError.getMessage())
-          .contains("hybridLimits.$vector", String.valueOf(HYBRID_LIMIT_MAX + 1), expectedBounds);
+          .contains(invalidLimit("hybridLimits.$vector", HYBRID_LIMIT_MAX + 1), expectedBounds);
 
       var lexicalError =
           assertPlanFails(
@@ -324,7 +324,7 @@ public class FindAndRerankPlannerTest {
                           .formatted(HYBRID_LIMIT_MIN - 1),
                       VECTOR_LEXICAL));
       assertThat(lexicalError.getMessage())
-          .contains("hybridLimits.$lexical", String.valueOf(HYBRID_LIMIT_MIN - 1), expectedBounds);
+          .contains(invalidLimit("hybridLimits.$lexical", HYBRID_LIMIT_MIN - 1), expectedBounds);
     }
 
     static Stream<Arguments> noHybridValueCases() {
@@ -578,7 +578,7 @@ public class FindAndRerankPlannerTest {
                       hybridSort(true, null, "cows", null),
                       "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 500, '$lexical': 0}}",
                       LEXICAL_NO_VECTOR));
-      assertThat(ex.getMessage()).contains("hybridLimits.$vector", "500");
+      assertThat(ex.getMessage()).contains(invalidLimit("hybridLimits.$vector", 500));
     }
 
     @Test
@@ -593,7 +593,7 @@ public class FindAndRerankPlannerTest {
                       hybridSort(false, null, null, VECTOR),
                       "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': {'$vector': 10, '$lexical': 0}}",
                       VECTOR_LEXICAL));
-      assertThat(ex.getMessage()).contains("hybridLimits.$lexical", "0");
+      assertThat(ex.getMessage()).contains(invalidLimit("hybridLimits.$lexical", 0));
     }
 
     @Test
@@ -610,7 +610,7 @@ public class FindAndRerankPlannerTest {
                           .formatted(HYBRID_LIMIT_MAX + 1),
                       VECTOR_NO_RERANK));
       assertThat(rerankDisabledError.getMessage())
-          .contains("hybridLimits.$vector", String.valueOf(HYBRID_LIMIT_MAX + 1));
+          .contains(invalidLimit("hybridLimits.$vector", HYBRID_LIMIT_MAX + 1));
 
       // {"$hybrid": {"$vector": [0.1, 0.2, 0.3]}}, with an empty rerank override
       var emptyOverrideError =
@@ -624,7 +624,7 @@ public class FindAndRerankPlannerTest {
                           .formatted(HYBRID_LIMIT_MIN - 1),
                       VECTOR_LEXICAL));
       assertThat(emptyOverrideError.getMessage())
-          .contains("hybridLimits.$vector", String.valueOf(HYBRID_LIMIT_MIN - 1));
+          .contains(invalidLimit("hybridLimits.$vector", HYBRID_LIMIT_MIN - 1));
     }
 
     @Test
@@ -738,6 +738,14 @@ public class FindAndRerankPlannerTest {
     var ex = assertThrowsExactly(exceptionClass, planCall);
     assertThat(ex.code).as("error code").isEqualTo(expectedCode.name());
     return ex;
+  }
+
+  /**
+   * The start of the COMMAND_FIELD_VALUE_INVALID message for a <code>hybridLimits</code> value, it
+   * has the field and the value together so a wrong value fails the assert.
+   */
+  private static String invalidLimit(String field, int value) {
+    return "Command field '%s' value %d not valid".formatted(field, value);
   }
 
   private static void assertQuery(

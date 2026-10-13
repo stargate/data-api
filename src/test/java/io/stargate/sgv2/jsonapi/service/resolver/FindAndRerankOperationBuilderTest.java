@@ -2,9 +2,9 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.TestConstants.rerankingModelConfig;
 import static io.stargate.sgv2.jsonapi.TestConstants.rerankingProvidersConfig;
-import static io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.assertReadTasks;
 import static io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.innerTaskGroups;
 import static io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.privateField;
+import static io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.readTaskSnapshots;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -302,6 +303,7 @@ class FindAndRerankOperationBuilderTest {
         "failsWhenMissingRerankOnAndNotVectorizeSort()",
         commandContext,
         command,
+        RequestException.class,
         RequestException.Code.MISSING_RERANK_ON);
   }
 
@@ -326,6 +328,7 @@ class FindAndRerankOperationBuilderTest {
         "failsWhenBlankRerankOnAndNotVectorizeSort()",
         commandContext,
         command,
+        RequestException.class,
         RequestException.Code.MISSING_RERANK_ON);
   }
 
@@ -361,7 +364,7 @@ class FindAndRerankOperationBuilderTest {
     assertThat(innerTaskGroups(operation))
         .as("read group and rerank group, no embedding group")
         .hasSize(2);
-    assertThat(assertReadTasks(operation))
+    assertThat(readTaskSnapshots(operation))
         .as("one lexical read at position 0")
         .containsExactly(
             new ReadTaskSnapshot(
@@ -398,7 +401,7 @@ class FindAndRerankOperationBuilderTest {
     // read task position = leg index: the lexical read is 0, the vector read is 1. Both reads get
     // includeScores as includeSimilarity, as before the planner, and each read has the limit of its
     // leg.
-    assertThat(assertReadTasks(operation))
+    assertThat(readTaskSnapshots(operation))
         .containsExactly(
             new ReadTaskSnapshot(
                 0, List.of("$lexical"), 15, true, true, false, Rank.RankSource.BM25),
@@ -444,7 +447,7 @@ class FindAndRerankOperationBuilderTest {
 
     // the vectorize read has no sort until the embedding is ready
     var defaultLimits = FindAndRerankCommand.HybridLimits.DEFAULT;
-    assertThat(assertReadTasks(operation))
+    assertThat(readTaskSnapshots(operation))
         .containsExactly(
             new ReadTaskSnapshot(
                 0,
@@ -485,6 +488,7 @@ class FindAndRerankOperationBuilderTest {
         "failsWhenHybridSortHasNoValue()",
         commandContext,
         command,
+        SortException.class,
         SortException.Code.MISSING_HYBRID_SORT_VALUE);
   }
 
@@ -509,18 +513,20 @@ class FindAndRerankOperationBuilderTest {
         "failsWhenSortIsNotHybrid()",
         commandContext,
         command,
+        SortException.class,
         SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT);
   }
 
-  private void assertBuildFails(
+  private <T extends APIException> void assertBuildFails(
       String context,
       CommandContext<CollectionSchemaObject> commandContext,
       FindAndRerankCommand command,
-      ErrorCode<?> code) {
+      Class<T> exceptionClass,
+      ErrorCode<T> code) {
 
     var ex =
         assertThrowsExactly(
-            code.template().constructor().getDeclaringClass(),
+            exceptionClass,
             () ->
                 new FindAndRerankOperationBuilder(commandContext)
                     .withCommand(command)

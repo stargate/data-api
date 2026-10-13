@@ -89,6 +89,21 @@ public class RerankLegTests {
   }
 
   @Test
+  void vectorLegEqualsAndHashCodeUseVectorValues() {
+    var leg = new VectorLeg(new float[] {0.1f, 0.2f, 0.3f}, 40);
+    var sameValues = new VectorLeg(new float[] {0.1f, 0.2f, 0.3f}, 40);
+
+    assertThat(leg).as("equal to a leg with the same vector values").isEqualTo(sameValues);
+    assertThat(leg.hashCode()).as("same hash code").isEqualTo(sameValues.hashCode());
+    assertThat(leg)
+        .as("different vector")
+        .isNotEqualTo(new VectorLeg(new float[] {0.1f, 0.2f, 0.4f}, 40));
+    assertThat(leg)
+        .as("different read limit")
+        .isNotEqualTo(new VectorLeg(new float[] {0.1f, 0.2f, 0.3f}, 41));
+  }
+
+  @Test
   void vectorLegRecordsVectorLengthNotValues() {
     assertThat(new VectorLeg(VECTOR, 40).toString())
         .isEqualTo("VectorLeg{vector.length=3, readLimit=40}");
