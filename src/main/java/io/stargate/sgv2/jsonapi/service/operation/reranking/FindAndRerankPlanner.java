@@ -98,6 +98,8 @@ public class FindAndRerankPlanner {
     // these come after the rerank query and passage checks, so a request with no valued sort (e.g.
     // {} or {"$hybrid": ""}) first gets any rerankQuery / rerankOn error
     // (MISSING_RERANK_QUERY_TEXT, MISSING_RERANK_ON, or an invalid rerankOn path)
+    // TODO(Hazel to Aaron): This order is the same as the error order before the planner. I think
+    // that it is better to return these two sort errors before the rerankQuery and rerankOn errors.
     // TODO: Update it when support LegMode.FILTER
     if (sort.legMode() != LegMode.HYBRID) {
       throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
@@ -298,7 +300,7 @@ public class FindAndRerankPlanner {
 
     // cannot be empty, checkSortSupported() has already thrown
     // UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION when there is no $vectorize column. If the steps
-    // in plan() are reordered this orElseThrow() fails with UNEXPECTED_SERVER_ERROR.
+    // in plan() are reordered, this orElseThrow() fails with UNEXPECTED_SERVER_ERROR.
     var vectorColumn =
         schemaObject.vectorConfig().getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
     return new VectorizeLeg(
