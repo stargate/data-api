@@ -191,7 +191,9 @@ public class FindAndRerankPlannerTest {
       var plan = plan(hybridObject("cheese", "cows", null), VECTORIZE_LEXICAL);
 
       assertThat(plan.legs()).containsExactly(LEXICAL_COWS, VECTORIZE_CHEESE);
+      // the defaults come from the $vectorize text, not the $lexical
       assertQuery(plan, "cheese", RerankingQuery.Source.VECTORIZE);
+      assertPassage(plan, DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
     }
 
     @Test

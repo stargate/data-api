@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
 
 /**
  * Decides what a findAndRerank command will do: which legs to read and how many documents each one
@@ -82,12 +80,20 @@ public class FindAndRerankPlanner {
           case VECTORIZE, VECTOR, LEXICAL, FILTER -> List.of();
         };
 
-    // only the vectorize leg has a default query, so the leg default is the vectorize query
+    // the mode decides the defaults, not the legs, the order of the legs is only the order of the
+    // read tasks
+    // TODO: GH #2602, GH #2603 - the defaults of the single leg modes and FILTER
+    var rerankDefaults =
+        switch (sort.legMode()) {
+          case HYBRID -> hybridRerankDefaults(sort);
+          case VECTORIZE, VECTOR, LEXICAL, FILTER -> RerankDefaults.NONE;
+        };
     var rerankingQuery =
         RerankingQuery.create(
             getOrDefault(options, FindAndRerankCommand.Options::rerankQuery, null),
-            firstLegDefault(legs, RerankLeg::defaultRerankQuery).orElse(null));
-    var passageLocator = PathMatchLocator.forPath(passageField(options, legs));
+            rerankDefaults.query());
+    var passageLocator =
+        PathMatchLocator.forPath(passageField(options, rerankDefaults.passageField()));
 
     // these come after the rerank query and passage checks, so a request with no valued sort (e.g.
     // {} or {"$hybrid": ""}) first gets any rerankQuery / rerankOn error
@@ -253,14 +259,12 @@ public class FindAndRerankPlanner {
     var legs = new ArrayList<RerankLeg>(2);
 
     if (sort.hybridText() != null) {
+      // the lexical leg for the $hybrid text is skipped without a lexical index
       if (schemaObject.lexicalDef().enabled()) {
         legs.add(new LexicalLeg(sort.hybridText(), hybridLimits.lexicalLimit()));
       }
-      legs.add(vectorizeLeg(sort.hybridText(), schemaObject, hybridLimits));
-      return legs;
-    }
-
-    if (sort.lexicalSort() != null) {
+      // explicitly ask for $lexical
+    } else if (sort.lexicalSort() != null) {
       // should have been caught in checkSortSupported(), sanity check
       throwIfNoLexicalIndex(schemaObject);
       legs.add(new LexicalLeg(sort.lexicalSort(), hybridLimits.lexicalLimit()));
@@ -268,12 +272,22 @@ public class FindAndRerankPlanner {
 
     // $vectorize wins when the sort has both $vectorize and $vector, as it did before the planner
     // TODO: GH #2616 - reject a sort that has both $vectorize and $vector
-    if (sort.vectorizeSort() != null) {
-      legs.add(vectorizeLeg(sort.vectorizeSort(), schemaObject, hybridLimits));
+    var vectorizeText = hybridVectorizeText(sort);
+    if (vectorizeText != null) {
+      legs.add(vectorizeLeg(vectorizeText, schemaObject, hybridLimits));
     } else if (sort.vectorSort() != null) {
       legs.add(new VectorLeg(sort.vectorSort(), hybridLimits.vectorLimit()));
     }
     return legs;
+  }
+
+  /**
+   * The text the vectorize leg of a <code>$hybrid</code> sort embeds: the <code>$hybrid</code>
+   * text, or the <code>$vectorize</code> value of the <code>$hybrid</code> object, <code>null
+   * </code> when there is neither.
+   */
+  private static String hybridVectorizeText(FindAndRerankSort sort) {
+    return sort.hybridText() != null ? sort.hybridText() : sort.vectorizeSort();
   }
 
   /** A vectorize leg for the text, using the vector column and service of the collection. */
@@ -295,23 +309,44 @@ public class FindAndRerankPlanner {
   }
 
   /**
-   * The field to rerank on: <code>options.rerankOn</code> when it is not blank, otherwise the
-   * default of the first leg that has one, otherwise throws {@link
-   * RequestException.Code#MISSING_RERANK_ON}.
+   * The defaults for a <code>$hybrid</code> sort, the <code>$vectorize
+   * </code> text is the rerank query and <code>$vectorize</code> is the field to rerank on. A
+   * <code>$vector</code> or <code>$lexical</code> value gives no default.
    */
-  private static String passageField(FindAndRerankCommand.Options options, List<RerankLeg> legs) {
+  private static RerankDefaults hybridRerankDefaults(FindAndRerankSort sort) {
+    var vectorizeText = hybridVectorizeText(sort);
+    return vectorizeText == null
+        ? RerankDefaults.NONE
+        : new RerankDefaults(vectorizeText, VECTOR_EMBEDDING_TEXT_FIELD);
+  }
+
+  /**
+   * The field to rerank on: <code>options.rerankOn</code> when it is not blank, otherwise the
+   * default field, otherwise throws {@link RequestException.Code#MISSING_RERANK_ON}.
+   *
+   * @param defaultField The default field to rerank on, <code>null</code> when there is none.
+   */
+  private static String passageField(FindAndRerankCommand.Options options, String defaultField) {
 
     var rerankOn = getOrDefault(options, FindAndRerankCommand.Options::rerankOn, null);
     if (rerankOn != null && !rerankOn.isBlank()) {
       return rerankOn;
     }
-    return firstLegDefault(legs, RerankLeg::defaultPassageField)
-        .orElseThrow(() -> RequestException.Code.MISSING_RERANK_ON.get());
+    if (defaultField != null) {
+      return defaultField;
+    }
+    throw RequestException.Code.MISSING_RERANK_ON.get();
   }
 
-  /** The first default the legs have, empty if none of them has one. */
-  private static Optional<String> firstLegDefault(
-      List<RerankLeg> legs, Function<RerankLeg, Optional<String>> getter) {
-    return legs.stream().map(getter).flatMap(Optional::stream).findFirst();
+  /**
+   * The default rerank query and the field to rerank on when the command does not set <code>
+   * rerankQuery
+   * </code> or <code>rerankOn</code>.
+   *
+   * @param query The default rerank query, <code>null</code> when there is none.
+   * @param passageField The default field to rerank on, <code>null</code> when there is none.
+   */
+  private record RerankDefaults(String query, String passageField) {
+    static final RerankDefaults NONE = new RerankDefaults(null, null);
   }
 }

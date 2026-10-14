@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * A leg that reads the documents most similar to a vector the user provided.
@@ -26,16 +25,6 @@ record VectorLeg(float[] vector, int readLimit) implements RerankLeg {
   @Override
   public Rank.RankSource rankSource() {
     return Rank.RankSource.VECTOR;
-  }
-
-  @Override
-  public Optional<String> defaultRerankQuery() {
-    return Optional.empty();
-  }
-
-  @Override
-  public Optional<String> defaultPassageField() {
-    return Optional.empty();
   }
 
   @Override

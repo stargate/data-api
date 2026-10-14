@@ -4,7 +4,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * A leg that reads the documents with the best BM25 score for a lexical query, the collection must
@@ -22,16 +21,6 @@ record LexicalLeg(String lexicalQuery, int readLimit) implements RerankLeg {
   @Override
   public Rank.RankSource rankSource() {
     return Rank.RankSource.BM25;
-  }
-
-  @Override
-  public Optional<String> defaultRerankQuery() {
-    return Optional.empty();
-  }
-
-  @Override
-  public Optional<String> defaultPassageField() {
-    return Optional.empty();
   }
 
   @Override

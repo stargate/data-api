@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAction;
 import java.util.stream.Stream;
@@ -46,12 +45,8 @@ public class RerankLegTests {
   }
 
   @Test
-  void lexicalLegDefaults() {
-    var leg = new LexicalLeg("cows", 20);
-
-    assertThat(leg.rankSource()).isEqualTo(Rank.RankSource.BM25);
-    assertThat(leg.defaultRerankQuery()).isEmpty();
-    assertThat(leg.defaultPassageField()).isEmpty();
+  void lexicalLegRankSource() {
+    assertThat(new LexicalLeg("cows", 20).rankSource()).isEqualTo(Rank.RankSource.BM25);
   }
 
   @ParameterizedTest(name = "includeScores={0}, includeSortVector={1}")
@@ -67,12 +62,8 @@ public class RerankLegTests {
   }
 
   @Test
-  void vectorLegDefaults() {
-    var leg = new VectorLeg(VECTOR, 40);
-
-    assertThat(leg.rankSource()).isEqualTo(Rank.RankSource.VECTOR);
-    assertThat(leg.defaultRerankQuery()).isEmpty();
-    assertThat(leg.defaultPassageField()).isEmpty();
+  void vectorLegRankSource() {
+    assertThat(new VectorLeg(VECTOR, 40).rankSource()).isEqualTo(Rank.RankSource.VECTOR);
   }
 
   @ParameterizedTest(name = "includeScores={0}, includeSortVector={1}")
@@ -110,13 +101,9 @@ public class RerankLegTests {
   }
 
   @Test
-  void vectorizeLegDefaults() {
-    var leg = new VectorizeLeg("cheese", DIMENSION, VECTORIZE_DEF, 30);
-
-    assertThat(leg.rankSource()).isEqualTo(Rank.RankSource.VECTOR);
-    assertThat(leg.defaultRerankQuery()).contains("cheese");
-    assertThat(leg.defaultPassageField())
-        .contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+  void vectorizeLegRankSource() {
+    assertThat(new VectorizeLeg("cheese", DIMENSION, VECTORIZE_DEF, 30).rankSource())
+        .isEqualTo(Rank.RankSource.VECTOR);
   }
 
   @ParameterizedTest(name = "includeScores={0}, includeSortVector={1}")

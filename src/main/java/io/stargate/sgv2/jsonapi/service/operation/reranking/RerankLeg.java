@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * One read that finds candidate documents for a findAndRerank command, the results of all the legs
@@ -32,12 +31,6 @@ public sealed interface RerankLeg extends Recordable permits LexicalLeg, VectorL
 
   /** The source of the ranks for the documents this leg reads. */
   Rank.RankSource rankSource();
-
-  /** The query to rerank with when the command does not set <code>rerankQuery</code>. */
-  Optional<String> defaultRerankQuery();
-
-  /** The passage field to rerank on when the command does not set <code>rerankOn</code>. */
-  Optional<String> defaultPassageField();
 
   /**
    * Builds the inner find command for this leg. Every call returns a new read, because the read and
