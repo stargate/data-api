@@ -22,7 +22,9 @@ import java.util.*;
 /**
  * {@link StdDeserializer} for the {@link FindAndRerankSort}.
  *
- * <p>Note: There is no validation, this is handled when resolving the command to an operation.
+ * <p>Note: There is no validation, this is handled when resolving the command to an operation. The
+ * sort records what the user wrote: the text of <code>{"$hybrid": "text"}</code> is kept as the
+ * hybrid text, the planner decides which legs read it.
  */
 public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAndRerankSort> {
 
@@ -71,8 +73,9 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
    * Deserialize the sort clause from an object node.
    *
    * @param sort The sort clause as an object node, no check for nulls.
-   * @return The {@link FindAndRerankSort} that reflects the request without validation, e.g.
-   *     checking that a vectorize or vector sort is provided but not both.
+   * @return The {@link FindAndRerankSort} that reflects the request without validation. For example
+   *     a sort with both <code>$vectorize</code> and <code>$vector</code> keeps both values, and
+   *     the planner then validates.
    */
   private static FindAndRerankSort deserialize(JsonParser jsonParser, ObjectNode sort)
       throws JsonMappingException {
@@ -85,14 +88,9 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     var hybridMatch = MATCH_HYBRID_FIELD.matchAndThrow(sort, jsonParser, ERROR_CONTEXT);
 
     return switch (hybridMatch.matched().get(HYBRID_FIELD)) {
-      case TextNode textNode -> {
-        // using the same text for vectorize and for lexical, no vector
-        var normalizedText = normalizedText(textNode.asText().trim());
-        // NOTE: commandFeatures flags are used to determine user intent, changing
-        // impacts FindAndRerankOperationBuilder
-        yield new FindAndRerankSort(
-            normalizedText, normalizedText, null, CommandFeatures.of(CommandFeature.HYBRID));
-      }
+      case TextNode textNode ->
+          FindAndRerankSort.fromHybridText(
+              normalizedText(textNode.asText().trim()), CommandFeatures.of(CommandFeature.HYBRID));
       case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
       case JsonNode node ->
           throw JsonFieldMatcher.errorForWrongType(
@@ -104,6 +102,8 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       JsonParser jsonParser, ObjectNode hybridObject) throws JsonMappingException {
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
+    // NOTE: commandFeatures are only for metrics, the FindAndRerankPlanner decides what to run
+    // from the legMode and the sort values
     CommandFeatures commandFeatures = CommandFeatures.of(CommandFeature.HYBRID);
 
     var vectorizeText =
@@ -145,15 +145,11 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           case NullNode ignored -> {
             // explict setting to null is allowed
             // { "sort" : { "$hybrid" : { "$lexical" : null,
-            // NOTE: commandFeatures flags are used to determine user intent, changing
-            // impacts FindAndRerankOperationBuilder
             commandFeatures.addFeature(CommandFeature.LEXICAL);
             yield null;
           }
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$lexical" : "cheese",
-            // NOTE: commandFeatures flags are used to determine user intent, changing
-            // impacts FindAndRerankOperationBuilder
             commandFeatures.addFeature(CommandFeature.LEXICAL);
             yield normalizedText(textNode.asText().trim());
           }
@@ -216,7 +212,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   ObjectNode.class);
         };
 
-    return new FindAndRerankSort(vectorizeText, lexicalText, vector, commandFeatures);
+    return FindAndRerankSort.fromHybridObject(vectorizeText, lexicalText, vector, commandFeatures);
   }
 
   /**
