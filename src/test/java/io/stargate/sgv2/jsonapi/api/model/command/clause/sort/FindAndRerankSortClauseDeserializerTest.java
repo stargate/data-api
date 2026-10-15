@@ -168,24 +168,7 @@ public class FindAndRerankSortClauseDeserializerTest {
                 CommandFeatures.of(HYBRID))),
         Arguments.of(
             """
-            { "$hybrid" : "  padded text  " }
-            """,
-            new FindAndRerankSort(
-                RerankLegMode.MULTI_LEG,
-                "padded text",
-                null,
-                null,
-                null,
-                CommandFeatures.of(HYBRID))),
-        Arguments.of(
-            """
             { "$hybrid" : "" }
-            """,
-            new FindAndRerankSort(
-                RerankLegMode.MULTI_LEG, null, null, null, null, CommandFeatures.of(HYBRID))),
-        Arguments.of(
-            """
-            { "$hybrid" : "   " }
             """,
             new FindAndRerankSort(
                 RerankLegMode.MULTI_LEG, null, null, null, null, CommandFeatures.of(HYBRID))),
@@ -285,6 +268,17 @@ public class FindAndRerankSortClauseDeserializerTest {
                 CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE))),
         Arguments.of(
             """
+            { "$hybrid" : { "$vectorize" : "   ", "$lexical" : "lexical sort"} }
+            """,
+            new FindAndRerankSort(
+                RerankLegMode.MULTI_LEG,
+                null,
+                null,
+                "lexical sort",
+                null,
+                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE))),
+        Arguments.of(
+            """
             { "$hybrid" : {"$lexical" : "lexical sort"} }
             """,
             new FindAndRerankSort(
@@ -296,6 +290,17 @@ public class FindAndRerankSortClauseDeserializerTest {
                 CommandFeatures.of(HYBRID, LEXICAL))),
         // ----
         // $vector variations
+        Arguments.of(
+            """
+            { "$hybrid" : { "$lexical" : "lexical", "$vector" : null} }
+            """,
+            new FindAndRerankSort(
+                RerankLegMode.MULTI_LEG,
+                null,
+                null,
+                "lexical",
+                null,
+                CommandFeatures.of(HYBRID, LEXICAL, VECTOR))),
         Arguments.of(
             """
             { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : null} }
@@ -341,7 +346,68 @@ public class FindAndRerankSortClauseDeserializerTest {
                 "vectorize",
                 "lexical",
                 vector,
-                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))));
+                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))),
+        // ----
+        // single leg sorts
+        Arguments.of(
+            """
+            { "$vectorize" : "vectorize sort" }
+            """,
+            new FindAndRerankSort(
+                RerankLegMode.SINGLE_LEG,
+                null,
+                "vectorize sort",
+                null,
+                null,
+                CommandFeatures.of(VECTORIZE))),
+        Arguments.of(
+            """
+            { "$vectorize" : "" }
+            """,
+            new FindAndRerankSort(
+                RerankLegMode.SINGLE_LEG, null, null, null, null, CommandFeatures.of(VECTORIZE))),
+        Arguments.of(
+            """
+            { "$vectorize" : null }
+            """,
+            new FindAndRerankSort(
+                RerankLegMode.SINGLE_LEG, null, null, null, null, CommandFeatures.of(VECTORIZE))),
+        Arguments.of(
+            """
+            { "$lexical" : "lexical sort" }
+            """,
+            new FindAndRerankSort(
+                RerankLegMode.SINGLE_LEG, null, null, "lexical sort", null, CommandFeatures.of(LEXICAL))),
+        Arguments.of(
+            """
+            { "$lexical" : "   " }
+            """,
+            new FindAndRerankSort(
+                RerankLegMode.SINGLE_LEG, null, null, null, null, CommandFeatures.of(LEXICAL))),
+        Arguments.of(
+            """
+            { "$vector" : [1.1, 2.2, 3.3] }
+            """,
+            new FindAndRerankSort(
+                RerankLegMode.SINGLE_LEG,
+                null,
+                null,
+                null,
+                new float[] {1.1f, 2.2f, 3.3f},
+                CommandFeatures.of(VECTOR))),
+        Arguments.of(
+                """
+            { "$vector" : {"$binary": "%s"} }
+            """
+                .formatted(vectorBase64),
+            new FindAndRerankSort(
+                RerankLegMode.SINGLE_LEG, null, null, null, vector, CommandFeatures.of(VECTOR))),
+        Arguments.of(
+            """
+            { "$vector" : null }
+            """,
+            new FindAndRerankSort(
+                RerankLegMode.SINGLE_LEG, null, null, null, null, CommandFeatures.of(VECTOR))));
   }
 
   @ParameterizedTest
@@ -374,7 +440,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """
             { "fake" : 1}
             """,
-            "Expected fields: $hybrid. Unexpected fields: fake"),
+            "Expected fields: $hybrid, $vectorize, $vector, $lexical. Unexpected fields: fake"),
         Arguments.of(
             """
             { "$hybrid" : {"fake" : 1} }
@@ -387,6 +453,11 @@ public class FindAndRerankSortClauseDeserializerTest {
             { "$hybrid" : 1}
             """,
             "Field $hybrid may only be of types TextNode, ObjectNode, but got: IntNode"),
+        Arguments.of(
+            """
+            { "$hybrid" : null}
+            """,
+            "Field $hybrid may only be of types TextNode, ObjectNode, but got: NullNode"),
         // ----
         // Combinations
         Arguments.of(
@@ -408,6 +479,33 @@ public class FindAndRerankSortClauseDeserializerTest {
             """
             { "$hybrid" : { "$vector" : "", "$lexical" : "", "$vector" : {"$date": "2023-01-01"}} }
             """,
-            "`sort` clause (binary vector) contained fields with the wrong type. Field $vector may only be of types NullNode, ArrayNode, ObjectNode, but got: ObjectNode"));
+            "`sort` clause (binary vector) contained fields with the wrong type. Field $vector may only be of types NullNode, ArrayNode, ObjectNode, but got: ObjectNode"),
+        // ----
+        // single leg sorts
+        Arguments.of(
+            """
+            { "$vectorize" : "cheese", "$lexical" : "cows" }
+            """,
+            "sort clause must have exactly one of $hybrid, $vectorize, $vector, $lexical"),
+        Arguments.of(
+            """
+            { "$hybrid" : "cheese", "$vectorize" : "cheese" }
+            """,
+            "sort clause must have exactly one of $hybrid, $vectorize, $vector, $lexical"),
+        Arguments.of(
+            """
+            { "$vectorize" : 1 }
+            """,
+            "Field $vectorize may only be of types NullNode, TextNode, but got: IntNode"),
+        Arguments.of(
+            """
+            { "$lexical" : 1 }
+            """,
+            "Field $lexical may only be of types NullNode, TextNode, but got: IntNode"),
+        Arguments.of(
+            """
+            { "$vector" : 1 }
+            """,
+            "Field $vector may only be of types NullNode, ArrayNode, ObjectNode, but got: IntNode"));
   }
 }
