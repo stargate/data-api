@@ -38,7 +38,7 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionCandidateReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTask;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.DeferredVectorize;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.IntermediateCollectionReadTask;
@@ -121,7 +121,8 @@ class FindAndRerankOperationBuilderTest {
             .map(
                 inner ->
                     findCommandResolver.resolveCollectionCandidateCommand(commandContext, inner))
-            .map(FindCollectionOperation.class::cast)
+            .map(CollectionCandidateReadOperation.class::cast)
+            .map(CollectionCandidateReadOperation::readOperation)
             .toList();
     assertThat(reads)
         .filteredOn(read -> read.vector() != null)
