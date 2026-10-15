@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.LegMode;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
@@ -30,6 +31,7 @@ import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests for {@link FindAndRerankPlanner}, plain JUnit without Quarkus.
@@ -318,6 +321,29 @@ public class FindAndRerankPlannerTest {
           SortException.class,
           SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION,
           () -> plan(hybridText("cheese"), RERANK_OPTIONS, VECTOR_LEXICAL));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, -1})
+    void nonPositiveUserLimitsReturnRequestErrors(int limit) {
+      for (var limitsJson :
+          List.of(
+              String.valueOf(limit),
+              "{'$vector': %d, '$lexical': 10}".formatted(limit),
+              "{'$vector': 10, '$lexical': %d}".formatted(limit))) {
+        var error =
+            assertPlanFails(
+                RequestException.class,
+                RequestException.Code.COMMAND_FIELD_VALUE_INVALID,
+                () ->
+                    plan(
+                        hybridObject(null, "cows", VECTOR),
+                        "{'rerankQuery': 'q', 'rerankOn': 'body', 'hybridLimits': %s}"
+                            .formatted(limitsJson),
+                        VECTOR_LEXICAL));
+        assertThat(CommandErrorFactory.create(error).errorCode())
+            .isEqualTo(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name());
+      }
     }
 
     @Test
