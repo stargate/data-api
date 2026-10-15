@@ -181,15 +181,6 @@ class FindAndRerankOperationBuilder {
     TaskGroup<IntermediateCollectionReadTask, CollectionSchemaObject> taskGroup =
         new TaskGroup<>(false);
 
-    // Hack: See https://github.com/stargate/data-api/issues/1961
-    // copying the hybrid limits on the command context so the find command resolver can pick it up
-    // when the command runs later, so we can set the page size to be the same as the limit
-    commandContext.setHybridLimits(
-        getOrDefault(
-            command.options(),
-            FindAndRerankCommand.Options::hybridLimits,
-            FindAndRerankCommand.HybridLimits.DEFAULT));
-
     var includeScores =
         getOrDefault(command.options(), FindAndRerankCommand.Options::includeScores, false);
     var includeSortVector =
