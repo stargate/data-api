@@ -66,8 +66,8 @@ import org.mockito.ArgumentCaptor;
  * FindAndRerankPlannerTest}.
  *
  * <p>The operation does not expose its tasks, so the tests check the providers the builder creates,
- * and what happens when the test runs the operation with mock reads: the inner finds it runs,
- * and the ranks the reranking task gives the documents each read finds.
+ * and what happens when the test runs the operation with mock reads: the inner finds it runs, and
+ * the ranks the reranking task gives the documents each read finds.
  */
 class FindAndRerankOperationBuilderTest {
 
@@ -327,7 +327,8 @@ class FindAndRerankOperationBuilderTest {
         .thenReturn(TestEmbeddingProvider.TEST_EMBEDDING_PROVIDER);
 
     var emptyRead = readFinding(commandContext);
-    when(findCommandResolver.resolveCollectionCandidateCommand(eq(commandContext), any())).thenReturn(emptyRead);
+    when(findCommandResolver.resolveCollectionCandidateCommand(eq(commandContext), any()))
+        .thenReturn(emptyRead);
 
     var result = build(commandContext, plan).execute(commandContext).await().indefinitely().get();
     // the reranking task fails if a read did not fill the deferred result the task waits for

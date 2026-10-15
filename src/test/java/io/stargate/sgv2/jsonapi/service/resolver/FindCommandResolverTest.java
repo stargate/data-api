@@ -63,7 +63,7 @@ public class FindCommandResolverTest {
         var command = new FindCommand(null, null, null, options);
         assertThatThrownBy(
                 () -> resolver.resolveCollectionCandidateCommand(commandContext, command))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(IllegalStateException.class)
             .hasMessage("Candidate reads require an explicit positive options.limit");
       }
     }
@@ -97,6 +97,38 @@ public class FindCommandResolverTest {
               FindCollectionOperation.class,
               read -> {
                 assertThat(read.limit()).isEqualTo(100);
+                assertThat(read.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+              });
+    }
+
+    @Test
+    void vectorCandidatePageSizeRespectsVectorSearchLimit() throws Exception {
+      var context =
+          testConstants.collectionContext(
+              testConstants.COMMAND_NAME,
+              testConstants.VECTOR_COLLECTION_SCHEMA_OBJECT,
+              null,
+              null);
+      var command =
+          objectMapper.readValue(
+                  """
+              {"find": {"sort": {"$vector": [0.1, 0.2, 0.3]}, "options": {"limit": %d}}}
+              """
+                  .formatted(operationsConfig.maxVectorSearchLimit() + 1),
+              FindCommand.class);
+
+      assertThat(resolver.resolveCollectionCandidateCommand(context, command))
+          .isInstanceOfSatisfying(
+              FindCollectionOperation.class,
+              read -> {
+                assertThat(read.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
+                assertThat(read.pageSize()).isEqualTo(operationsConfig.maxVectorSearchLimit());
+              });
+      assertThat(resolver.resolveCollectionCommand(context, command))
+          .isInstanceOfSatisfying(
+              FindCollectionOperation.class,
+              read -> {
+                assertThat(read.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(read.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
               });
     }

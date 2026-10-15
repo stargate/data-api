@@ -72,23 +72,34 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   @Override
   public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> commandContext, FindCommand command) {
-    return resolveCollectionCommand(commandContext, command, false);
+    int pageSize = operationsConfig.defaultPageSize();
+    return resolveCollectionRead(
+        commandContext, command, new CollectionReadLimits(pageSize, pageSize, pageSize));
   }
 
-  /** Resolves an internal reranking read. The inner find must supply a positive options.limit. */
+  /**
+   * Resolves an internal reranking read. The planner validates user-supplied hybridLimits before
+   * building the inner find, so a missing or non-positive limit here is an internal state error.
+   */
   public Operation<CollectionSchemaObject> resolveCollectionCandidateCommand(
       CommandContext<CollectionSchemaObject> commandContext, FindCommand command) {
     var options = command.options();
-    Preconditions.checkArgument(
+    Preconditions.checkState(
         options != null && options.limit() != null && options.limit() > 0,
         "Candidate reads require an explicit positive options.limit");
-    return resolveCollectionCommand(commandContext, command, true);
+    return resolveCollectionRead(
+        commandContext,
+        command,
+        new CollectionReadLimits(
+            Math.min(options.limit(), operationsConfig.maxVectorSearchLimit()),
+            options.limit(),
+            operationsConfig.defaultPageSize()));
   }
 
-  private Operation<CollectionSchemaObject> resolveCollectionCommand(
+  private FindCollectionOperation resolveCollectionRead(
       CommandContext<CollectionSchemaObject> commandContext,
       FindCommand command,
-      boolean candidateRead) {
+      CollectionReadLimits readLimits) {
 
     var resolvedDbLogicalExpression =
         collectionFilterResolver.resolve(commandContext, command).target();
@@ -145,14 +156,13 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           Math.min(
               limit, operationsConfig.maxVectorSearchLimit()); // Max vector search support is 1000
 
-      int pageSize = candidateRead ? limit : operationsConfig.defaultPageSize();
       return FindCollectionOperation.vsearch(
           commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(includeSimilarity),
           pageState,
           limit,
-          pageSize,
+          readLimits.vectorPageSize(),
           CollectionReadType.DOCUMENT,
           objectMapper,
           vector,
@@ -162,14 +172,13 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     // BM25 search / sort?
     SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
     if (bm25Expr != null) {
-      int pageSize = candidateRead ? limit : operationsConfig.defaultPageSize();
       return FindCollectionOperation.bm25Multi(
           commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,
           limit,
-          pageSize,
+          readLimits.lexicalPageSize(),
           CollectionReadType.DOCUMENT,
           objectMapper,
           bm25Expr);
@@ -183,9 +192,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,
-          // For in-memory sorting if no limit provided in the request will use
-          // documentConfig.defaultPageSize() as limit
-          Math.min(limit, operationsConfig.defaultPageSize()),
+          Math.min(limit, readLimits.sortedLimit()),
           // For in-memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           CollectionReadType.SORTED_DOCUMENT,
@@ -206,4 +213,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
         objectMapper,
         includeSortVector);
   }
+
+  /** Concrete execution limits supplied by the caller, independent of query resolution. */
+  private record CollectionReadLimits(int vectorPageSize, int lexicalPageSize, int sortedLimit) {}
 }
