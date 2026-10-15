@@ -391,7 +391,7 @@ public class FindAndRerankPlannerTest {
         value = LegMode.class,
         names = {"VECTORIZE", "VECTOR", "LEXICAL"})
     void failSingleLegModes(LegMode legMode) {
-      // the parser does not produce these modes yet (GH #2602), the sort has the value for the mode
+      // the planner has no legs for these modes yet (GH #2602)
       var sort =
           switch (legMode) {
             case VECTORIZE -> singleLegSort(legMode, "cheese", null, null);

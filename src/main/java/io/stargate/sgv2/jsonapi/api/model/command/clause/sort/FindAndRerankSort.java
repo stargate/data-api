@@ -24,14 +24,13 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  *     planner uses this, to decide what to run.
  * @param hybridText If <code>null</code> then the $hybrid field was not text, OR was blank text,
  *     otherwise it is the trimmed text. The planner decides which legs use it.
- * @param vectorizeSort If <code>null</code> then the $vectorize field was not present in the
- *     $hybrid object, OR was present but set to JSON null OR it was blank string, otherwise it is
- *     the value provided.
- * @param lexicalSort If <code>null</code> then the $lexical field was not present in the $hybrid
- *     object, OR was present but set to JSON null OR it was blank string, otherwise it is the value
+ * @param vectorizeSort If <code>null</code> then the $vectorize field was not present in the sort,
+ *     OR was present but set to JSON null OR it was blank string, otherwise it is the value
  *     provided.
- * @param vectorSort If <code>null</code> then the vector field was not present in the $hybrid
- *     object, or present and JSON null, otherwise it is the value provided.
+ * @param lexicalSort If <code>null</code> then the $lexical field was not present in the sort, OR
+ *     was present but set to JSON null OR it was blank string, otherwise it is the value provided.
+ * @param vectorSort If <code>null</code> then the vector field was not present in the sort, or
+ *     present and JSON null, otherwise it is the value provided.
  * @param commandFeatures The features used by the sort clause, only used for metrics.
  */
 @JsonDeserialize(using = FindAndRerankSortClauseDeserializer.class)
@@ -79,6 +78,23 @@ public record FindAndRerankSort(
       }
     }
 
+    // a single leg sort has only the value for its mode
+    if (legMode == LegMode.VECTORIZE
+        && (hybridText != null || lexicalSort != null || vectorSort != null)) {
+      throw new IllegalArgumentException(
+          "hybridText, lexicalSort and vectorSort must be null when legMode is VECTORIZE");
+    }
+    if (legMode == LegMode.VECTOR
+        && (hybridText != null || vectorizeSort != null || lexicalSort != null)) {
+      throw new IllegalArgumentException(
+          "hybridText, vectorizeSort and lexicalSort must be null when legMode is VECTOR");
+    }
+    if (legMode == LegMode.LEXICAL
+        && (hybridText != null || vectorizeSort != null || vectorSort != null)) {
+      throw new IllegalArgumentException(
+          "hybridText, vectorizeSort and vectorSort must be null when legMode is LEXICAL");
+    }
+
     // the $hybrid field is either text or an object, never both
     if (hybridText != null
         && (vectorizeSort != null || lexicalSort != null || vectorSort != null)) {
@@ -122,6 +138,40 @@ public record FindAndRerankSort(
       CommandFeatures commandFeatures) {
     return new FindAndRerankSort(
         LegMode.HYBRID, null, vectorizeSort, lexicalSort, vectorSort, commandFeatures);
+  }
+
+  /**
+   * Creates the sort for <code>{"$vectorize": "text"}</code>.
+   *
+   * @param vectorizeSort The trimmed <code>$vectorize</code> text, or <code>null</code>.
+   * @param commandFeatures The features used by the sort clause, only used for metrics.
+   */
+  public static FindAndRerankSort fromVectorizeSort(
+      String vectorizeSort, CommandFeatures commandFeatures) {
+    return new FindAndRerankSort(
+        LegMode.VECTORIZE, null, vectorizeSort, null, null, commandFeatures);
+  }
+
+  /**
+   * Creates the sort for <code>{"$lexical": "text"}</code>.
+   *
+   * @param lexicalSort The trimmed <code>$lexical</code> text, or <code>null</code>.
+   * @param commandFeatures The features used by the sort clause, only used for metrics.
+   */
+  public static FindAndRerankSort fromLexicalSort(
+      String lexicalSort, CommandFeatures commandFeatures) {
+    return new FindAndRerankSort(LegMode.LEXICAL, null, null, lexicalSort, null, commandFeatures);
+  }
+
+  /**
+   * Creates the sort for <code>{"$vector": [...]}</code>.
+   *
+   * @param vectorSort The <code>$vector</code> value, or <code>null</code>.
+   * @param commandFeatures The features used by the sort clause, only used for metrics.
+   */
+  public static FindAndRerankSort fromVectorSort(
+      float[] vectorSort, CommandFeatures commandFeatures) {
+    return new FindAndRerankSort(LegMode.VECTOR, null, null, null, vectorSort, commandFeatures);
   }
 
   @Override

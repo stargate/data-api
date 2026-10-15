@@ -30,13 +30,21 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
 
   private static final String ERROR_CONTEXT = "`sort` clause";
 
-  // the only field we accept at top level is $hybrid
-  // can be string or object
+  // top level has exactly one of $hybrid, $vectorize, $vector or $lexical
   // { "sort" : { "$hybrid" : "i like cheese" } }
   // { "sort" : { "$hybrid" : { "$vectorize" : "i like cheese", "$lexical" : "cows"} } }
-  // { "sort" : { "$hybrid" : { "$vector" : [1, 2, 3], "$lexical" : "cows"} } }
-  private static final JsonFieldMatcher<JsonNode> MATCH_HYBRID_FIELD =
-      new JsonFieldMatcher<>(JsonNode.class, List.of(HYBRID_FIELD), List.of());
+  // { "sort" : { "$vectorize" : "i like cheese" } }
+  // { "sort" : { "$vector" : [1, 2, 3] } }
+  // { "sort" : { "$lexical" : "cows" } }
+  private static final JsonFieldMatcher<JsonNode> MATCH_SORT_CLAUSE_FIELDS =
+      new JsonFieldMatcher<>(
+          JsonNode.class,
+          List.of(),
+          List.of(
+              HYBRID_FIELD,
+              VECTOR_EMBEDDING_TEXT_FIELD,
+              VECTOR_EMBEDDING_FIELD,
+              LEXICAL_CONTENT_FIELD));
 
   // user is specifying the sorts individually
   // can be
@@ -85,17 +93,54 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       return FindAndRerankSort.NO_ARG_SORT;
     }
 
-    var hybridMatch = MATCH_HYBRID_FIELD.matchAndThrow(sort, jsonParser, ERROR_CONTEXT);
+    var sortMatch = MATCH_SORT_CLAUSE_FIELDS.matchAndThrow(sort, jsonParser, ERROR_CONTEXT);
+    if (sortMatch.matched().size() != 1) {
+      throw new JsonMappingException(
+          jsonParser,
+          "sort clause must have exactly one of $hybrid, $vectorize, $vector, $lexical",
+          jsonParser.currentLocation());
+    }
 
-    return switch (hybridMatch.matched().get(HYBRID_FIELD)) {
-      case TextNode textNode ->
-          FindAndRerankSort.fromHybridText(
-              normalizedText(textNode.asText().trim()), CommandFeatures.of(CommandFeature.HYBRID));
-      case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
-      case JsonNode node ->
-          throw JsonFieldMatcher.errorForWrongType(
-              jsonParser, ERROR_CONTEXT, HYBRID_FIELD, node, TextNode.class, ObjectNode.class);
-    };
+    if (sortMatch.matched().containsKey(HYBRID_FIELD)) {
+      return switch (sortMatch.matched().get(HYBRID_FIELD)) {
+        case TextNode textNode ->
+            FindAndRerankSort.fromHybridText(
+                normalizedText(textNode.asText().trim()),
+                CommandFeatures.of(CommandFeature.HYBRID));
+        case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
+        case JsonNode node ->
+            throw JsonFieldMatcher.errorForWrongType(
+                jsonParser, ERROR_CONTEXT, HYBRID_FIELD, node, TextNode.class, ObjectNode.class);
+      };
+    }
+    if (sortMatch.matched().containsKey(VECTOR_EMBEDDING_TEXT_FIELD)) {
+      var commandFeatures = CommandFeatures.create();
+      var vectorizeText =
+          textSortValue(
+              jsonParser,
+              VECTOR_EMBEDDING_TEXT_FIELD,
+              sortMatch.matched().get(VECTOR_EMBEDDING_TEXT_FIELD),
+              commandFeatures,
+              CommandFeature.VECTORIZE);
+      return FindAndRerankSort.fromVectorizeSort(vectorizeText, commandFeatures);
+    }
+    if (sortMatch.matched().containsKey(LEXICAL_CONTENT_FIELD)) {
+      var commandFeatures = CommandFeatures.create();
+      var lexicalText =
+          textSortValue(
+              jsonParser,
+              LEXICAL_CONTENT_FIELD,
+              sortMatch.matched().get(LEXICAL_CONTENT_FIELD),
+              commandFeatures,
+              CommandFeature.LEXICAL);
+      return FindAndRerankSort.fromLexicalSort(lexicalText, commandFeatures);
+    }
+    // only $vector is left, the matcher has checked the field names
+    var commandFeatures = CommandFeatures.create();
+    var vector =
+        vectorSortValue(
+            jsonParser, sortMatch.matched().get(VECTOR_EMBEDDING_FIELD), commandFeatures);
+    return FindAndRerankSort.fromVectorSort(vector, commandFeatures);
   }
 
   private static FindAndRerankSort deserializeHybridObject(
@@ -107,112 +152,91 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     CommandFeatures commandFeatures = CommandFeatures.of(CommandFeature.HYBRID);
 
     var vectorizeText =
-        switch (sortMatch.matched().get(VECTOR_EMBEDDING_TEXT_FIELD)) {
-          case null -> {
-            // undefined in the object, up to the resolver to check if both vectorize and vector are
-            // not set
-            // { "sort" : { "$hybrid" : { }}
-            yield null;
-          }
-          case NullNode ignored -> {
-            // explict setting to null is allowed
-            // { "sort" : { "$hybrid" : { "$vectorize" : null,
-            commandFeatures.addFeature(CommandFeature.VECTORIZE);
-            yield null;
-          }
-          case TextNode textNode -> {
-            // { "sort" : { "$hybrid" : { "$vectorize" : "I like cheese",
-            commandFeatures.addFeature(CommandFeature.VECTORIZE);
-            yield normalizedText(textNode.asText().trim());
-          }
-          case JsonNode node ->
-              throw JsonFieldMatcher.errorForWrongType(
-                  jsonParser,
-                  ERROR_CONTEXT,
-                  VECTOR_EMBEDDING_TEXT_FIELD,
-                  node,
-                  NullNode.class,
-                  TextNode.class);
-        };
-
+        textSortValue(
+            jsonParser,
+            VECTOR_EMBEDDING_TEXT_FIELD,
+            sortMatch.matched().get(VECTOR_EMBEDDING_TEXT_FIELD),
+            commandFeatures,
+            CommandFeature.VECTORIZE);
     var lexicalText =
-        switch (sortMatch.matched().get(LEXICAL_CONTENT_FIELD)) {
-          case null -> {
-            // undefined in the object, up to the resolver to check if valid
-            // { "sort" : { "$hybrid" : { }}
-            yield null;
-          }
-          case NullNode ignored -> {
-            // explict setting to null is allowed
-            // { "sort" : { "$hybrid" : { "$lexical" : null,
-            commandFeatures.addFeature(CommandFeature.LEXICAL);
-            yield null;
-          }
-          case TextNode textNode -> {
-            // { "sort" : { "$hybrid" : { "$lexical" : "cheese",
-            commandFeatures.addFeature(CommandFeature.LEXICAL);
-            yield normalizedText(textNode.asText().trim());
-          }
-          case JsonNode node ->
-              throw JsonFieldMatcher.errorForWrongType(
-                  jsonParser,
-                  ERROR_CONTEXT,
-                  LEXICAL_CONTENT_FIELD,
-                  node,
-                  NullNode.class,
-                  TextNode.class);
-        };
-
+        textSortValue(
+            jsonParser,
+            LEXICAL_CONTENT_FIELD,
+            sortMatch.matched().get(LEXICAL_CONTENT_FIELD),
+            commandFeatures,
+            CommandFeature.LEXICAL);
     var vector =
-        switch (sortMatch.matched().get(VECTOR_EMBEDDING_FIELD)) {
-          case null -> {
-            // undefined in the object, up to the resolver to check if valid
-            // { "sort" : { "$hybrid" : { }}
-            yield null;
-          }
-          case NullNode ignored -> {
-            // explict setting to null is allowed
-            // { "sort" : { "$hybrid" : { "$vector" : null,
-            commandFeatures.addFeature(CommandFeature.VECTOR);
-            yield null;
-          }
-          case ArrayNode arrayNode -> {
-            // { "sort" : { "$hybrid" : { "vector" : [1,2,3],
-            commandFeatures.addFeature(CommandFeature.VECTOR);
-            yield arrayNodeToVector(arrayNode);
-          }
-          case ObjectNode objectNode -> {
-            // binary vector
-            // { "sort" : { "$hybrid" : { "$vector" : {"$binary": "c3VyZS4="},
-            var ejson = EJSONWrapper.maybeFrom(objectNode);
-            if (ejson == null || ejson.type() != EJSONWrapper.EJSONType.BINARY) {
-              // not the best error, wont tell people how to do a binary vector
-              // and it will say it got an object node and that is not supported
-              // TODO: better error message
-              throw JsonFieldMatcher.errorForWrongType(
-                  jsonParser,
-                  ERROR_CONTEXT + " (binary vector)",
-                  VECTOR_EMBEDDING_FIELD,
-                  objectNode,
-                  NullNode.class,
-                  ArrayNode.class,
-                  ObjectNode.class);
-            }
-            commandFeatures.addFeature(CommandFeature.VECTOR);
-            yield ejson.getVectorValueForBinary();
-          }
-          case JsonNode node ->
-              throw JsonFieldMatcher.errorForWrongType(
-                  jsonParser,
-                  ERROR_CONTEXT,
-                  VECTOR_EMBEDDING_FIELD,
-                  node,
-                  NullNode.class,
-                  ArrayNode.class,
-                  ObjectNode.class);
-        };
+        vectorSortValue(
+            jsonParser, sortMatch.matched().get(VECTOR_EMBEDDING_FIELD), commandFeatures);
 
     return FindAndRerankSort.fromHybridObject(vectorizeText, lexicalText, vector, commandFeatures);
+  }
+
+  // a text sort value, null when the field is missing, null or blank
+  private static String textSortValue(
+      JsonParser jsonParser,
+      String field,
+      JsonNode node,
+      CommandFeatures commandFeatures,
+      CommandFeature feature)
+      throws JsonMappingException {
+    return switch (node) {
+      case null -> null;
+      case NullNode ignored -> {
+        commandFeatures.addFeature(feature);
+        yield null;
+      }
+      case TextNode textNode -> {
+        commandFeatures.addFeature(feature);
+        yield normalizedText(textNode.asText().trim());
+      }
+      case JsonNode wrongType ->
+          throw JsonFieldMatcher.errorForWrongType(
+              jsonParser, ERROR_CONTEXT, field, wrongType, NullNode.class, TextNode.class);
+    };
+  }
+
+  // a $vector sort value, null when the field is missing or null
+  private static float[] vectorSortValue(
+      JsonParser jsonParser, JsonNode node, CommandFeatures commandFeatures)
+      throws JsonMappingException {
+    return switch (node) {
+      case null -> null;
+      case NullNode ignored -> {
+        commandFeatures.addFeature(CommandFeature.VECTOR);
+        yield null;
+      }
+      case ArrayNode arrayNode -> {
+        commandFeatures.addFeature(CommandFeature.VECTOR);
+        yield arrayNodeToVector(arrayNode);
+      }
+      case ObjectNode objectNode -> {
+        // binary vector, {"$binary": "c3VyZS4="}
+        var ejson = EJSONWrapper.maybeFrom(objectNode);
+        if (ejson == null || ejson.type() != EJSONWrapper.EJSONType.BINARY) {
+          // TODO: better error message
+          throw JsonFieldMatcher.errorForWrongType(
+              jsonParser,
+              ERROR_CONTEXT + " (binary vector)",
+              VECTOR_EMBEDDING_FIELD,
+              objectNode,
+              NullNode.class,
+              ArrayNode.class,
+              ObjectNode.class);
+        }
+        commandFeatures.addFeature(CommandFeature.VECTOR);
+        yield ejson.getVectorValueForBinary();
+      }
+      case JsonNode wrongType ->
+          throw JsonFieldMatcher.errorForWrongType(
+              jsonParser,
+              ERROR_CONTEXT,
+              VECTOR_EMBEDDING_FIELD,
+              wrongType,
+              NullNode.class,
+              ArrayNode.class,
+              ObjectNode.class);
+    };
   }
 
   /**
