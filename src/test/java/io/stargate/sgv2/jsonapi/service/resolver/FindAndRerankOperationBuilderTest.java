@@ -207,17 +207,17 @@ class FindAndRerankOperationBuilderTest {
     var command =
         command(
             """
-            {
-              "findAndRerank": {
-                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
-                "options": {
-                  "rerankOn": "body",
-                  "rerankQuery": "text",
-                  "hybridLimits": { "$vector": 50, "$lexical": 10 }
-                }
-              }
-            }
-            """);
+                    {
+                      "findAndRerank": {
+                        "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                        "options": {
+                          "rerankOn": "body",
+                          "rerankQuery": "text",
+                          "hybridLimits": { "$vector": 50, "$lexical": 10 }
+                        }
+                      }
+                    }
+                    """);
 
     assertThatThrownBy(
             () ->
@@ -237,17 +237,17 @@ class FindAndRerankOperationBuilderTest {
     var command =
         command(
             """
-            {
-              "findAndRerank": {
-                "sort": { "$hybrid": "cheese" },
-                "options": {
-                  "rerankOn": "body",
-                  "rerankQuery": "text",
-                  "hybridLimits": { "$vector": 50, "$lexical": 10 }
-                }
-              }
-            }
-            """);
+                    {
+                      "findAndRerank": {
+                        "sort": { "$hybrid": "cheese" },
+                        "options": {
+                          "rerankOn": "body",
+                          "rerankQuery": "text",
+                          "hybridLimits": { "$vector": 50, "$lexical": 10 }
+                        }
+                      }
+                    }
+                    """);
 
     var operation =
         new FindAndRerankOperationBuilder(commandContext)
