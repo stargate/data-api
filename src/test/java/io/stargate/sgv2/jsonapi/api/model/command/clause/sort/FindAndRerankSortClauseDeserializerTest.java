@@ -14,6 +14,9 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
+import org.junit.jupiter.params.provider.ValueSource;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -484,16 +487,6 @@ public class FindAndRerankSortClauseDeserializerTest {
         // single leg sorts
         Arguments.of(
             """
-            { "$vectorize" : "cheese", "$lexical" : "cows" }
-            """,
-            "sort clause must have exactly one of $hybrid, $vectorize, $vector, $lexical"),
-        Arguments.of(
-            """
-            { "$hybrid" : "cheese", "$vectorize" : "cheese" }
-            """,
-            "sort clause must have exactly one of $hybrid, $vectorize, $vector, $lexical"),
-        Arguments.of(
-            """
             { "$vectorize" : 1 }
             """,
             "Field $vectorize may only be of types NullNode, TextNode, but got: IntNode"),
@@ -507,5 +500,37 @@ public class FindAndRerankSortClauseDeserializerTest {
             { "$vector" : 1 }
             """,
             "Field $vector may only be of types NullNode, ArrayNode, ObjectNode, but got: IntNode"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{ \"$vectorize\" : \"cheese\", \"$lexical\" : \"cows\" }",
+        "{ \"$hybrid\" : \"cheese\", \"$vectorize\" : \"cheese\" }"
+      })
+  public void invalidSortWithTwoTopLevelFields(String jsonString) throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    when(deserializationContext.readTree(jsonParser)).thenReturn(mapper.readTree(jsonString));
+
+    var error =
+        assertThrows(
+            SortException.class,
+            () -> deserializer.deserialize(jsonParser, deserializationContext));
+    assertThat(error.code).isEqualTo(SortException.Code.SORT_CLAUSE_INVALID.name());
+    assertThat(error.body)
+        .contains("sort clause must have exactly one of $hybrid, $vectorize, $vector, $lexical");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"{ \"$vector\" : [] }", "{ \"$hybrid\" : { \"$vector\" : [] } }"})
+  public void invalidEmptyVector(String jsonString) throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    when(deserializationContext.readTree(jsonParser)).thenReturn(mapper.readTree(jsonString));
+
+    var error =
+        assertThrows(
+            DocumentException.class,
+            () -> deserializer.deserialize(jsonParser, deserializationContext));
+    assertThat(error.code).isEqualTo(DocumentException.Code.SHRED_BAD_VECTOR_SIZE.name());
   }
 }

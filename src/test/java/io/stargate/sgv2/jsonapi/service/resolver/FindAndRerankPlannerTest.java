@@ -304,6 +304,12 @@ class FindAndRerankPlannerTest {
             {"$hybrid": {"$lexical": "cows", "$vector": null}}
             """,
             SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT),
+        Arguments.of("$vectorize single leg False", "{\"$vectorize\": \"cheese\"}", SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
+        Arguments.of("$vector single leg False", "{\"$vector\": [0.1, 0.2, 0.3]}", SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
+        Arguments.of("$lexical single leg False", "{\"$lexical\": \"cows\"}", SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
+        Arguments.of("$vectorize single leg True", "{\"$vectorize\": null}", SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
+        Arguments.of("$vector single leg True", "{\"$vector\": null}", SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
+        Arguments.of("$lexical single leg True", "{\"$lexical\": null}", SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
         Arguments.of("no sort", null, SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
         Arguments.of(
             "sort empty",
