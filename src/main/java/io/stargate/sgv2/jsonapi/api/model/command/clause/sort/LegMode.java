@@ -1,5 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.HYBRID_FIELD;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.LEXICAL_CONTENT_FIELD;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+
+import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
+import java.util.Arrays;
+
 /**
  * The kind of sort the user wrote in a findAndRerank command.
  *
@@ -21,16 +29,50 @@ public enum LegMode {
    * lexical leg when the sort has a <code>$lexical</code> value, or has <code>$hybrid</code> text
    * and the collection has a lexical index.
    */
-  HYBRID,
+  HYBRID(HYBRID_FIELD, CommandFeature.HYBRID),
   /** A <code>$vectorize</code> sort, runs one vectorize leg. */
-  VECTORIZE,
+  VECTORIZE(VECTOR_EMBEDDING_TEXT_FIELD, CommandFeature.VECTORIZE),
   /** A <code>$vector</code> sort, runs one vector leg. */
-  VECTOR,
+  VECTOR(VECTOR_EMBEDDING_FIELD, CommandFeature.VECTOR),
   /** A <code>$lexical</code> sort, runs one lexical leg. */
-  LEXICAL,
+  LEXICAL(LEXICAL_CONTENT_FIELD, CommandFeature.LEXICAL),
   /**
    * No sort, or an empty sort. The planner rejects it with UNSUPPORTED_FIND_AND_RERANK_SORT until
    * findAndRerank can run a read with only the filter (GH #2603).
    */
-  FILTER
+  FILTER(null, null);
+
+  private final String sortField;
+  private final CommandFeature commandFeature;
+
+  LegMode(String sortField, CommandFeature commandFeature) {
+    this.sortField = sortField;
+    this.commandFeature = commandFeature;
+  }
+
+  /**
+   * The sort field for this mode, e.g. <code>$vectorize</code>, <code>null</code> for {@link
+   * #FILTER} which has no field.
+   */
+  public String sortField() {
+    return sortField;
+  }
+
+  /** The metrics feature for this mode's field, <code>null</code> for {@link #FILTER}. */
+  public CommandFeature commandFeature() {
+    return commandFeature;
+  }
+
+  /**
+   * The mode for a sort field.
+   *
+   * @param sortField A field from the sort clause, e.g. <code>$lexical</code>.
+   * @throws IllegalArgumentException If no mode has this field.
+   */
+  public static LegMode fromSortField(String sortField) {
+    return Arrays.stream(values())
+        .filter(mode -> mode.sortField != null && mode.sortField.equals(sortField))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("unknown sort field: " + sortField));
+  }
 }

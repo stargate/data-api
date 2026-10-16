@@ -56,43 +56,51 @@ public record FindAndRerankSort(
     Objects.requireNonNull(legMode, "legMode must not be null");
     Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
 
-    // a FILTER sort has no sort values, otherwise the planner would check them against the
-    // collection and could fail with a schema error rather than UNSUPPORTED_FIND_AND_RERANK_SORT
-    if (legMode == LegMode.FILTER) {
-      if (hybridText != null) {
-        throw new IllegalArgumentException(
-            "hybridText must be null when legMode is FILTER, hybridText=" + hybridText);
+    switch (legMode) {
+      case FILTER -> {
+        // a FILTER sort has no sort values, otherwise the planner would check them against the
+        // collection and could fail with a schema error rather than
+        // UNSUPPORTED_FIND_AND_RERANK_SORT
+        if (hybridText != null) {
+          throw new IllegalArgumentException(
+              "hybridText must be null when legMode is FILTER, hybridText=" + hybridText);
+        }
+        if (vectorizeSort != null) {
+          throw new IllegalArgumentException(
+              "vectorizeSort must be null when legMode is FILTER, vectorizeSort=" + vectorizeSort);
+        }
+        if (lexicalSort != null) {
+          throw new IllegalArgumentException(
+              "lexicalSort must be null when legMode is FILTER, lexicalSort=" + lexicalSort);
+        }
+        if (vectorSort != null) {
+          throw new IllegalArgumentException(
+              "vectorSort must be null when legMode is FILTER, vectorSort.length="
+                  + vectorSort.length);
+        }
       }
-      if (vectorizeSort != null) {
-        throw new IllegalArgumentException(
-            "vectorizeSort must be null when legMode is FILTER, vectorizeSort=" + vectorizeSort);
+        // a single leg sort has only the value for its mode
+      case VECTORIZE -> {
+        if (hybridText != null || lexicalSort != null || vectorSort != null) {
+          throw new IllegalArgumentException(
+              "hybridText, lexicalSort and vectorSort must be null when legMode is VECTORIZE");
+        }
       }
-      if (lexicalSort != null) {
-        throw new IllegalArgumentException(
-            "lexicalSort must be null when legMode is FILTER, lexicalSort=" + lexicalSort);
+      case VECTOR -> {
+        if (hybridText != null || vectorizeSort != null || lexicalSort != null) {
+          throw new IllegalArgumentException(
+              "hybridText, vectorizeSort and lexicalSort must be null when legMode is VECTOR");
+        }
       }
-      if (vectorSort != null) {
-        throw new IllegalArgumentException(
-            "vectorSort must be null when legMode is FILTER, vectorSort.length="
-                + vectorSort.length);
+      case LEXICAL -> {
+        if (hybridText != null || vectorizeSort != null || vectorSort != null) {
+          throw new IllegalArgumentException(
+              "hybridText, vectorizeSort and vectorSort must be null when legMode is LEXICAL");
+        }
       }
-    }
-
-    // a single leg sort has only the value for its mode
-    if (legMode == LegMode.VECTORIZE
-        && (hybridText != null || lexicalSort != null || vectorSort != null)) {
-      throw new IllegalArgumentException(
-          "hybridText, lexicalSort and vectorSort must be null when legMode is VECTORIZE");
-    }
-    if (legMode == LegMode.VECTOR
-        && (hybridText != null || vectorizeSort != null || lexicalSort != null)) {
-      throw new IllegalArgumentException(
-          "hybridText, vectorizeSort and lexicalSort must be null when legMode is VECTOR");
-    }
-    if (legMode == LegMode.LEXICAL
-        && (hybridText != null || vectorizeSort != null || vectorSort != null)) {
-      throw new IllegalArgumentException(
-          "hybridText, vectorizeSort and vectorSort must be null when legMode is LEXICAL");
+      case HYBRID -> {
+        // any combination is kept as written, the $hybrid text check below still applies
+      }
     }
 
     // the $hybrid field is either text or an object, never both

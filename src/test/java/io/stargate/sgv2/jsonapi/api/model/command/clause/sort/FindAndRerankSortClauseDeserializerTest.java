@@ -12,6 +12,8 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.stream.Stream;
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
@@ -175,47 +178,47 @@ public class FindAndRerankSortClauseDeserializerTest {
                 CommandFeatures.create()));
   }
 
-  @Test
-  public void failSingleLegSortWithOtherValues() {
-    var vectorizeEx =
-        assertThrows(
-            IllegalArgumentException.class,
-            () ->
-                new FindAndRerankSort(
-                    LegMode.VECTORIZE, null, "cheese", "cows", null, CommandFeatures.create()));
-    assertThat(vectorizeEx)
-        .hasMessage(
-            "hybridText, lexicalSort and vectorSort must be null when legMode is VECTORIZE");
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("singleLegSortWithOtherValuesCases")
+  public void failSingleLegSortWithOtherValues(
+      LegMode legMode, Executable newSort, String expectedMessage) {
+    var ex = assertThrows(IllegalArgumentException.class, newSort);
+    assertThat(ex).hasMessage(expectedMessage);
+  }
 
-    var vectorEx =
-        assertThrows(
-            IllegalArgumentException.class,
-            () ->
-                new FindAndRerankSort(
-                    LegMode.VECTOR,
-                    null,
-                    "cheese",
-                    null,
-                    new float[] {1.1f},
-                    CommandFeatures.create()));
-    assertThat(vectorEx)
-        .hasMessage(
-            "hybridText, vectorizeSort and lexicalSort must be null when legMode is VECTOR");
-
-    var lexicalEx =
-        assertThrows(
-            IllegalArgumentException.class,
-            () ->
-                new FindAndRerankSort(
-                    LegMode.LEXICAL,
-                    null,
-                    null,
-                    "cows",
-                    new float[] {1.1f},
-                    CommandFeatures.create()));
-    assertThat(lexicalEx)
-        .hasMessage(
-            "hybridText, vectorizeSort and vectorSort must be null when legMode is LEXICAL");
+  private static Stream<Arguments> singleLegSortWithOtherValuesCases() {
+    return Stream.of(
+        Arguments.of(
+            LegMode.VECTORIZE,
+            (Executable)
+                () ->
+                    new FindAndRerankSort(
+                        LegMode.VECTORIZE, null, "cheese", "cows", null, CommandFeatures.create()),
+            "hybridText, lexicalSort and vectorSort must be null when legMode is VECTORIZE"),
+        Arguments.of(
+            LegMode.VECTOR,
+            (Executable)
+                () ->
+                    new FindAndRerankSort(
+                        LegMode.VECTOR,
+                        null,
+                        "cheese",
+                        null,
+                        new float[] {1.1f},
+                        CommandFeatures.create()),
+            "hybridText, vectorizeSort and lexicalSort must be null when legMode is VECTOR"),
+        Arguments.of(
+            LegMode.LEXICAL,
+            (Executable)
+                () ->
+                    new FindAndRerankSort(
+                        LegMode.LEXICAL,
+                        null,
+                        null,
+                        "cows",
+                        new float[] {1.1f},
+                        CommandFeatures.create()),
+            "hybridText, vectorizeSort and vectorSort must be null when legMode is LEXICAL"));
   }
 
   @Test
@@ -608,16 +611,6 @@ public class FindAndRerankSortClauseDeserializerTest {
         // single leg sorts
         Arguments.of(
             """
-            { "$vectorize" : "cheese", "$lexical" : "cows" }
-            """,
-            "sort clause must have exactly one of $hybrid, $vectorize, $vector, $lexical"),
-        Arguments.of(
-            """
-            { "$hybrid" : "cheese", "$vectorize" : "cheese" }
-            """,
-            "sort clause must have exactly one of $hybrid, $vectorize, $vector, $lexical"),
-        Arguments.of(
-            """
             { "$vectorize" : 1 }
             """,
             "Field $vectorize may only be of types NullNode, TextNode, but got: IntNode"),
@@ -631,5 +624,37 @@ public class FindAndRerankSortClauseDeserializerTest {
             { "$vector" : 1 }
             """,
             "Field $vector may only be of types NullNode, ArrayNode, ObjectNode, but got: IntNode"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{ \"$vectorize\" : \"cheese\", \"$lexical\" : \"cows\" }",
+        "{ \"$hybrid\" : \"cheese\", \"$vectorize\" : \"cheese\" }"
+      })
+  public void invalidSortWithTwoTopLevelFields(String jsonString) throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    when(deserializationContext.readTree(jsonParser)).thenReturn(mapper.readTree(jsonString));
+
+    var error =
+        assertThrows(
+            SortException.class,
+            () -> deserializer.deserialize(jsonParser, deserializationContext));
+    assertThat(error.code).isEqualTo(SortException.Code.SORT_CLAUSE_INVALID.name());
+    assertThat(error.body)
+        .contains("sort clause must have exactly one of $hybrid, $vectorize, $vector, $lexical");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"{ \"$vector\" : [] }", "{ \"$hybrid\" : { \"$vector\" : [] } }"})
+  public void invalidEmptyVector(String jsonString) throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    when(deserializationContext.readTree(jsonParser)).thenReturn(mapper.readTree(jsonString));
+
+    var error =
+        assertThrows(
+            DocumentException.class,
+            () -> deserializer.deserialize(jsonParser, deserializationContext));
+    assertThat(error.code).isEqualTo(DocumentException.Code.SHRED_BAD_VECTOR_SIZE.name());
   }
 }

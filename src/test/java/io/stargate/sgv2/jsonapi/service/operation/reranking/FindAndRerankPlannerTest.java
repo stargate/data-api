@@ -406,6 +406,21 @@ public class FindAndRerankPlannerTest {
           () -> plan(sort, RERANK_OPTIONS, VECTORIZE_LEXICAL));
     }
 
+    @ParameterizedTest
+    @EnumSource(
+        value = LegMode.class,
+        names = {"VECTORIZE", "VECTOR", "LEXICAL"})
+    void failSingleLegModeWithNoValue(LegMode legMode) {
+      // e.g. {"$lexical": null}: inside $hybrid null skips a leg, at the top level it is the
+      // only leg, rejected here with every single leg mode (GH #2602)
+      var sort = singleLegSort(legMode, null, null, null);
+
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT,
+          () -> plan(sort, RERANK_OPTIONS, VECTORIZE_LEXICAL));
+    }
+
     private static FindAndRerankSort singleLegSort(
         LegMode legMode, String vectorize, String lexical, float[] vector) {
       return new FindAndRerankSort(
