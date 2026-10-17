@@ -21,9 +21,10 @@ import java.util.*;
 /**
  * {@link StdDeserializer} for the {@link FindAndRerankSort}.
  *
- * <p>Note: There is no validation, this is handled when resolving the command to an operation. The
- * sort records what the user wrote: the text of <code>{"$hybrid": "text"}</code> is kept as the
- * hybrid text, the planner decides which legs read it.
+ * <p>Checks the JSON structure and value types. A nonempty sort must have exactly one top-level
+ * field to select its mode. The planner validates the values against the collection and decides
+ * which legs run. For example, the text of <code>{"$hybrid": "text"}</code> is kept as hybrid text
+ * for the planner to use.
  */
 public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAndRerankSort> {
 
@@ -85,9 +86,9 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
    * Deserialize the sort clause from an object node.
    *
    * @param sort The sort clause as an object node, no check for nulls.
-   * @return The {@link FindAndRerankSort} that reflects the request without validation. For example
-   *     a sort with both <code>$vectorize</code> and <code>$vector</code> keeps both values, and
-   *     the planner then validates. A single-leg sort with no value, e.g. <code>
+   * @return The {@link FindAndRerankSort} after checking its JSON structure and value types. Inside
+   *     <code>$hybrid</code>, both <code>$vectorize</code> and <code>$vector</code> are kept for
+   *     the planner to validate. A single-leg sort with no value, e.g. <code>
    *     {"$lexical": null}</code>, is recorded as that mode with no value, the planner rejects it
    *     (for now every single-leg mode fails with UNSUPPORTED_FIND_AND_RERANK_SORT, GH #2602).
    */
