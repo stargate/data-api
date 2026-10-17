@@ -12,6 +12,8 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.stream.Stream;
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
@@ -173,6 +176,49 @@ public class FindAndRerankSortClauseDeserializerTest {
                 null,
                 new float[] {1.1f, 2.2f},
                 CommandFeatures.create()));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("singleLegSortWithOtherValuesCases")
+  public void failSingleLegSortWithOtherValues(
+      LegMode legMode, Executable newSort, String expectedMessage) {
+    var ex = assertThrows(IllegalArgumentException.class, newSort);
+    assertThat(ex).hasMessage(expectedMessage);
+  }
+
+  private static Stream<Arguments> singleLegSortWithOtherValuesCases() {
+    return Stream.of(
+        Arguments.of(
+            LegMode.VECTORIZE,
+            (Executable)
+                () ->
+                    new FindAndRerankSort(
+                        LegMode.VECTORIZE, null, "cheese", "cows", null, CommandFeatures.create()),
+            "hybridText, lexicalSort and vectorSort must be null when legMode is VECTORIZE"),
+        Arguments.of(
+            LegMode.VECTOR,
+            (Executable)
+                () ->
+                    new FindAndRerankSort(
+                        LegMode.VECTOR,
+                        null,
+                        "cheese",
+                        null,
+                        new float[] {1.1f},
+                        CommandFeatures.create()),
+            "hybridText, vectorizeSort and lexicalSort must be null when legMode is VECTOR"),
+        Arguments.of(
+            LegMode.LEXICAL,
+            (Executable)
+                () ->
+                    new FindAndRerankSort(
+                        LegMode.LEXICAL,
+                        null,
+                        null,
+                        "cows",
+                        new float[] {1.1f},
+                        CommandFeatures.create()),
+            "hybridText, vectorizeSort and vectorSort must be null when legMode is LEXICAL"));
   }
 
   @Test
@@ -427,7 +473,68 @@ public class FindAndRerankSortClauseDeserializerTest {
                 "vectorize",
                 "lexical",
                 vector,
-                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))));
+                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))),
+        // ----
+        // single leg sorts
+        Arguments.of(
+            """
+            { "$vectorize" : "vectorize sort" }
+            """,
+            new FindAndRerankSort(
+                LegMode.VECTORIZE,
+                null,
+                "vectorize sort",
+                null,
+                null,
+                CommandFeatures.of(VECTORIZE))),
+        Arguments.of(
+            """
+            { "$vectorize" : "" }
+            """,
+            new FindAndRerankSort(
+                LegMode.VECTORIZE, null, null, null, null, CommandFeatures.of(VECTORIZE))),
+        Arguments.of(
+            """
+            { "$vectorize" : null }
+            """,
+            new FindAndRerankSort(
+                LegMode.VECTORIZE, null, null, null, null, CommandFeatures.of(VECTORIZE))),
+        Arguments.of(
+            """
+            { "$lexical" : "lexical sort" }
+            """,
+            new FindAndRerankSort(
+                LegMode.LEXICAL, null, null, "lexical sort", null, CommandFeatures.of(LEXICAL))),
+        Arguments.of(
+            """
+            { "$lexical" : "   " }
+            """,
+            new FindAndRerankSort(
+                LegMode.LEXICAL, null, null, null, null, CommandFeatures.of(LEXICAL))),
+        Arguments.of(
+            """
+            { "$vector" : [1.1, 2.2, 3.3] }
+            """,
+            new FindAndRerankSort(
+                LegMode.VECTOR,
+                null,
+                null,
+                null,
+                new float[] {1.1f, 2.2f, 3.3f},
+                CommandFeatures.of(VECTOR))),
+        Arguments.of(
+                """
+            { "$vector" : {"$binary": "%s"} }
+            """
+                .formatted(vectorBase64),
+            new FindAndRerankSort(
+                LegMode.VECTOR, null, null, null, vector, CommandFeatures.of(VECTOR))),
+        Arguments.of(
+            """
+            { "$vector" : null }
+            """,
+            new FindAndRerankSort(
+                LegMode.VECTOR, null, null, null, null, CommandFeatures.of(VECTOR))));
   }
 
   @ParameterizedTest
@@ -460,7 +567,7 @@ public class FindAndRerankSortClauseDeserializerTest {
             """
             { "fake" : 1}
             """,
-            "Expected fields: $hybrid. Unexpected fields: fake"),
+            "Expected fields: $hybrid, $vectorize, $vector, $lexical. Unexpected fields: fake"),
         Arguments.of(
             """
             { "$hybrid" : {"fake" : 1} }
@@ -499,6 +606,55 @@ public class FindAndRerankSortClauseDeserializerTest {
             """
             { "$hybrid" : { "$vector" : "", "$lexical" : "", "$vector" : {"$date": "2023-01-01"}} }
             """,
-            "`sort` clause (binary vector) contained fields with the wrong type. Field $vector may only be of types NullNode, ArrayNode, ObjectNode, but got: ObjectNode"));
+            "`sort` clause (binary vector) contained fields with the wrong type. Field $vector may only be of types NullNode, ArrayNode, ObjectNode, but got: ObjectNode"),
+        // ----
+        // single leg sorts
+        Arguments.of(
+            """
+            { "$vectorize" : 1 }
+            """,
+            "Field $vectorize may only be of types NullNode, TextNode, but got: IntNode"),
+        Arguments.of(
+            """
+            { "$lexical" : 1 }
+            """,
+            "Field $lexical may only be of types NullNode, TextNode, but got: IntNode"),
+        Arguments.of(
+            """
+            { "$vector" : 1 }
+            """,
+            "Field $vector may only be of types NullNode, ArrayNode, ObjectNode, but got: IntNode"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{ \"$vectorize\" : \"cheese\", \"$lexical\" : \"cows\" }",
+        "{ \"$hybrid\" : \"cheese\", \"$vectorize\" : \"cheese\" }"
+      })
+  public void invalidSortWithTwoTopLevelFields(String jsonString) throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    when(deserializationContext.readTree(jsonParser)).thenReturn(mapper.readTree(jsonString));
+
+    var error =
+        assertThrows(
+            SortException.class,
+            () -> deserializer.deserialize(jsonParser, deserializationContext));
+    assertThat(error.code).isEqualTo(SortException.Code.SORT_CLAUSE_INVALID.name());
+    assertThat(error.body)
+        .contains("sort clause must have exactly one of $hybrid, $vectorize, $vector, $lexical");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"{ \"$vector\" : [] }", "{ \"$hybrid\" : { \"$vector\" : [] } }"})
+  public void invalidEmptyVector(String jsonString) throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    when(deserializationContext.readTree(jsonParser)).thenReturn(mapper.readTree(jsonString));
+
+    var error =
+        assertThrows(
+            DocumentException.class,
+            () -> deserializer.deserialize(jsonParser, deserializationContext));
+    assertThat(error.code).isEqualTo(DocumentException.Code.SHRED_BAD_VECTOR_SIZE.name());
   }
 }
