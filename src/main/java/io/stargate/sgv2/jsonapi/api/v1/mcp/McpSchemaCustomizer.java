@@ -18,14 +18,17 @@ import jakarta.inject.Singleton;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
- * Generates schemas for Data API clauses whose JSON shape differs from their Java fields. Custom
- * deserializers and delegating creators cannot be described by reflecting their fields.
+ * Generates MCP schemas using Data API clause definitions and Jackson and OpenAPI annotations.
+ * Custom deserializers and delegating creators cannot be described by reflecting their fields.
+ *
+ * <p>The generator's PLAIN_JSON preset does not read annotations. This customizer supplies field
+ * names, ignored fields, descriptions, and schema overrides.
  */
 @Singleton
-public class McpClauseSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
+public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
   private final SchemaIO<JsonNode, ArrayNode, ObjectNode, ArrayNode, ObjectNode> schemaIO;
 
-  public McpClauseSchemaCustomizer() {
+  public McpSchemaCustomizer() {
     var context =
         IOContext.forJson(
             JsonIO.<JsonNode, ArrayNode, ObjectNode, ArrayNode, ObjectNode>newInstance(null));
@@ -38,6 +41,13 @@ public class McpClauseSchemaCustomizer implements SchemaGeneratorConfigCustomize
   public void customize(SchemaGeneratorConfigBuilder builder) {
     builder
         .forFields()
+        .withDescriptionResolver(
+            field -> {
+              var schema = field.getAnnotationConsideringFieldAndGetter(Schema.class);
+              return schema != null && !schema.description().isEmpty()
+                  ? schema.description()
+                  : null;
+            })
         .withIgnoreCheck(
             field -> {
               var ignore = field.getAnnotationConsideringFieldAndGetter(JsonIgnore.class);
@@ -62,6 +72,13 @@ public class McpClauseSchemaCustomizer implements SchemaGeneratorConfigCustomize
 
     builder
         .forTypesInGeneral()
+        .withDescriptionResolver(
+            type -> {
+              var schema = type.getType().getErasedType().getAnnotation(Schema.class);
+              return schema != null && !schema.description().isEmpty()
+                  ? schema.description()
+                  : null;
+            })
         .withCustomDefinitionProvider(
             (javaType, context) -> {
               var provider =

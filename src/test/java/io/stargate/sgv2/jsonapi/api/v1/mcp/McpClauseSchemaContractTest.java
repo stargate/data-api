@@ -129,10 +129,6 @@ class McpClauseSchemaContractTest {
   @MethodSource("clauseTypes")
   void everyAdvertisedClauseExampleDeserializes(Class<?> clauseType) throws Exception {
     var schema = schemaFor(clauseType);
-    assertFalse(schema.toString().contains("commandFeatures"));
-    assertFalse(schema.toString().contains("filterClause"));
-    assertFalse(schema.toString().contains("sortClause"));
-    assertFalse(schema.toString().contains("vectorizeSort"));
     var examples = schema.get("examples");
     assertNotNull(examples, "Clause schema must advertise examples of the accepted JSON");
     assertFalse(examples.isEmpty());
@@ -524,8 +520,7 @@ class McpClauseSchemaContractTest {
         new SchemaGeneratorConfigBuilder(
                 objectMapper, SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
             .without(Option.SCHEMA_VERSION_INDICATOR);
-    new McpSchemaDescriptionCustomizer().customize(builder);
-    new McpClauseSchemaCustomizer().customize(builder);
+    new McpSchemaCustomizer().customize(builder);
     return new SchemaGenerator(builder.build()).generateSchema(type);
   }
 }

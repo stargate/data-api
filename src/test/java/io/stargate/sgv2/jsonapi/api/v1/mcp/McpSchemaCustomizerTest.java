@@ -11,10 +11,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link McpSchemaDescriptionCustomizer}. Verifies that the customizer correctly
- * resolves {@link Schema#description()} into the generated JSON schema.
+ * Unit tests for {@link McpSchemaCustomizer}. Verifies that the customizer correctly resolves
+ * {@link Schema#description()} into the generated JSON schema.
  */
-class McpSchemaDescriptionCustomizerTest {
+class McpSchemaCustomizerTest {
 
   /**
    * Test record that mimics nested command structures such as {@link
@@ -45,7 +45,7 @@ class McpSchemaDescriptionCustomizerTest {
   @Test
   void shouldIncludeRootTypeDescription() {
     var configBuilder = baseConfigBuilder();
-    new McpSchemaDescriptionCustomizer().customize(configBuilder);
+    new McpSchemaCustomizer().customize(configBuilder);
 
     var schema = new SchemaGenerator(configBuilder.build()).generateSchema(TestDescribedType.class);
 
@@ -55,7 +55,7 @@ class McpSchemaDescriptionCustomizerTest {
   @Test
   void shouldIncludeNestedTypeDescriptionWithoutFieldDescription() {
     var configBuilder = baseConfigBuilder();
-    new McpSchemaDescriptionCustomizer().customize(configBuilder);
+    new McpSchemaCustomizer().customize(configBuilder);
 
     var schema =
         new SchemaGenerator(configBuilder.build()).generateSchema(TestTypeDescription.class);
@@ -68,7 +68,7 @@ class McpSchemaDescriptionCustomizerTest {
   @Test
   void shouldIncludeSchemaDescriptionWithCustomizer() {
     var configBuilder = baseConfigBuilder();
-    new McpSchemaDescriptionCustomizer().customize(configBuilder);
+    new McpSchemaCustomizer().customize(configBuilder);
 
     var schema = new SchemaGenerator(configBuilder.build()).generateSchema(TestCreateTable.class);
     var props = schema.get("properties");
