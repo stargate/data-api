@@ -27,7 +27,14 @@ public class CollectionCommandTools {
 
   @Inject McpResource mcpResource;
 
-  @Tool(description = "Command that alters the column definition in a table.")
+  @Tool(
+      description = "Command that alters the column definition in a table.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = false,
+              openWorldHint = false))
   public Uni<ToolResponse> alterTable(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
@@ -37,7 +44,14 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, table, command);
   }
 
-  @Tool(description = "Command that returns count of documents in a collection")
+  @Tool(
+      description = "Command that returns count of documents in a collection",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = true,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> countDocuments(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection") String collection,
@@ -47,7 +61,14 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
-  @Tool(description = "Creates a regular index for a column in a table.")
+  @Tool(
+      description = "Creates a regular index for a column in a table.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> createIndex(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
@@ -70,7 +91,13 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
-          "Creates an index on a text column that can be used for lexical filtering and sorting.")
+          "Creates an index on a text column that can be used for lexical filtering and sorting.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> createTextIndex(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
@@ -91,7 +118,14 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, table, command);
   }
 
-  @Tool(description = "Creates an index on a vector column that can be used for vector sorting.")
+  @Tool(
+      description = "Creates an index on a vector column that can be used for vector sorting.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> createVectorIndex(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
@@ -114,7 +148,13 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
-          "Command that finds documents based on the filter and deletes them from a collection")
+          "Command that finds documents based on the filter and deletes them from a collection",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = false,
+              openWorldHint = false))
   public Uni<ToolResponse> deleteMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -127,7 +167,14 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
-  @Tool(description = "Command that finds a single document and deletes it from a collection")
+  @Tool(
+      description = "Command that finds a single document and deletes it from a collection",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = false,
+              openWorldHint = true))
   public Uni<ToolResponse> deleteOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -139,7 +186,14 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
-  @Tool(description = "Command that returns estimated count of documents in a collection")
+  @Tool(
+      description = "Command that returns estimated count of documents in a collection",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = true,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> estimatedDocumentCount(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection") String collection) {
@@ -150,7 +204,13 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
-          "Finds documents using using vector and lexical sorting, then reranks the results.")
+          "Finds documents using using vector and lexical sorting, then reranks the results.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = true,
+              destructiveHint = false,
+              idempotentHint = false,
+              openWorldHint = true))
   public Uni<ToolResponse> findAndRerank(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -163,7 +223,14 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
-  @Tool(description = "Command that finds JSON documents from a collection.")
+  @Tool(
+      description = "Command that finds JSON documents from a collection.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = true,
+              destructiveHint = false,
+              idempotentHint = false,
+              openWorldHint = true))
   public Uni<ToolResponse> find(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -178,7 +245,13 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
-          "Command that finds a single JSON document from a collection and deletes it. The deleted document is returned")
+          "Command that finds a single JSON document from a collection and deletes it. The deleted document is returned",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = false,
+              openWorldHint = true))
   public Uni<ToolResponse> findOneAndDelete(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -192,7 +265,13 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
-          "Command that finds a single JSON document from a collection and replaces it with the replacement document.")
+          "Command that finds a single JSON document from a collection and replaces it with the replacement document.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = false,
+              openWorldHint = true))
   public Uni<ToolResponse> findOneAndReplace(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -209,7 +288,13 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
-          "Command that finds a single JSON document from a collection and updates the values provided in the update clause.")
+          "Command that finds a single JSON document from a collection and updates the values provided in the update clause.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = false,
+              openWorldHint = true))
   public Uni<ToolResponse> findOneAndUpdate(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -223,7 +308,14 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
-  @Tool(description = "Command that finds a single JSON document from a collection.")
+  @Tool(
+      description = "Command that finds a single JSON document from a collection.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = true,
+              destructiveHint = false,
+              idempotentHint = false,
+              openWorldHint = true))
   public Uni<ToolResponse> findOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -236,7 +328,14 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
-  @Tool(description = "Command that lists all available indexes in a table.")
+  @Tool(
+      description = "Command that lists all available indexes in a table.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = true,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> listIndexes(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
@@ -247,7 +346,14 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, table, command);
   }
 
-  @Tool(description = "Command that inserts multiple JSON documents to a collection.")
+  @Tool(
+      description = "Command that inserts multiple JSON documents to a collection.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = false,
+              openWorldHint = true))
   public Uni<ToolResponse> insertMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -259,7 +365,14 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
-  @Tool(description = "Command that inserts a single JSON document to a collection.")
+  @Tool(
+      description = "Command that inserts a single JSON document to a collection.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = false,
+              openWorldHint = true))
   public Uni<ToolResponse> insertOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -271,7 +384,13 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
-          "Command that finds documents from a collection and updates it with the values provided in the update clause.")
+          "Command that finds documents from a collection and updates it with the values provided in the update clause.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = false,
+              openWorldHint = true))
   public Uni<ToolResponse> updateMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
@@ -285,7 +404,13 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
-          "Command that finds a single JSON document from a table or collection and updates the values provided in the update clause.")
+          "Command that finds a single JSON document from a table or collection and updates the values provided in the update clause.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = false,
+              openWorldHint = true))
   public Uni<ToolResponse> updateOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
