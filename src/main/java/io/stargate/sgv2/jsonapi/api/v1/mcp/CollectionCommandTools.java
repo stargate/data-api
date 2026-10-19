@@ -155,10 +155,7 @@ public class CollectionCommandTools {
       @ToolArg(description = "filter", required = false) FilterDefinition filter,
       @ToolArg(description = "projection", required = false) JsonNode projection,
       @ToolArg(required = false) FindAndRerankSort sort,
-      @ToolArg(
-              description =
-                  "Reranking options: limit, hybridLimits, rerankQuery, rerankOn, includeScores, includeSortVector, and an optional rerank service override.",
-              required = false)
+      @ToolArg(description = "Reranking options", required = false)
           FindAndRerankCommand.Options options) {
 
     var command = new FindAndRerankCommand(filter, projection, sort, options);
