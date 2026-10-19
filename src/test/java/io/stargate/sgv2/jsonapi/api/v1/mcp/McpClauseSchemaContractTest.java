@@ -45,7 +45,15 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/** Contracts between advertised MCP schemas and the actual Data API JSON deserializers. */
+/**
+ * Checks that MCP and OpenAPI advertise the JSON accepted by Data API clause deserializers.
+ * Reflection alone exposes internal Java fields for clauses with custom deserializers, so those
+ * clauses need schema overrides.
+ *
+ * <p>Schema validation checks the advertised JSON shape. Deserialization and clause building check
+ * that the server accepts the examples. Generated tool schemas and the OpenAPI document also verify
+ * that the overrides reach clients. These checks do not execute commands or require a database.
+ */
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 class McpClauseSchemaContractTest {
@@ -55,6 +63,9 @@ class McpClauseSchemaContractTest {
 
   record WireNames(
       @JsonProperty("wireName") String internalName, @JsonIgnore CommandFeatures commandFeatures) {}
+
+  record PropertyNameDefaults(
+      @JsonProperty("") String defaultName, @JsonProperty(" ") String whitespaceName) {}
 
   record IgnoredFields(
       @JsonIgnore String internal,
@@ -91,6 +102,24 @@ class McpClauseSchemaContractTest {
     assertFalse(properties.has("commandFeatures"));
   }
 
+  @Test
+  void emptyAndWhitespacePropertyNamesMatchJackson() throws Exception {
+    var payload =
+        objectMapper.readTree(
+            """
+            {"defaultName": "default", " ": "explicit"}
+            """);
+    var schema = schemaFor(PropertyNameDefaults.class);
+    var properties = schema.path("properties");
+    assertEquals(payload.size(), properties.size());
+    payload.fieldNames().forEachRemaining(name -> assertTrue(properties.has(name)));
+    assertSchemaAccepts(schema, payload);
+    assertEquals(
+        new PropertyNameDefaults("default", "explicit"),
+        objectMapper.treeToValue(payload, PropertyNameDefaults.class));
+  }
+
+  /** An example must satisfy both its advertised schema and the server's clause parser. */
   @ParameterizedTest
   @MethodSource("clauseTypes")
   void everyAdvertisedClauseExampleDeserializes(Class<?> clauseType) throws Exception {
@@ -106,6 +135,7 @@ class McpClauseSchemaContractTest {
       assertSchemaAccepts(schema, example);
       var clause = objectMapper.treeToValue(example, clauseType);
       assertNotNull(clause);
+      // These two clauses defer parsing until build, so deserialization alone cannot validate them.
       if (clause instanceof FilterDefinition filter) {
         assertNotNull(filter.build(new TestConstants().collectionContext()));
       } else if (clause instanceof SortDefinition sort) {
@@ -122,6 +152,7 @@ class McpClauseSchemaContractTest {
         FindAndRerankCommand.HybridLimits.class);
   }
 
+  /** Both entry points accept the same clause JSON and must expose the same schema definition. */
   @ParameterizedTest
   @MethodSource("clauseTypes")
   void openApiAndMcpShareClauseSchemas(Class<?> clauseType) throws Exception {
@@ -131,6 +162,7 @@ class McpClauseSchemaContractTest {
     assertEquals(objectMapper.readTree(schemaFor(clauseType).toString()), openApiSchema);
   }
 
+  /** A correct reusable schema has no effect unless command fields actually reference it. */
   @Test
   void openApiCommandsReferenceSharedSchemas() throws Exception {
     var document = openApi();
@@ -158,6 +190,7 @@ class McpClauseSchemaContractTest {
     assertEquals(mcpOverride, schemas.path("RerankServiceOverride"));
   }
 
+  /** Check the complete command schema because inferred parent types can restrict valid clauses. */
   @ParameterizedTest
   @ValueSource(strings = {"50", "{\"$vector\": 50, \"$lexical\": 10}", "null"})
   void openApiAcceptsHybridLimitsWireForms(String limits) throws Exception {
@@ -372,6 +405,7 @@ class McpClauseSchemaContractTest {
     }
   }
 
+  /** Positive examples alone would also pass against a schema that accepts every JSON value. */
   @ParameterizedTest
   @MethodSource("invalidWireShapes")
   void schemaRejectsInvalidWireShapes(Class<?> clauseType, String json) throws Exception {
@@ -421,6 +455,7 @@ class McpClauseSchemaContractTest {
   }
 
   private JsonNode inputSchema(String name) throws Exception {
+    // The registered tool includes nested command fields and the application's customizer wiring.
     var tool = toolManager.getTool(name);
     assertNotNull(tool);
     return objectMapper.readTree(schemaGenerator.generate(tool).asJson());

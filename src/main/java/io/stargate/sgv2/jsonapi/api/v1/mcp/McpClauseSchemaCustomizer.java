@@ -56,6 +56,7 @@ public class McpClauseSchemaCustomizer implements SchemaGeneratorConfigCustomize
         .withPropertyNameOverrideResolver(
             field -> {
               var property = field.getAnnotationConsideringFieldAndGetter(JsonProperty.class);
+              // Jackson uses an empty value for the Java name. Whitespace is an explicit JSON name.
               return property != null && !property.value().isEmpty() ? property.value() : null;
             });
 
