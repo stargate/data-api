@@ -20,13 +20,25 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl.RerankingProviderConfigImpl;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl.RequestPropertiesImpl;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -175,6 +187,96 @@ class McpClauseSchemaContractTest {
     assertEquals(
         description,
         inputSchema("findAndRerank").path("properties").path("sort").path("description").asText());
+  }
+
+  /**
+   * Required fields are enforced by service validation, so schema acceptance must agree with it.
+   */
+  @ParameterizedTest
+  @MethodSource("rerankOverrideRequiredFields")
+  void rerankOverrideSchemaMatchesRequiredFieldValidation(String json, boolean accepted)
+      throws Exception {
+    var schema =
+        inputSchema("findAndRerank")
+            .path("properties")
+            .path("options")
+            .path("properties")
+            .path("rerank");
+    var payload = objectMapper.readTree(json);
+    var errors =
+        JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012)
+            .getSchema(schema)
+            .validate(payload);
+    assertEquals(
+        accepted, errors.isEmpty(), () -> "Schema validation for " + json + " returned " + errors);
+
+    var override =
+        objectMapper.treeToValue(payload, CreateCollectionCommand.Options.RerankServiceDesc.class);
+    Executable validate =
+        () ->
+            CollectionRerankDef.validateServiceDesc(
+                supportedRerankingProvider(),
+                override.provider(),
+                override.modelName(),
+                override.authentication(),
+                override.parameters(),
+                RequestException.Code.INVALID_RERANK_OVERRIDE);
+    if (accepted) {
+      assertDoesNotThrow(validate);
+    } else {
+      var error = assertThrows(RequestException.class, validate);
+      assertEquals(RequestException.Code.INVALID_RERANK_OVERRIDE.name(), error.code);
+    }
+  }
+
+  static Stream<Arguments> rerankOverrideRequiredFields() {
+    return Stream.of(
+        Arguments.of(
+            """
+            {"provider": "nvidia", "modelName": "nvidia/rerank-v1"}
+            """,
+            true),
+        Arguments.of("{}", false),
+        Arguments.of(
+            """
+            {"provider": "nvidia"}
+            """,
+            false),
+        Arguments.of(
+            """
+            {"modelName": "nvidia/rerank-v1"}
+            """,
+            false),
+        Arguments.of(
+            """
+            {"provider": null, "modelName": "nvidia/rerank-v1"}
+            """,
+            false),
+        Arguments.of(
+            """
+            {"provider": "nvidia", "modelName": null}
+            """,
+            false),
+        Arguments.of(
+            """
+            {"provider": null, "modelName": null}
+            """,
+            false));
+  }
+
+  private static RerankingProvidersConfig supportedRerankingProvider() {
+    var model =
+        new ModelConfigImpl(
+            "nvidia/rerank-v1",
+            new ApiModelSupport.ApiModelSupportImpl(
+                ApiModelSupport.SupportStatus.SUPPORTED, Optional.empty()),
+            false,
+            "https://example.com/rerank",
+            new RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10));
+    return new RerankingProvidersConfigImpl(
+        Map.of(
+            "nvidia",
+            new RerankingProviderConfigImpl(false, "nvidia", true, Map.of(), List.of(model))));
   }
 
   @Test

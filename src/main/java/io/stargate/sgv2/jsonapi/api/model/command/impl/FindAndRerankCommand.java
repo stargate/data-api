@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import static io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider.type;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
+import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.MODEL_NAME;
+import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.PROVIDER;
 import static org.eclipse.microprofile.openapi.models.media.Schema.SchemaType.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -139,12 +141,11 @@ public record FindAndRerankCommand(
     @Override
     public org.eclipse.microprofile.openapi.models.media.Schema schema() {
       return type(OBJECT, NULL)
-          .addProperty("provider", type(STRING))
-          .addProperty("modelName", type(STRING))
-          .required(List.of("provider", "modelName"))
+          .addProperty(PROVIDER, type(STRING))
+          .addProperty(MODEL_NAME, type(STRING))
+          .required(List.of(PROVIDER, MODEL_NAME))
           .additionalPropertiesBoolean(false)
-          .addExample(
-              Map.of("provider", "nvidia", "modelName", "nvidia/llama-3.2-nv-rerankqa-1b-v2"));
+          .addExample(Map.of(PROVIDER, "nvidia", MODEL_NAME, "nvidia/llama-3.2-nv-rerankqa-1b-v2"));
     }
   }
 
