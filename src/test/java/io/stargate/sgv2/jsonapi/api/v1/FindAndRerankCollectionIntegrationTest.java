@@ -154,7 +154,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
 
   @Test
   void failOnHybridLimitsAboveMax() {
-    // Validation now runs in FindAndRerankOperationBuilder.build(), so the collection must exist.
+    // Validation runs when the command is resolved to an operation, so the collection must exist.
     Assumptions.assumeTrue(isLexicalAvailableForDB());
 
     String collectionName = "find_rerank_hybrid_limits_too_large";

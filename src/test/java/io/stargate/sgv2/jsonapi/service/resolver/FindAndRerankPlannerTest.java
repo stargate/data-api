@@ -5,6 +5,9 @@ import static io.stargate.sgv2.jsonapi.TestConstants.rerankingProvidersConfig;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.json.JsonReadFeature;
@@ -25,8 +28,10 @@ import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.RerankingQuery;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -41,7 +46,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  * Tests for {@link FindAndRerankPlanner}: pins the outcome for many request shapes and collection
  * configs. A row either makes a plan, and then pins its legs in order (type, read limit, and if the
- * vector is from the vectorize step), or it pins the error code.
+ * vector is from the vectorize step), or it pins the error code. A row that makes a plan also
+ * builds the operation from it.
  *
  * <p>The order of the checks decides which error a request gets, some rows pin it:
  *
@@ -94,6 +100,7 @@ class FindAndRerankPlannerTest {
   @InjectMock protected RequestContext dataApiRequestInfo;
 
   @Inject ObjectMapper objectMapper;
+  @Inject FindCommandResolver findCommandResolver;
 
   private final TestConstants TEST_CONSTANTS = new TestConstants();
 
@@ -670,6 +677,13 @@ class FindAndRerankPlannerTest {
         assertThat(plan.legs().stream().map(ExpectedLeg::of).toList())
             .as(row.id() + " legs, in order")
             .containsExactlyElementsOf(success.legs());
+
+        // the builder accepts the plan
+        new FindAndRerankOperationBuilder(commandContext)
+            .withCommand(command)
+            .withPlan(plan)
+            .withFindCommandResolver(findCommandResolver)
+            .build();
       }
       case Failure failure -> {
         var ex =
@@ -788,6 +802,15 @@ class FindAndRerankPlannerTest {
         .thenReturn(
             rerankingProvidersConfig(
                 "nvidia", true, rerankingModelConfig(TestConstants.RERANK_MODEL, modelStatus)));
+    when(commandContext.rerankingProviderFactory().create(any(), any(), any(), any(), any(), any()))
+        .thenReturn(mock(RerankingProvider.class));
+
+    if (schemaObject.vectorConfig().getFirstVectorColumnWithVectorizeDefinition().isPresent()) {
+      when(commandContext
+              .embeddingProviderFactory()
+              .create(any(), any(), any(), any(), anyInt(), any(), any(), any()))
+          .thenReturn(mock(EmbeddingProvider.class));
+    }
     return commandContext;
   }
 
