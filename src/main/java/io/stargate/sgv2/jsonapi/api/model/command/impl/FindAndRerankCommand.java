@@ -149,6 +149,12 @@ public record FindAndRerankCommand(
 
     private static final String ERROR_CONTEXT = "hybridLimits";
 
+    /** The name of the vector limit in error messages, "hybridLimits.$vector". */
+    public static final String VECTOR_LIMIT_FIELD = ERROR_CONTEXT + "." + VECTOR_EMBEDDING_FIELD;
+
+    /** The name of the lexical limit in error messages, "hybridLimits.$lexical". */
+    public static final String LEXICAL_LIMIT_FIELD = ERROR_CONTEXT + "." + LEXICAL_CONTENT_FIELD;
+
     // user can specify the limit as a single number node, or as an object with $vector and $lexical
     // this is macher for the later
     //
