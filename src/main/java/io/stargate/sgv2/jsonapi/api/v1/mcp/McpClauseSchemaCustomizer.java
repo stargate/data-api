@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -13,7 +14,6 @@ import io.smallrye.openapi.runtime.io.IOContext;
 import io.smallrye.openapi.runtime.io.JsonIO;
 import io.smallrye.openapi.runtime.io.media.SchemaIO;
 import io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider;
-import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import jakarta.inject.Singleton;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -38,7 +38,11 @@ public class McpClauseSchemaCustomizer implements SchemaGeneratorConfigCustomize
   public void customize(SchemaGeneratorConfigBuilder builder) {
     builder
         .forFields()
-        .withIgnoreCheck(field -> field.getType().getErasedType() == CommandFeatures.class)
+        .withIgnoreCheck(
+            field -> {
+              var ignore = field.getAnnotationConsideringFieldAndGetter(JsonIgnore.class);
+              return ignore != null && ignore.value();
+            })
         .withCustomDefinitionProvider(
             (field, context) -> {
               var provider =

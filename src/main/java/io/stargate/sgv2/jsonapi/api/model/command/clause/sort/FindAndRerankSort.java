@@ -4,6 +4,7 @@ import static io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider.type;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
 import static org.eclipse.microprofile.openapi.models.media.Schema.SchemaType.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider;
@@ -43,7 +44,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
       """
     })
 public record FindAndRerankSort(
-    String vectorizeSort, String lexicalSort, float[] vectorSort, CommandFeatures commandFeatures)
+    String vectorizeSort,
+    String lexicalSort,
+    float[] vectorSort,
+    @JsonIgnore CommandFeatures commandFeatures)
     implements Recordable {
 
   @Schema(name = SchemaProvider.NAME)

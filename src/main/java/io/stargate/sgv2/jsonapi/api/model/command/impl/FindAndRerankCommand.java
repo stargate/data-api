@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.MOD
 import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.PROVIDER;
 import static org.eclipse.microprofile.openapi.models.media.Schema.SchemaType.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.core.JsonParser;
@@ -159,7 +160,7 @@ public record FindAndRerankCommand(
       @JsonProperty(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) int vectorLimit,
       /** ---- */
       @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit,
-      CommandFeatures commandFeatures)
+      @JsonIgnore CommandFeatures commandFeatures)
       implements Recordable {
 
     @Schema(name = SchemaProvider.NAME)

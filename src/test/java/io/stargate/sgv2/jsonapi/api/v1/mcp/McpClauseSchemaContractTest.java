@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.mcp;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,7 +54,34 @@ class McpClauseSchemaContractTest {
   @Inject ToolManager toolManager;
 
   record WireNames(
-      @JsonProperty("wireName") String internalName, CommandFeatures commandFeatures) {}
+      @JsonProperty("wireName") String internalName, @JsonIgnore CommandFeatures commandFeatures) {}
+
+  record IgnoredFields(
+      @JsonIgnore String internal,
+      @JsonIgnore(false) String visible,
+      CommandFeatures unannotatedFeatures) {}
+
+  static class GetterIgnoredField {
+    public String internal;
+
+    @JsonIgnore
+    public String getInternal() {
+      return internal;
+    }
+  }
+
+  @Test
+  void jsonIgnoreControlsFieldVisibility() {
+    var properties = schemaFor(IgnoredFields.class).path("properties");
+    assertFalse(properties.has("internal"));
+    assertTrue(properties.has("visible"));
+    assertTrue(properties.has("unannotatedFeatures"));
+  }
+
+  @Test
+  void jsonIgnoreOnGetterHidesField() {
+    assertFalse(schemaFor(GetterIgnoredField.class).path("properties").has("internal"));
+  }
 
   @Test
   void fieldsUseJsonPropertyNamesAndHideCommandFeatures() {
