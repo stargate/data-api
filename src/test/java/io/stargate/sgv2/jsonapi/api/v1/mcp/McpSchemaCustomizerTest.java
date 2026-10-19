@@ -2,17 +2,21 @@ package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
+import io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 
 /**
- * Unit tests for {@link McpSchemaCustomizer}. Verifies that the customizer correctly resolves
- * {@link Schema#description()} into the generated JSON schema.
+ * Checks description resolution and reuse of independent schema copies in {@link
+ * McpSchemaCustomizer}.
  */
 class McpSchemaCustomizerTest {
 
@@ -41,6 +45,76 @@ class McpSchemaCustomizerTest {
   record TestDescribedType(String value) {}
 
   record TestTypeDescription(TestDescribedType value) {}
+
+  @Schema(implementation = CountingSchemaProvider.class)
+  record TestCachedType(String value) {}
+
+  record TestCachedFields(
+      @Schema(implementation = CountingSchemaProvider.class, description = "First field")
+          TestCachedType first,
+      @Schema(implementation = CountingSchemaProvider.class, description = "Second field")
+          TestCachedType second) {}
+
+  @Schema(name = "CustomizerTestSchema")
+  public static class CountingSchemaProvider implements ApiSchemaProvider {
+    static final AtomicInteger instances = new AtomicInteger();
+    static final AtomicInteger schemasBuilt = new AtomicInteger();
+
+    public CountingSchemaProvider() {
+      instances.incrementAndGet();
+    }
+
+    @Override
+    public org.eclipse.microprofile.openapi.models.media.Schema schema() {
+      schemasBuilt.incrementAndGet();
+      return ApiSchemaProvider.type(
+              org.eclipse.microprofile.openapi.models.media.Schema.SchemaType.OBJECT)
+          .addProperty(
+              "value",
+              ApiSchemaProvider.type(
+                  org.eclipse.microprofile.openapi.models.media.Schema.SchemaType.STRING));
+    }
+  }
+
+  @Test
+  void shouldCacheSchemaAcrossTypesAndFields() {
+    CountingSchemaProvider.instances.set(0);
+    CountingSchemaProvider.schemasBuilt.set(0);
+    var customizer = new McpSchemaCustomizer();
+
+    schemaFor(customizer, TestCachedType.class);
+    schemaFor(customizer, TestCachedFields.class);
+    schemaFor(customizer, TestCachedType.class);
+
+    assertEquals(1, CountingSchemaProvider.instances.get());
+    assertEquals(1, CountingSchemaProvider.schemasBuilt.get());
+  }
+
+  @Test
+  void shouldIsolateCachedSchemaFromGeneratedNodes() {
+    var customizer = new McpSchemaCustomizer();
+    var schema = schemaFor(customizer, TestCachedType.class);
+    var original = schema.deepCopy();
+    ((ObjectNode) schema.path("properties").path("value")).put("type", "integer");
+
+    assertEquals(original, schemaFor(customizer, TestCachedType.class));
+  }
+
+  @Test
+  void shouldKeepFieldDescriptionsIndependentWhenSharingCachedSchema() {
+    var customizer = new McpSchemaCustomizer();
+    var properties = schemaFor(customizer, TestCachedFields.class).path("properties");
+
+    assertEquals("First field", properties.path("first").path("description").asText());
+    assertEquals("Second field", properties.path("second").path("description").asText());
+    assertFalse(schemaFor(customizer, TestCachedType.class).has("description"));
+  }
+
+  private static JsonNode schemaFor(McpSchemaCustomizer customizer, Class<?> type) {
+    var builder = baseConfigBuilder();
+    customizer.customize(builder);
+    return new SchemaGenerator(builder.build()).generateSchema(type);
+  }
 
   @Test
   void shouldIncludeRootTypeDescription() {

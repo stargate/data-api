@@ -18,13 +18,6 @@ public interface ApiSchemaProvider {
     return OASFactory.createSchema().type(List.of(types));
   }
 
-  static ApiSchemaProvider from(org.eclipse.microprofile.openapi.annotations.media.Schema schema) {
-    if (schema == null || !ApiSchemaProvider.class.isAssignableFrom(schema.implementation())) {
-      return null;
-    }
-    return create(schema.implementation().asSubclass(ApiSchemaProvider.class));
-  }
-
   static ApiSchemaProvider create(Class<? extends ApiSchemaProvider> providerClass) {
     try {
       return providerClass.getConstructor().newInstance();

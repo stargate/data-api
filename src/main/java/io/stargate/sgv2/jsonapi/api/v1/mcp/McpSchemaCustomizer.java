@@ -15,6 +15,8 @@ import io.smallrye.openapi.runtime.io.JsonIO;
 import io.smallrye.openapi.runtime.io.media.SchemaIO;
 import io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider;
 import jakarta.inject.Singleton;
+import java.util.HashMap;
+import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
@@ -27,6 +29,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Singleton
 public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
   private final SchemaIO<JsonNode, ArrayNode, ObjectNode, ArrayNode, ObjectNode> schemaIO;
+  private final Map<Class<? extends ApiSchemaProvider>, ObjectNode> schemas = new HashMap<>();
 
   public McpSchemaCustomizer() {
     var context =
@@ -55,13 +58,10 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
             })
         .withCustomDefinitionProvider(
             (field, context) -> {
-              var provider =
-                  ApiSchemaProvider.from(
-                      field.getAnnotationConsideringFieldAndGetter(Schema.class));
-              return provider == null
+              var schema = schemaNode(field.getAnnotationConsideringFieldAndGetter(Schema.class));
+              return schema == null
                   ? null
-                  : new CustomPropertyDefinition(
-                      schemaNode(provider), CustomDefinition.AttributeInclusion.YES);
+                  : new CustomPropertyDefinition(schema, CustomDefinition.AttributeInclusion.YES);
             })
         .withPropertyNameOverrideResolver(
             field -> {
@@ -81,18 +81,29 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
             })
         .withCustomDefinitionProvider(
             (javaType, context) -> {
-              var provider =
-                  ApiSchemaProvider.from(javaType.getErasedType().getAnnotation(Schema.class));
-              return provider == null
+              var schema = schemaNode(javaType.getErasedType().getAnnotation(Schema.class));
+              return schema == null
                   ? null
                   : new CustomDefinition(
-                      schemaNode(provider),
+                      schema,
                       CustomDefinition.DefinitionType.INLINE,
                       CustomDefinition.AttributeInclusion.YES);
             });
   }
 
-  private ObjectNode schemaNode(ApiSchemaProvider provider) {
-    return (ObjectNode) schemaIO.write(provider.schema()).orElseThrow();
+  private synchronized ObjectNode schemaNode(Schema annotation) {
+    if (annotation == null
+        || !ApiSchemaProvider.class.isAssignableFrom(annotation.implementation())) {
+      return null;
+    }
+    var providerClass = annotation.implementation().asSubclass(ApiSchemaProvider.class);
+    // Serialize each provider once. Synchronization also protects the shared OpenAPI writer.
+    var schema =
+        schemas.computeIfAbsent(
+            providerClass,
+            type ->
+                (ObjectNode) schemaIO.write(ApiSchemaProvider.create(type).schema()).orElseThrow());
+    // The generator adds field metadata, so each use needs its own mutable copy.
+    return schema.deepCopy();
   }
 }
