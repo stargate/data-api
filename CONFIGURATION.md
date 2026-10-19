@@ -75,6 +75,35 @@ Other Quarkus properties that are specifically relevant for the service:
 | `stargate.jsonapi.logging.only-results-with-errors` | `boolean` | `true`  | Setting it to `true` prints the command level info only for the commands where the command result has errors.                                                      |
 | `stargate.jsonapi.logging.enabled-tenants`          | `string`  | `ALL`   | Comma separated list of tenants for which command level logging should be enabled. Default is a special keyword called `ALL` which prints this log for all tenants |
 
+## MCP logging
+
+Normal MCP logs contain generated request IDs, fixed protocol/command categories, HTTP status,
+error counts, logger names and exception class names. They exclude document/query contents,
+request/response bodies, client-supplied RPC IDs, credential headers, exception messages and
+user-controlled logging context. MCP access URLs are excluded from the standard access log and
+replaced with request summaries. Structured billing events keep their existing logging path.
+
+Raw framework traffic logging is disabled. The `mcp-safe-logging` filter also discards that category
+if `quarkus.mcp.server.traffic-logging.enabled` is overridden. It is attached to the standard console,
+file, syslog and socket handlers. Any added handler or log exporter must apply the same filter
+before publishing records. Keep these filters in deployment overrides. If the HTTP root or MCP
+path changes, set `quarkus.http.access-log.exclude-pattern` to match the full normalized MCP path
+and its descendants, alongside the authentication path configuration. For example, an endpoint at
+`/service/tools` needs `/service/tools(/.*)?`. Ordinary HTTP API logging is unaffected.
+
+For a diagnostic session, set `stargate.jsonapi.mcp.diagnostics-until` (environment variable
+`STARGATE_JSONAPI_MCP_DIAGNOSTICS_UNTIL`) to an absolute ISO-8601 UTC timestamp no more than 15 minutes
+in the future at startup. Diagnostics add at most 32 stack frames per exception. They expire at
+that timestamp, including across restarts. Payloads, credentials, exception messages, causes and
+suppressed exceptions remain excluded. There is no payload-capture mode.
+
+Before enabling diagnostics, restrict access to the log destination and configure diagnostic log
+retention to at most 24 hours. Remove the setting after the session and delete diagnostic exports
+when the investigation ends. Retention is enforced by the log destination, not by this service.
+Deployment verification must check the effective handlers, access-log exclusion and retention
+through the public service. OAuth authorization-service logs require separate verification when
+that service is integrated.
+
 ## API Feature enabling configuration
 *Configuration for enabling Features, defined by [FeaturesConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/CommandLoggingConfig.java).*
 

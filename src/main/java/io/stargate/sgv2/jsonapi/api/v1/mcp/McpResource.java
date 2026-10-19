@@ -234,6 +234,9 @@ public class McpResource {
               }
               return meteredCommandProcessor.processCommand(context, command);
             })
+        .invoke(result -> McpRequestLogging.commandCompleted(command, result))
+        .onFailure()
+        .invoke(failure -> McpRequestLogging.commandFailed(command))
         .map(CommandResult::toToolResponse);
   }
 
@@ -243,8 +246,10 @@ public class McpResource {
    * jakarta.ws.rs.core.SecurityContext}.
    */
   private RequestContext createRequestContext() {
+    var routingContext = routingContextProvider.get();
+    McpRequestLogging.activate(routingContext);
     return new RequestContext(
-        routingContextProvider.get(),
+        routingContext,
         securityIdentityProvider.get(),
         tenantResolver,
         embeddingCredentialsResolver);
