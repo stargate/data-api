@@ -1,10 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
+import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.*;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
@@ -21,12 +23,14 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import java.util.HashSet;
 import java.util.stream.Stream;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Contracts between advertised MCP schemas and the actual Data API JSON deserializers. */
 @QuarkusTest
@@ -76,6 +80,92 @@ class McpClauseSchemaContractTest {
         SortDefinition.class,
         FindAndRerankSort.class,
         FindAndRerankCommand.HybridLimits.class);
+  }
+
+  @ParameterizedTest
+  @MethodSource("clauseTypes")
+  void openApiAndMcpShareClauseSchemas(Class<?> clauseType) throws Exception {
+    var provider = clauseType.getAnnotation(Schema.class).implementation();
+    var name = provider.getAnnotation(Schema.class).name();
+    var openApiSchema = openApi().path("components").path("schemas").path(name);
+    assertEquals(objectMapper.readTree(schemaFor(clauseType).toString()), openApiSchema);
+  }
+
+  @Test
+  void openApiCommandsReferenceSharedSchemas() throws Exception {
+    var document = openApi();
+    var schemas = document.path("components").path("schemas");
+    var find = schemas.path("FindCommand").path("properties");
+    assertEquals(schemas.path("FilterDefinition"), referencedSchema(document, find.path("filter")));
+    assertEquals(schemas.path("SortDefinition"), referencedSchema(document, find.path("sort")));
+    var rerank = schemas.path("FindAndRerankCommand").path("properties");
+    assertEquals(
+        schemas.path("FindAndRerankSort"), referencedSchema(document, rerank.path("sort")));
+    var options = referencedSchema(document, rerank.path("options")).path("properties");
+    assertEquals(
+        schemas.path("HybridLimits"), referencedSchema(document, options.path("hybridLimits")));
+    assertEquals(
+        schemas.path("RerankServiceOverride"), referencedSchema(document, options.path("rerank")));
+    var mcpOverride =
+        inputSchema("findAndRerank")
+            .path("properties")
+            .path("options")
+            .path("properties")
+            .path("rerank")
+            .deepCopy();
+    // The field description belongs to the command options, not the reusable schema component.
+    ((ObjectNode) mcpOverride).remove("description");
+    assertEquals(mcpOverride, schemas.path("RerankServiceOverride"));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"50", "{\"$vector\": 50, \"$lexical\": 10}", "null"})
+  void openApiAcceptsHybridLimitsWireForms(String limits) throws Exception {
+    var document = openApi();
+    var schema =
+        objectMapper.createObjectNode().put("$ref", "#/components/schemas/FindAndRerankCommand");
+    schema.set("components", document.path("components"));
+    var command = objectMapper.createObjectNode();
+    command.putObject("sort").put("$hybrid", "search text");
+    command.putObject("options").set("hybridLimits", objectMapper.readTree(limits));
+    assertSchemaAccepts(schema, command);
+  }
+
+  @Test
+  void openApiAcceptsNullOptionalClauses() throws Exception {
+    var schema =
+        objectMapper.createObjectNode().put("$ref", "#/components/schemas/FindAndRerankCommand");
+    schema.set("components", openApi().path("components"));
+    assertSchemaAccepts(
+        schema,
+        objectMapper.readTree(
+            """
+        {"filter": null, "sort": null, "options": {"rerank": null}}
+        """));
+  }
+
+  private JsonNode referencedSchema(JsonNode document, JsonNode schema) {
+    var visited = new HashSet<String>();
+    while (schema.has("$ref")) {
+      var reference = schema.path("$ref").asText();
+      assertTrue(reference.startsWith("#/"), "Expected a local schema reference");
+      assertTrue(visited.add(reference), "Circular schema reference");
+      schema = document.at(reference.substring(1));
+      assertFalse(schema.isMissingNode(), "Unresolved schema reference " + reference);
+    }
+    return schema;
+  }
+
+  private JsonNode openApi() throws Exception {
+    var json =
+        given()
+            .queryParam("format", "json")
+            .get("/api/json/openapi")
+            .then()
+            .statusCode(200)
+            .extract()
+            .asString();
+    return objectMapper.readTree(json);
   }
 
   @Test

@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
+import static io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider.type;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
+import static org.eclipse.microprofile.openapi.models.media.Schema.SchemaType.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -12,9 +14,11 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
+import io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
@@ -25,7 +29,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
+import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -71,6 +77,7 @@ public record FindAndRerankCommand(
       @Schema(
               description =
                   "The maximum number of documents to read for the vector and lexical queries that feed into the reranking. May be a number or an object with $vector and $lexical fields. The accepted range is determined by server configuration.",
+              ref = HybridLimits.SchemaProvider.REF,
               examples = {
                 "50",
                 """
@@ -116,17 +123,66 @@ public record FindAndRerankCommand(
                   "Optional override for the reranking service. Completely replaces the"
                       + " collection-level reranking configuration when provided. Both 'provider' and"
                       + " 'modelName' are required.",
-              implementation = CreateCollectionCommand.Options.RerankServiceDesc.class)
+              implementation = RerankOverrideSchema.class,
+              ref = RerankOverrideSchema.REF)
           @JsonProperty("rerank")
           CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
 
+  // Collection creation uses the same service record but also accepts authentication and
+  // parameters.
+  @Schema(name = RerankOverrideSchema.NAME)
+  @RegisterForReflection
+  public static class RerankOverrideSchema implements ApiSchemaProvider {
+    public static final String NAME = "RerankServiceOverride";
+    public static final String REF = "#/components/schemas/" + NAME;
+
+    @Override
+    public org.eclipse.microprofile.openapi.models.media.Schema schema() {
+      return type(OBJECT, NULL)
+          .addProperty("provider", type(STRING))
+          .addProperty("modelName", type(STRING))
+          .required(List.of("provider", "modelName"))
+          .additionalPropertiesBoolean(false)
+          .addExample(
+              Map.of("provider", "nvidia", "modelName", "nvidia/llama-3.2-nv-rerankqa-1b-v2"));
+    }
+  }
+
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
+  @Schema(
+      description =
+          "Candidate read limits as one integer for both legs, or an object containing both $vector and $lexical integer limits. Accepted bounds are determined by server configuration.",
+      implementation = HybridLimits.SchemaProvider.class,
+      ref = HybridLimits.SchemaProvider.REF)
   public record HybridLimits(
       @JsonProperty(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) int vectorLimit,
       /** ---- */
       @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit,
       CommandFeatures commandFeatures)
       implements Recordable {
+
+    @Schema(name = SchemaProvider.NAME)
+    @RegisterForReflection
+    public static class SchemaProvider implements ApiSchemaProvider {
+      public static final String NAME = "HybridLimits";
+      public static final String REF = "#/components/schemas/" + NAME;
+
+      @Override
+      public org.eclipse.microprofile.openapi.models.media.Schema schema() {
+        return OASFactory.createSchema()
+            .description(HybridLimits.class.getAnnotation(Schema.class).description())
+            .addAnyOf(type(INTEGER))
+            .addAnyOf(
+                type(OBJECT)
+                    .addProperty(VECTOR_EMBEDDING_FIELD, type(INTEGER))
+                    .addProperty(LEXICAL_CONTENT_FIELD, type(INTEGER))
+                    .required(List.of(VECTOR_EMBEDDING_FIELD, LEXICAL_CONTENT_FIELD))
+                    .additionalPropertiesBoolean(false))
+            .addAnyOf(type(NULL))
+            .addExample(50)
+            .addExample(Map.of(VECTOR_EMBEDDING_FIELD, 50, LEXICAL_CONTENT_FIELD, 10));
+      }
+    }
 
     public static final HybridLimits DEFAULT =
         new HybridLimits(

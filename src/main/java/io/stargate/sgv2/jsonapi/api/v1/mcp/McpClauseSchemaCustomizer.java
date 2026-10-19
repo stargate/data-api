@@ -1,20 +1,21 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.CustomDefinition;
 import com.github.victools.jsonschema.generator.CustomPropertyDefinition;
-import com.github.victools.jsonschema.generator.SchemaGenerationContext;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import io.quarkiverse.mcp.server.runtime.SchemaGeneratorConfigCustomizer;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
+import io.smallrye.openapi.model.OpenApiVersion;
+import io.smallrye.openapi.runtime.io.IOContext;
+import io.smallrye.openapi.runtime.io.JsonIO;
+import io.smallrye.openapi.runtime.io.media.SchemaIO;
+import io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import jakarta.inject.Singleton;
-import java.util.Map;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
  * Generates schemas for Data API clauses whose JSON shape differs from their Java fields. Custom
@@ -22,93 +23,16 @@ import java.util.Map;
  */
 @Singleton
 public class McpClauseSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
-  private static final Map<Class<?>, String> CLAUSE_SCHEMAS =
-      Map.of(
-          FilterDefinition.class,
-          """
-          {
-            "type": ["object", "null"],
-            "description": "A Data API filter object mapping document paths to values or operator expressions, such as $eq, $gt, $in, $and, and $or.",
-            "additionalProperties": true,
-            "examples": [{"age": {"$gt": 40}}, {"name": "Aaron", "country": {"$eq": "NZ"}}]
-          }
-          """,
-          SortDefinition.class,
-          """
-          {
-            "type": ["object", "null"],
-            "description": "A Data API sort object mapping paths to 1 (ascending) or -1 (descending). Collections also accept a single $vector, $vectorize, or $lexical sort. Tables use the vector or lexical column name.",
-            "additionalProperties": true,
-            "examples": [{"user.age": -1, "user.name": 1}, {"$vector": [0.1, 0.2, 0.3]}, {"$vectorize": "search text"}]
-          }
-          """,
-          FindAndRerankSort.class,
-          """
-          {
-            "type": ["object", "null"],
-            "properties": {
-              "$hybrid": {
-                "anyOf": [
-                  {"type": "string"},
-                  {
-                    "type": "object",
-                    "properties": {
-                      "$vectorize": {"type": ["string", "null"]},
-                      "$lexical": {"type": ["string", "null"]},
-                      "$vector": {
-                        "anyOf": [
-                          {"type": "array", "items": {"type": "number"}},
-                          {"type": "object", "properties": {"$binary": {"type": "string"}}, "required": ["$binary"], "additionalProperties": false},
-                          {"type": "null"}
-                        ]
-                      }
-                    },
-                    "additionalProperties": false,
-                    "not": {"required": ["$vector", "$vectorize"]}
-                  }
-                ]
-              }
-            },
-            "additionalProperties": false,
-            "examples": [
-              {"$hybrid": "search text"},
-              {"$hybrid": {"$vectorize": "vector query", "$lexical": "lexical query"}},
-              {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "lexical query"}},
-              {"$hybrid": {"$vector": {"$binary": "P4AAAEAAAABAQAAA"}, "$lexical": "lexical query"}}
-            ]
-          }
-          """,
-          FindAndRerankCommand.HybridLimits.class,
-          """
-          {
-            "description": "Candidate read limits as one integer for both legs, or an object containing both $vector and $lexical integer limits. Accepted bounds are determined by server configuration.",
-            "anyOf": [
-              {"type": "integer"},
-              {
-                "type": "object",
-                "properties": {"$vector": {"type": "integer"}, "$lexical": {"type": "integer"}},
-                "required": ["$vector", "$lexical"],
-                "additionalProperties": false
-              },
-              {"type": "null"}
-            ],
-            "examples": [50, {"$vector": 50, "$lexical": 10}]
-          }
-          """);
+  private final SchemaIO<JsonNode, ArrayNode, ObjectNode, ArrayNode, ObjectNode> schemaIO;
 
-  // This override is field-specific: collection creation uses the same service record but may
-  // advertise authentication and parameters separately from the findAndRerank request override.
-  private static final String RERANK_OVERRIDE_SCHEMA =
-      """
-      {
-        "type": ["object", "null"],
-        "description": "Optional reranking service override. Supply both provider and modelName.",
-        "properties": {"provider": {"type": "string"}, "modelName": {"type": "string"}},
-        "required": ["provider", "modelName"],
-        "additionalProperties": false,
-        "examples": [{"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"}]
-      }
-      """;
+  public McpClauseSchemaCustomizer() {
+    var context =
+        IOContext.forJson(
+            JsonIO.<JsonNode, ArrayNode, ObjectNode, ArrayNode, ObjectNode>newInstance(null));
+    // OpenAPI 3.1 uses the same JSON Schema dialect as the MCP generator.
+    context.setOpenApiVersion(OpenApiVersion.V3_1);
+    schemaIO = context.schemaIO();
+  }
 
   @Override
   public void customize(SchemaGeneratorConfigBuilder builder) {
@@ -117,13 +41,13 @@ public class McpClauseSchemaCustomizer implements SchemaGeneratorConfigCustomize
         .withIgnoreCheck(field -> field.getType().getErasedType() == CommandFeatures.class)
         .withCustomDefinitionProvider(
             (field, context) -> {
-              if (field.getDeclaringType().getErasedType() == FindAndRerankCommand.Options.class
-                  && field.getDeclaredName().equals("rerankServiceOverride")) {
-                return new CustomPropertyDefinition(
-                    parseSchema(RERANK_OVERRIDE_SCHEMA, context),
-                    CustomDefinition.AttributeInclusion.NO);
-              }
-              return null;
+              var provider =
+                  ApiSchemaProvider.from(
+                      field.getAnnotationConsideringFieldAndGetter(Schema.class));
+              return provider == null
+                  ? null
+                  : new CustomPropertyDefinition(
+                      schemaNode(provider), CustomDefinition.AttributeInclusion.YES);
             })
         .withPropertyNameOverrideResolver(
             field -> {
@@ -135,22 +59,18 @@ public class McpClauseSchemaCustomizer implements SchemaGeneratorConfigCustomize
         .forTypesInGeneral()
         .withCustomDefinitionProvider(
             (javaType, context) -> {
-              var schemaJson = CLAUSE_SCHEMAS.get(javaType.getErasedType());
-              if (schemaJson == null) {
-                return null;
-              }
-              return new CustomDefinition(
-                  parseSchema(schemaJson, context),
-                  CustomDefinition.DefinitionType.INLINE,
-                  CustomDefinition.AttributeInclusion.YES);
+              var provider =
+                  ApiSchemaProvider.from(javaType.getErasedType().getAnnotation(Schema.class));
+              return provider == null
+                  ? null
+                  : new CustomDefinition(
+                      schemaNode(provider),
+                      CustomDefinition.DefinitionType.INLINE,
+                      CustomDefinition.AttributeInclusion.YES);
             });
   }
 
-  private static ObjectNode parseSchema(String schemaJson, SchemaGenerationContext context) {
-    try {
-      return (ObjectNode) context.getGeneratorConfig().getObjectMapper().readTree(schemaJson);
-    } catch (JsonProcessingException e) {
-      throw new IllegalStateException("Invalid MCP clause schema", e);
-    }
+  private ObjectNode schemaNode(ApiSchemaProvider provider) {
+    return (ObjectNode) schemaIO.write(provider.schema()).orElseThrow();
   }
 }
