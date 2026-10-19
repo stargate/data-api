@@ -148,8 +148,7 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
-  @Tool(
-      description = "Finds candidate documents using a $hybrid sort, then reranks their passages.")
+  @Tool(description = "Finds documents using vector and lexical sorting, then reranks the results.")
   public Uni<ToolResponse> findAndRerank(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,

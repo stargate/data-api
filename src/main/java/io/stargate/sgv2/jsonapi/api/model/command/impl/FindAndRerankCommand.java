@@ -29,8 +29,7 @@ import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(
-    description = "Finds candidate documents using a $hybrid sort, then reranks their passages.")
+@Schema(description = "Finds documents using vector and lexical sorting, then reranks the results.")
 @JsonTypeName(CommandName.Names.FIND_AND_RERANK)
 public record FindAndRerankCommand(
     @Valid @JsonProperty("filter") FilterDefinition filterDefinition,
