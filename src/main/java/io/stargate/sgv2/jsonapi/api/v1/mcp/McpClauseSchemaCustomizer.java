@@ -17,8 +17,8 @@ import jakarta.inject.Singleton;
 import java.util.Map;
 
 /**
- * Advertises the Data API wire format for clauses whose JSON shape differs from their Java fields.
- * Custom deserializers and delegating creators cannot be described by reflecting their fields.
+ * Generates schemas for Data API clauses whose JSON shape differs from their Java fields. Custom
+ * deserializers and delegating creators cannot be described by reflecting their fields.
  */
 @Singleton
 public class McpClauseSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
