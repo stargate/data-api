@@ -22,9 +22,15 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     type = SchemaType.OBJECT,
     implementation = Map.class,
     examples = {
-      "{\"$hybrid\": \"Same query for vectorize and BM25 sorting\"}",
-      "{\"$hybrid\": {\"$vectorize\": \"vectorize sort query\", \"$lexical\": \"lexical sort\"}}",
-      "{\"$hybrid\": {\"$vector\": [1, 2, 3], \"$lexical\": \"lexical sort\"}}"
+      """
+      {"$hybrid": "Same query for vectorize and BM25 sorting"}
+      """,
+      """
+      {"$hybrid": {"$vectorize": "vectorize sort query", "$lexical": "lexical sort"}}
+      """,
+      """
+      {"$hybrid": {"$vector": [1, 2, 3], "$lexical": "lexical sort"}}
+      """
     })
 public record FindAndRerankSort(
     String vectorizeSort, String lexicalSort, float[] vectorSort, CommandFeatures commandFeatures)
