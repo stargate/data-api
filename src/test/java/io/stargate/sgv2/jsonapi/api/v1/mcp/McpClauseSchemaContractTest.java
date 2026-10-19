@@ -21,6 +21,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
+import io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
@@ -32,12 +33,16 @@ import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvide
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.IndexReader;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -144,12 +149,26 @@ class McpClauseSchemaContractTest {
     }
   }
 
-  static Stream<Class<?>> clauseTypes() {
-    return Stream.of(
-        FilterDefinition.class,
-        SortDefinition.class,
-        FindAndRerankSort.class,
-        FindAndRerankCommand.HybridLimits.class);
+  static Stream<Class<?>> clauseTypes() throws Exception {
+    var loader = ApiSchemaProvider.class.getClassLoader();
+    // Use the build's class index so new annotated clauses join these tests automatically.
+    try (var indexStream = loader.getResourceAsStream("META-INF/jandex.idx")) {
+      assertNotNull(indexStream, "The application class index must be available");
+      var index = new IndexReader(indexStream).read();
+      var clauseTypes = new ArrayList<Class<?>>();
+      for (var annotation : index.getAnnotations(Schema.class)) {
+        if (annotation.target().kind() != AnnotationTarget.Kind.CLASS) {
+          continue;
+        }
+        var type = Class.forName(annotation.target().asClass().name().toString(), false, loader);
+        var provider = type.getAnnotation(Schema.class).implementation();
+        if (ApiSchemaProvider.class.isAssignableFrom(provider)) {
+          clauseTypes.add(type);
+        }
+      }
+      assertFalse(clauseTypes.isEmpty(), "The application index must contain clause schemas");
+      return clauseTypes.stream().sorted(Comparator.comparing(Class::getName));
+    }
   }
 
   /** Both entry points accept the same clause JSON and must expose the same schema definition. */
@@ -340,32 +359,30 @@ class McpClauseSchemaContractTest {
             new RerankingProviderConfigImpl(false, "nvidia", true, Map.of(), List.of(model))));
   }
 
-  @Test
-  void rerankToolAdvertisesWireFormatAndOverrideName() throws Exception {
-    var schema = inputSchema("findAndRerank");
-    var properties = schema.path("properties");
-    assertTrue(properties.path("sort").path("properties").has("$hybrid"));
-    var options = properties.path("options").path("properties");
-    assertTrue(options.has("rerank"));
-    assertFalse(options.has("rerankServiceOverride"));
-    var hybridLimits = options.path("hybridLimits");
-    assertSchemaAccepts(hybridLimits, objectMapper.readTree("50"));
-    assertSchemaAccepts(hybridLimits, objectMapper.readTree("{\"$vector\": 50, \"$lexical\": 10}"));
-    var rerankProperties = options.path("rerank").path("properties");
-    assertTrue(rerankProperties.has("provider"));
-    assertTrue(rerankProperties.has("modelName"));
-    assertFalse(rerankProperties.has("authentication"));
-    assertFalse(rerankProperties.has("parameters"));
-    assertFalse(schema.toString().contains("commandFeatures"));
-    assertFalse(schema.toString().contains("vectorLimit"));
+  @ParameterizedTest
+  @ValueSource(strings = {"50", "{\"$vector\": 50, \"$lexical\": 10}"})
+  void rerankToolAcceptsWirePayloads(String limits) throws Exception {
+    var payload =
+        toolInput(
+            """
+            {
+              "filter": {"age": {"$gt": 40}},
+              "sort": {"$hybrid": "search text"},
+              "options": {"rerank": {"provider": "nvidia", "modelName": "nvidia/rerank-v1"}}
+            }
+            """);
+    ((ObjectNode) payload.path("options")).set("hybridLimits", objectMapper.readTree(limits));
+    assertSchemaAccepts(inputSchema("findAndRerank"), payload);
+  }
 
-    var sortSchema = properties.path("sort");
-    assertFalse(sortSchema.path("examples").isEmpty());
-    for (var example : sortSchema.path("examples")) {
-      assertSchemaAccepts(sortSchema, example);
-      assertNotNull(objectMapper.treeToValue(example, FindAndRerankSort.class));
-    }
-    var rerankSchema = options.path("rerank");
+  @Test
+  void rerankOverrideExamplesDeserialize() throws Exception {
+    var rerankSchema =
+        inputSchema("findAndRerank")
+            .path("properties")
+            .path("options")
+            .path("properties")
+            .path("rerank");
     assertFalse(rerankSchema.path("examples").isEmpty());
     for (var example : rerankSchema.path("examples")) {
       assertSchemaAccepts(rerankSchema, example);
@@ -373,28 +390,55 @@ class McpClauseSchemaContractTest {
           objectMapper.treeToValue(
               example, CreateCollectionCommand.Options.RerankServiceDesc.class));
     }
-    var limitExamples = hybridLimits.findValues("examples");
-    assertFalse(limitExamples.isEmpty());
-    for (var example : limitExamples.getFirst()) {
-      assertSchemaAccepts(hybridLimits, example);
-      assertNotNull(objectMapper.treeToValue(example, FindAndRerankCommand.HybridLimits.class));
-    }
   }
 
   @Test
-  void findToolAdvertisesPlainFilterAndSortClauses() throws Exception {
-    var properties = inputSchema("find").path("properties");
-    var filter = properties.path("filter");
-    var sort = properties.path("sort");
-    assertFalse(filter.has("properties"));
-    assertFalse(sort.toString().contains("sortClause"));
-    assertTrue(filter.path("examples").size() > 0);
-    assertTrue(sort.path("examples").size() > 0);
-    var filterExample = filter.path("examples").get(0);
-    var sortExample = sort.path("examples").get(0);
-    assertEquals(
-        filterExample, objectMapper.treeToValue(filterExample, FilterDefinition.class).json());
-    assertEquals(sortExample, objectMapper.treeToValue(sortExample, SortDefinition.class).json());
+  void findToolAcceptsWirePayloads() throws Exception {
+    var payload =
+        toolInput(
+            """
+            {"filter": {"age": {"$gt": 40}}, "sort": {"user.age": -1, "user.name": 1}}
+            """);
+    assertSchemaAccepts(inputSchema("find"), payload);
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidToolPayloads")
+  void toolSchemasRejectInvalidPayloads(String tool, String json) throws Exception {
+    var schema =
+        JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012).getSchema(inputSchema(tool));
+    assertFalse(schema.validate(toolInput(json)).isEmpty());
+  }
+
+  static Stream<Arguments> invalidToolPayloads() {
+    return Stream.of(
+        Arguments.of("find", "{\"filter\": 5}"),
+        Arguments.of("find", "{\"sort\": []}"),
+        Arguments.of("findAndRerank", "{\"sort\": {\"vectorizeSort\": \"query\"}}"),
+        Arguments.of("findAndRerank", "{\"sort\": {\"$hybrid\": {\"$vector\": \"query\"}}}"),
+        Arguments.of("findAndRerank", "{\"options\": {\"hybridLimits\": {\"$vector\": 50}}}"),
+        Arguments.of("findAndRerank", "{\"options\": {\"rerank\": {\"provider\": \"nvidia\"}}}"),
+        Arguments.of(
+            "findAndRerank",
+            """
+            {"options": {"rerank": {
+              "provider": "nvidia", "modelName": "nvidia/rerank-v1", "authentication": {}
+            }}}
+            """),
+        Arguments.of(
+            "findAndRerank",
+            """
+            {"options": {"rerank": {
+              "provider": "nvidia", "modelName": "nvidia/rerank-v1", "parameters": {}
+            }}}
+            """));
+  }
+
+  private ObjectNode toolInput(String json) throws Exception {
+    // Routing arguments are required by MCP but are not part of the command clauses.
+    return ((ObjectNode) objectMapper.readTree(json))
+        .put("keyspace", "default_keyspace")
+        .put("collection", "documents");
   }
 
   @Test
@@ -447,11 +491,25 @@ class McpClauseSchemaContractTest {
   }
 
   @Test
-  void collectionCreationKeepsItsOwnRerankServiceFields() {
-    var properties =
-        schemaFor(CreateCollectionCommand.Options.RerankServiceDesc.class).path("properties");
-    assertTrue(properties.has("authentication"));
-    assertTrue(properties.has("parameters"));
+  void collectionCreationAcceptsRerankAuthenticationAndParameters() throws Exception {
+    var payload =
+        objectMapper.readTree(
+            """
+            {
+              "provider": "nvidia", "modelName": "nvidia/rerank-v1",
+              "authentication": {"providerKey": "credential-reference"},
+              "parameters": {"truncate": "END"}
+            }
+            """);
+    assertSchemaAccepts(
+        schemaFor(CreateCollectionCommand.Options.RerankServiceDesc.class), payload);
+    assertEquals(
+        new CreateCollectionCommand.Options.RerankServiceDesc(
+            "nvidia",
+            "nvidia/rerank-v1",
+            Map.of("providerKey", "credential-reference"),
+            Map.of("truncate", "END")),
+        objectMapper.treeToValue(payload, CreateCollectionCommand.Options.RerankServiceDesc.class));
   }
 
   private JsonNode inputSchema(String name) throws Exception {
