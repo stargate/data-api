@@ -7,19 +7,29 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
  * Enables MicroProfile {@link Schema#description()} resolution for the victools JSON schema
- * generator used by Quarkus MCP Server. Without this customizer, nested record fields annotated
- * with {@code @Schema(description = "...")} will not have their descriptions included in the MCP
- * tool schema output.
+ * generator used by Quarkus MCP Server. Without this customizer, classes and record fields
+ * annotated with {@code @Schema(description = "...")} will not have their descriptions included in
+ * the MCP tool schema output.
  *
  * <p>The Quarkus MCP Server's {@code DefaultSchemaGenerator} uses {@code OptionPreset.PLAIN_JSON},
- * which does not read any annotations by default. This customizer bridges that gap by adding a
- * field-level description resolver for MicroProfile OpenAPI's {@code @Schema} annotation.
+ * which does not read any annotations by default. This customizer bridges that gap by adding field
+ * and type description resolvers for MicroProfile OpenAPI's {@code @Schema} annotation.
  */
 @Singleton
 public class McpSchemaDescriptionCustomizer implements SchemaGeneratorConfigCustomizer {
 
   @Override
   public void customize(SchemaGeneratorConfigBuilder builder) {
+    builder
+        .forTypesInGeneral()
+        .withDescriptionResolver(
+            type -> {
+              Schema schemaAnn = type.getType().getErasedType().getAnnotation(Schema.class);
+              return schemaAnn != null && !schemaAnn.description().isEmpty()
+                  ? schemaAnn.description()
+                  : null;
+            });
+
     builder
         .forFields()
         .withDescriptionResolver(

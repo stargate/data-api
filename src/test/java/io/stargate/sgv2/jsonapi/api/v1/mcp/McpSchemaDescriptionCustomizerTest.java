@@ -37,6 +37,34 @@ class McpSchemaDescriptionCustomizerTest {
       @Schema(description = "Configuration options") TestOptions options,
       Boolean noAnnotation) {}
 
+  @Schema(description = "Reusable value description")
+  record TestDescribedType(String value) {}
+
+  record TestTypeDescription(TestDescribedType value) {}
+
+  @Test
+  void shouldIncludeRootTypeDescription() {
+    var configBuilder = baseConfigBuilder();
+    new McpSchemaDescriptionCustomizer().customize(configBuilder);
+
+    var schema = new SchemaGenerator(configBuilder.build()).generateSchema(TestDescribedType.class);
+
+    assertEquals("Reusable value description", schema.path("description").asText());
+  }
+
+  @Test
+  void shouldIncludeNestedTypeDescriptionWithoutFieldDescription() {
+    var configBuilder = baseConfigBuilder();
+    new McpSchemaDescriptionCustomizer().customize(configBuilder);
+
+    var schema =
+        new SchemaGenerator(configBuilder.build()).generateSchema(TestTypeDescription.class);
+
+    assertEquals(
+        "Reusable value description",
+        schema.path("properties").path("value").path("description").asText());
+  }
+
   @Test
   void shouldIncludeSchemaDescriptionWithCustomizer() {
     var configBuilder = baseConfigBuilder();

@@ -46,7 +46,6 @@ public class McpClauseSchemaCustomizer implements SchemaGeneratorConfigCustomize
           """
           {
             "type": ["object", "null"],
-            "description": "Use $hybrid with a query string or an object containing $vectorize or $vector, and optionally $lexical. $vector and $vectorize cannot be used together. Query text and required collection capabilities are checked when resolving the command.",
             "properties": {
               "$hybrid": {
                 "anyOf": [
@@ -143,7 +142,7 @@ public class McpClauseSchemaCustomizer implements SchemaGeneratorConfigCustomize
               return new CustomDefinition(
                   parseSchema(schemaJson, context),
                   CustomDefinition.DefinitionType.INLINE,
-                  CustomDefinition.AttributeInclusion.NO);
+                  CustomDefinition.AttributeInclusion.YES);
             });
   }
 

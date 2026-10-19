@@ -19,6 +19,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  */
 @JsonDeserialize(using = FindAndRerankSortClauseDeserializer.class)
 @Schema(
+    description =
+        "Use $hybrid with a query string or an object containing $vectorize or $vector, and optionally $lexical."
+            + " $vector and $vectorize cannot be used together."
+            + " Query text and required collection capabilities are checked when resolving the command.",
     type = SchemaType.OBJECT,
     implementation = Map.class,
     examples = {

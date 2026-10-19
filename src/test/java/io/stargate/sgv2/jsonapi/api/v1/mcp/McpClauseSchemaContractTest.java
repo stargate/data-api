@@ -79,6 +79,15 @@ class McpClauseSchemaContractTest {
   }
 
   @Test
+  void rerankToolUsesSortClassDescription() throws Exception {
+    var description = FindAndRerankSort.class.getAnnotation(Schema.class).description();
+    assertFalse(description.isBlank());
+    assertEquals(
+        description,
+        inputSchema("findAndRerank").path("properties").path("sort").path("description").asText());
+  }
+
+  @Test
   void rerankToolAdvertisesWireFormatAndOverrideName() throws Exception {
     var schema = inputSchema("findAndRerank");
     var properties = schema.path("properties");
