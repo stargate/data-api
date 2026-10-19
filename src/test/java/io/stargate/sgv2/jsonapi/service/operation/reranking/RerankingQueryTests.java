@@ -27,13 +27,13 @@ public class RerankingQueryTests {
 
   static {
     vectorizeSort = mock(FindAndRerankSort.class);
-    when(vectorizeSort.vectorizeSort()).thenReturn(VECTORIZE_QUERY);
+    when(vectorizeSort.vectorizeText()).thenReturn(VECTORIZE_QUERY);
 
     blankVectorizeSort = mock(FindAndRerankSort.class);
-    when(blankVectorizeSort.vectorizeSort()).thenReturn("");
+    when(blankVectorizeSort.vectorizeText()).thenReturn("");
 
     noSort = mock(FindAndRerankSort.class);
-    when(noSort.vectorizeSort()).thenReturn(null);
+    when(noSort.vectorizeText()).thenReturn(null);
 
     rerankQueryOptions = mock(FindAndRerankCommand.Options.class);
     when(rerankQueryOptions.rerankQuery()).thenReturn(OPTIONS_QUERY);

@@ -17,7 +17,6 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
-import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -195,7 +194,7 @@ class FindAndRerankOperationBuilder {
     }
 
     // The index is only required if the user explicitly asked for lexical,
-    // they could also have used $hybrid and it expanded into the lexical sort.
+    // the $hybrid text skips the lexical leg when there is no index.
     if (isLexicalSort() && isExplicitLexicalSort()) {
       throwIfNoLexicalIndex();
     }
@@ -358,7 +357,7 @@ class FindAndRerankOperationBuilder {
       return null;
     }
 
-    var bm25SortTerm = command.sortClause().lexicalSort();
+    var bm25SortTerm = command.sortClause().lexicalText();
     var bm25SortClause =
         new SortClause(List.of(SortExpression.collectionLexicalSort(bm25SortTerm)));
     var bm25ReadCommand =
@@ -398,7 +397,7 @@ class FindAndRerankOperationBuilder {
       // pass the vector sort clause through so it will be updated when we get the vector
       deferredVectorize =
           new DeferredVectorize(
-              command.sortClause().vectorizeSort(),
+              command.sortClause().vectorizeText(),
               vectorDef.vectorSize(),
               vectorDef.vectorizeDefinition(),
               sortClause);
@@ -478,15 +477,16 @@ class FindAndRerankOperationBuilder {
   }
 
   private boolean isLexicalSort() {
+    return command.sortClause().lexicalText() != null;
+  }
+
+  /** The $hybrid object has $lexical text, so the collection must have a lexical index. */
+  private boolean isExplicitLexicalSort() {
     return command.sortClause().lexicalSort() != null;
   }
 
-  private boolean isExplicitLexicalSort() {
-    return command.sortClause().commandFeatures().contains(CommandFeature.LEXICAL);
-  }
-
   private boolean isVectorizeSort() {
-    return command.sortClause().vectorizeSort() != null;
+    return command.sortClause().vectorizeText() != null;
   }
 
   private boolean isVectorSort() {
