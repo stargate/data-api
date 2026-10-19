@@ -72,7 +72,12 @@ public record FindAndRerankCommand(
       @Schema(
               description =
                   "The maximum number of documents to read for the vector and lexical queries that feed into the reranking. May be a number or an object with $vector and $lexical fields. The accepted range is determined by server configuration.",
-              examples = {"50", "{\"$vector\": 50, \"$lexical\": 10}"})
+              examples = {
+                "50",
+                """
+                {"$vector": 50, "$lexical": 10}
+                """
+              })
           HybridLimits hybridLimits,
       /** ---- */
       @Schema(
