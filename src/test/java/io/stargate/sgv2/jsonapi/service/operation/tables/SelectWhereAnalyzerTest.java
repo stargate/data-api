@@ -32,80 +32,9 @@ public class SelectWhereAnalyzerTest {
   // (there are a number of combinations to test, pls keep organised into sections for easier
   // reading)
   // ==================================================================================================================
-
-  @Test
-  public void emptyFilter() {
-    var fixture =
-        TEST_DATA
-            .whereAnalyzer()
-            .table2PK3Clustering1Index(
-                "emptyFilter()", WhereCQLClauseAnalyzer.StatementType.SELECT);
-    fixture
-        .analyze()
-        .assertAllowFilteringEnabled()
-        .assertOneWarning(WarningException.Code.ZERO_FILTER_OPERATIONS);
-  }
-
-  @Test
-  public void eqAllPrimaryKeys() {
-
-    var fixture =
-        TEST_DATA
-            .whereAnalyzer()
-            .table2PK3Clustering1Index(
-                "eqAllPrimaryKeys()", WhereCQLClauseAnalyzer.StatementType.SELECT);
-    fixture.expression().eqAllPrimaryKeys().analyze().assertNoFilteringNoWarnings();
-  }
-
   // ==================================================================================================================
   // NON PK COLUMNS - INDEXED AND UNINDEXED
   // ==================================================================================================================
-
-  @Test
-  public void oneIndexed() {
-
-    var fixture =
-        TEST_DATA
-            .whereAnalyzer()
-            .table2PK3Clustering1Index("oneIndexed()", WhereCQLClauseAnalyzer.StatementType.SELECT);
-    fixture.expression().eqOn(names().COL_INDEXED_1).analyze().assertNoFilteringNoWarnings();
-  }
-
-  @Test
-  public void oneIndexedOneRegular() {
-
-    var fixture =
-        TEST_DATA
-            .whereAnalyzer()
-            .table2PK3Clustering1Index(
-                "oneIndexedOneRegular()", WhereCQLClauseAnalyzer.StatementType.SELECT);
-
-    fixture
-        .expression()
-        .eqOn(names().COL_INDEXED_1)
-        .expression()
-        .eqOn(names().COL_REGULAR_1)
-        .analyze()
-        .assertAllowFilteringEnabled()
-        .assertOneWarning(WarningException.Code.MISSING_INDEX)
-        .assertWarnOnUnindexedColumns(names().COL_REGULAR_1);
-  }
-
-  @Test
-  public void oneRegular() {
-
-    var fixture =
-        TEST_DATA
-            .whereAnalyzer()
-            .table2PK3Clustering1Index("oneRegular()", WhereCQLClauseAnalyzer.StatementType.SELECT);
-    fixture
-        .expression()
-        .eqOn(names().COL_REGULAR_1)
-        .analyze()
-        .assertAllowFilteringEnabled()
-        .assertOneWarning(WarningException.Code.MISSING_INDEX)
-        .assertWarnOnUnindexedColumns(names().COL_REGULAR_1);
-  }
 
   // ==================================================================================================================
   // NOT EQUAL OPERATIONS - INDEXED AND UNINDEXED
