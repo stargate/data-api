@@ -2,43 +2,28 @@ package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.CustomDefinition;
 import com.github.victools.jsonschema.generator.CustomPropertyDefinition;
 import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import io.quarkiverse.mcp.server.runtime.SchemaGeneratorConfigCustomizer;
-import io.smallrye.openapi.model.OpenApiVersion;
-import io.smallrye.openapi.runtime.io.IOContext;
-import io.smallrye.openapi.runtime.io.JsonIO;
-import io.smallrye.openapi.runtime.io.media.SchemaIO;
-import io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider;
 import jakarta.inject.Singleton;
-import java.util.HashMap;
-import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
  * Generates MCP schemas using Data API clause definitions and Jackson and OpenAPI annotations.
- * Custom deserializers and delegating creators cannot be described by reflecting their fields.
  *
- * <p>The generator's PLAIN_JSON preset does not read annotations. This customizer supplies field
- * names, ignored fields, descriptions, and schema overrides.
+ * <p>MCP clients use these schemas to build tool arguments. Custom deserialization can accept JSON
+ * shapes that differ from the Java fields, so those types need overrides. Ordinary records still
+ * use field-based generation.
+ *
+ * <p>Named {@code @Schema} definitions refer to the schemas Quarkus already generates for Swagger.
+ * {@link McpOpenApiSchemaAdapter} packages those definitions into the complete MCP input schema.
  */
 @Singleton
 public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
-  private final SchemaIO<JsonNode, ArrayNode, ObjectNode, ArrayNode, ObjectNode> schemaIO;
-  private final Map<Class<? extends ApiSchemaProvider>, ObjectNode> schemas = new HashMap<>();
-
-  public McpSchemaCustomizer() {
-    var context =
-        IOContext.forJson(
-            JsonIO.<JsonNode, ArrayNode, ObjectNode, ArrayNode, ObjectNode>newInstance(null));
-    // OpenAPI 3.1 uses the same JSON Schema dialect as the MCP generator.
-    context.setOpenApiVersion(OpenApiVersion.V3_1);
-    schemaIO = context.schemaIO();
-  }
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   @Override
   public void customize(SchemaGeneratorConfigBuilder builder) {
@@ -54,11 +39,13 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
         .withIgnoreCheck(
             field -> {
               var ignore = field.getAnnotationConsideringFieldAndGetter(JsonIgnore.class);
-              return ignore != null && ignore.value();
+              var schema = field.getAnnotationConsideringFieldAndGetter(Schema.class);
+              return (ignore != null && ignore.value()) || (schema != null && schema.hidden());
             })
         .withCustomDefinitionProvider(
             (field, context) -> {
-              var schema = schemaNode(field.getAnnotationConsideringFieldAndGetter(Schema.class));
+              var schema =
+                  schemaNode(field.getAnnotationConsideringFieldAndGetter(Schema.class), false);
               return schema == null
                   ? null
                   : new CustomPropertyDefinition(schema, CustomDefinition.AttributeInclusion.YES);
@@ -81,7 +68,7 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
             })
         .withCustomDefinitionProvider(
             (javaType, context) -> {
-              var schema = schemaNode(javaType.getErasedType().getAnnotation(Schema.class));
+              var schema = schemaNode(javaType.getErasedType().getAnnotation(Schema.class), true);
               return schema == null
                   ? null
                   : new CustomDefinition(
@@ -91,19 +78,22 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
             });
   }
 
-  private synchronized ObjectNode schemaNode(Schema annotation) {
-    if (annotation == null
-        || !ApiSchemaProvider.class.isAssignableFrom(annotation.implementation())) {
+  private static ObjectNode schemaNode(Schema annotation, boolean typeAnnotation) {
+    if (annotation == null) {
       return null;
     }
-    var providerClass = annotation.implementation().asSubclass(ApiSchemaProvider.class);
-    // Serialize each provider once. Synchronization also protects the shared OpenAPI writer.
-    var schema =
-        schemas.computeIfAbsent(
-            providerClass,
-            type ->
-                (ObjectNode) schemaIO.write(ApiSchemaProvider.create(type).schema()).orElseThrow());
-    // The generator adds field metadata, so each use needs its own mutable copy.
-    return schema.deepCopy();
+    var reference = annotation.ref();
+    if (reference.isEmpty()) {
+      var name = typeAnnotation ? annotation.name() : "";
+      if (name.isEmpty()) {
+        var implementation = annotation.implementation().getAnnotation(Schema.class);
+        name = implementation == null ? "" : implementation.name();
+      }
+      if (name.isEmpty()) {
+        return null;
+      }
+      reference = "#/components/schemas/" + name.replace("~", "~0").replace("/", "~1");
+    }
+    return MAPPER.createObjectNode().put("$ref", reference);
   }
 }

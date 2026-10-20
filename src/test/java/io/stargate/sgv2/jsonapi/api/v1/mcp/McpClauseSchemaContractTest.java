@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.MissingNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.*;
 import com.networknt.schema.JsonSchemaFactory;
@@ -16,12 +18,12 @@ import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.JsonDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
-import io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
@@ -129,8 +131,9 @@ class McpClauseSchemaContractTest {
   @MethodSource("clauseTypes")
   void everyAdvertisedClauseExampleDeserializes(Class<?> clauseType) throws Exception {
     var schema = schemaFor(clauseType);
-    var examples = schema.get("examples");
-    assertNotNull(examples, "Clause schema must advertise examples of the accepted JSON");
+    var examples = schemaMetadata(schema, schema, "examples");
+    assertFalse(
+        examples.isMissingNode(), "Clause schema must advertise examples of the accepted JSON");
     assertFalse(examples.isEmpty());
     for (var example : examples) {
       assertSchemaAccepts(schema, example);
@@ -146,7 +149,7 @@ class McpClauseSchemaContractTest {
   }
 
   static Stream<Class<?>> clauseTypes() throws Exception {
-    var loader = ApiSchemaProvider.class.getClassLoader();
+    var loader = FilterDefinition.class.getClassLoader();
     // Use the build's class index so new annotated clauses join these tests automatically.
     try (var indexStream = loader.getResourceAsStream("META-INF/jandex.idx")) {
       assertNotNull(indexStream, "The application class index must be available");
@@ -157,8 +160,12 @@ class McpClauseSchemaContractTest {
           continue;
         }
         var type = Class.forName(annotation.target().asClass().name().toString(), false, loader);
-        var provider = type.getAnnotation(Schema.class).implementation();
-        if (ApiSchemaProvider.class.isAssignableFrom(provider)) {
+        var schema = type.getAnnotation(Schema.class);
+        // Select parsed clause types, excluding helper classes for nested JSON shapes.
+        if (!schema.name().isBlank()
+            && schema.examples().length > 0
+            && (JsonDefinition.class.isAssignableFrom(type)
+                || type.isAnnotationPresent(JsonDeserialize.class))) {
           clauseTypes.add(type);
         }
       }
@@ -171,10 +178,40 @@ class McpClauseSchemaContractTest {
   @ParameterizedTest
   @MethodSource("clauseTypes")
   void openApiAndMcpShareClauseSchemas(Class<?> clauseType) throws Exception {
-    var provider = clauseType.getAnnotation(Schema.class).implementation();
-    var name = provider.getAnnotation(Schema.class).name();
-    var openApiSchema = openApi().path("components").path("schemas").path(name);
-    assertEquals(objectMapper.readTree(schemaFor(clauseType).toString()), openApiSchema);
+    var name = clauseType.getAnnotation(Schema.class).name();
+    var document = openApi();
+    var openApiSchema = document.path("components").path("schemas").path(name);
+    assertFalse(openApiSchema.isMissingNode(), "Missing OpenAPI component " + name);
+    var expected =
+        new McpOpenApiSchemaAdapter(document)
+            .adapt(objectMapper.createObjectNode().put("$ref", "#/components/schemas/" + name));
+    var actual = objectMapper.readTree(schemaFor(clauseType).toString());
+    assertEquals(referencedSchema(expected, expected), referencedSchema(actual, actual));
+    assertEquals(expected.path("$defs"), actual.path("$defs"));
+  }
+
+  @Test
+  void filterAnnotationDefinesBothSchemasWithoutWrapperFields() throws Exception {
+    var annotation = FilterDefinition.class.getAnnotation(Schema.class);
+    var schema = schemaFor(FilterDefinition.class);
+    var component = referencedSchema(schema, schema);
+
+    assertEquals(annotation.description(), schemaMetadata(schema, schema, "description").asText());
+    assertEquals(annotation.examples().length, component.path("examples").size());
+    for (var i = 0; i < annotation.examples().length; i++) {
+      assertEquals(
+          objectMapper.readTree(annotation.examples()[i]), component.path("examples").get(i));
+    }
+    assertTrue(component.path("additionalProperties").asBoolean());
+    assertFalse(component.path("properties").has("json"));
+    assertFalse(component.path("properties").has("filterClause"));
+    assertSchemaAccepts(schema, objectMapper.readTree("null"));
+    assertSchemaAccepts(schema, objectMapper.readTree("{\"some.path\": {\"$gt\": 40}}"));
+    assertFalse(
+        JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012)
+            .getSchema(schema)
+            .validate(objectMapper.readTree("[]"))
+            .isEmpty());
   }
 
   /** A correct reusable schema has no effect unless command fields actually reference it. */
@@ -191,18 +228,24 @@ class McpClauseSchemaContractTest {
     var options = referencedSchema(document, rerank.path("options")).path("properties");
     assertEquals(
         schemas.path("HybridLimits"), referencedSchema(document, options.path("hybridLimits")));
-    assertEquals(
-        schemas.path("RerankServiceOverride"), referencedSchema(document, options.path("rerank")));
-    var mcpOverride =
-        inputSchema("findAndRerank")
-            .path("properties")
-            .path("options")
-            .path("properties")
-            .path("rerank")
-            .deepCopy();
+    var openApiOverride =
+        (ObjectNode) referencedSchema(document, options.path("rerank")).deepCopy();
     // The field description belongs to the command options, not the reusable schema component.
+    openApiOverride.remove("description");
+    assertEquals(schemas.path("RerankServiceOverride"), openApiOverride);
+    var mcpDocument = inputSchema("findAndRerank");
+    var mcpOverride =
+        (ObjectNode)
+            referencedSchema(mcpDocument, propertySchema(mcpDocument, "options", "rerank"))
+                .deepCopy();
     ((ObjectNode) mcpOverride).remove("description");
-    assertEquals(mcpOverride, schemas.path("RerankServiceOverride"));
+    var expected =
+        new McpOpenApiSchemaAdapter(document)
+            .adapt(
+                objectMapper
+                    .createObjectNode()
+                    .put("$ref", "#/components/schemas/RerankServiceOverride"));
+    assertEquals(referencedSchema(expected, expected), mcpOverride);
   }
 
   /** Check the complete command schema because inferred parent types can restrict valid clauses. */
@@ -244,6 +287,31 @@ class McpClauseSchemaContractTest {
     return schema;
   }
 
+  private JsonNode propertySchema(JsonNode document, String... names) {
+    var schema = document;
+    for (var name : names) {
+      schema = referencedSchema(document, schema).path("properties").path(name);
+      assertFalse(schema.isMissingNode(), "Missing property " + name);
+    }
+    return schema;
+  }
+
+  private JsonNode schemaMetadata(JsonNode document, JsonNode schema, String keyword) {
+    if (schema.has(keyword)) {
+      return schema.get(keyword);
+    }
+    if (schema.has("$ref")) {
+      return schemaMetadata(document, referencedSchema(document, schema), keyword);
+    }
+    for (var branch : schema.path("allOf")) {
+      var metadata = schemaMetadata(document, branch, keyword);
+      if (!metadata.isMissingNode()) {
+        return metadata;
+      }
+    }
+    return MissingNode.getInstance();
+  }
+
   private JsonNode openApi() throws Exception {
     var json =
         given()
@@ -260,9 +328,25 @@ class McpClauseSchemaContractTest {
   void rerankToolUsesSortClassDescription() throws Exception {
     var description = FindAndRerankSort.class.getAnnotation(Schema.class).description();
     assertFalse(description.isBlank());
+    var document = inputSchema("findAndRerank");
     assertEquals(
         description,
-        inputSchema("findAndRerank").path("properties").path("sort").path("description").asText());
+        schemaMetadata(document, propertySchema(document, "sort"), "description").asText());
+  }
+
+  @Test
+  void rerankToolUsesOverrideFieldDescription() throws Exception {
+    var description =
+        FindAndRerankCommand.Options.class
+            .getDeclaredField("rerankServiceOverride")
+            .getAnnotation(Schema.class)
+            .description();
+    assertFalse(description.isBlank());
+    var document = inputSchema("findAndRerank");
+    assertEquals(
+        description,
+        schemaMetadata(document, propertySchema(document, "options", "rerank"), "description")
+            .asText());
   }
 
   /**
@@ -272,17 +356,14 @@ class McpClauseSchemaContractTest {
   @MethodSource("rerankOverrideRequiredFields")
   void rerankOverrideSchemaMatchesRequiredFieldValidation(String json, boolean accepted)
       throws Exception {
-    var schema =
-        inputSchema("findAndRerank")
-            .path("properties")
-            .path("options")
-            .path("properties")
-            .path("rerank");
+    var schema = inputSchema("findAndRerank");
     var payload = objectMapper.readTree(json);
+    var command = toolInput("{}");
+    command.putObject("options").set("rerank", payload);
     var errors =
         JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012)
             .getSchema(schema)
-            .validate(payload);
+            .validate(command);
     assertEquals(
         accepted, errors.isEmpty(), () -> "Schema validation for " + json + " returned " + errors);
 
@@ -371,17 +452,44 @@ class McpClauseSchemaContractTest {
     assertSchemaAccepts(inputSchema("findAndRerank"), payload);
   }
 
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{\"$hybrid\":{\"$vector\":null,\"$lexical\":\"query\"}}",
+        "{\"$hybrid\":{\"$vectorize\":null,\"$lexical\":\"query\"}}",
+        "{\"$hybrid\":{\"$vectorize\":\"query\",\"$lexical\":null}}",
+        "{\"$hybrid\":{\"$vector\":[1,2,3],\"$lexical\":null}}",
+        "{\"$hybrid\":{\"$vector\":null}}",
+        "{\"$hybrid\":{\"$vectorize\":null}}",
+        "{\"$hybrid\":{\"$lexical\":null}}",
+        "{\"$hybrid\":{}}",
+        "{}",
+        "null"
+      })
+  void sortSchemaAcceptsNullableAndEmptyWireForms(String json) throws Exception {
+    var sort = objectMapper.readTree(json);
+    assertSchemaAccepts(schemaFor(FindAndRerankSort.class), sort);
+    var clause = assertDoesNotThrow(() -> objectMapper.treeToValue(sort, FindAndRerankSort.class));
+    if (!sort.isNull()) {
+      assertNotNull(clause);
+    }
+
+    var payload = toolInput("{}");
+    payload.set("sort", sort);
+    assertSchemaAccepts(inputSchema("findAndRerank"), payload);
+  }
+
   @Test
   void rerankOverrideExamplesDeserialize() throws Exception {
-    var rerankSchema =
-        inputSchema("findAndRerank")
-            .path("properties")
-            .path("options")
-            .path("properties")
-            .path("rerank");
-    assertFalse(rerankSchema.path("examples").isEmpty());
-    for (var example : rerankSchema.path("examples")) {
-      assertSchemaAccepts(rerankSchema, example);
+    var document = inputSchema("findAndRerank");
+    var rerank = propertySchema(document, "options", "rerank");
+    var examples = schemaMetadata(document, rerank, "examples");
+    assertFalse(examples.isMissingNode());
+    assertFalse(examples.isEmpty());
+    for (var example : examples) {
+      var command = toolInput("{}");
+      command.putObject("options").set("rerank", example);
+      assertSchemaAccepts(document, command);
       assertNotNull(
           objectMapper.treeToValue(
               example, CreateCollectionCommand.Options.RerankServiceDesc.class));
@@ -470,11 +578,9 @@ class McpClauseSchemaContractTest {
   }
 
   @Test
-  void openApiLimitExamplesAreValidClauseJson() throws Exception {
-    var schema =
-        FindAndRerankCommand.Options.class
-            .getDeclaredField("hybridLimits")
-            .getAnnotation(Schema.class);
+  void hybridLimitAnnotationExamplesAreValidClauseJson() throws Exception {
+    var schema = FindAndRerankCommand.HybridLimits.class.getAnnotation(Schema.class);
+    assertTrue(schema.examples().length > 0);
     for (var example : schema.examples()) {
       assertNotNull(objectMapper.readValue(example, FindAndRerankCommand.HybridLimits.class));
     }
@@ -508,6 +614,20 @@ class McpClauseSchemaContractTest {
         objectMapper.treeToValue(payload, CreateCollectionCommand.Options.RerankServiceDesc.class));
   }
 
+  @Test
+  void allRegisteredToolsGenerateInputSchemas() {
+    var count = 0;
+    // Exercise named OpenAPI lookups for every tool, including ordinary options records.
+    for (var tool : toolManager) {
+      var schema =
+          assertDoesNotThrow(
+              () -> objectMapper.readTree(schemaGenerator.generate(tool).asJson()), tool.name());
+      assertTrue(schema.path("properties").isObject(), tool.name());
+      count++;
+    }
+    assertTrue(count > 0, "The MCP server must register tools");
+  }
+
   private JsonNode inputSchema(String name) throws Exception {
     // The registered tool includes nested command fields and the application's customizer wiring.
     var tool = toolManager.getTool(name);
@@ -521,6 +641,7 @@ class McpClauseSchemaContractTest {
                 objectMapper, SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
             .without(Option.SCHEMA_VERSION_INDICATOR);
     new McpSchemaCustomizer().customize(builder);
-    return new SchemaGenerator(builder.build()).generateSchema(type);
+    return new McpOpenApiSchemaAdapter()
+        .adapt(new SchemaGenerator(builder.build()).generateSchema(type));
   }
 }

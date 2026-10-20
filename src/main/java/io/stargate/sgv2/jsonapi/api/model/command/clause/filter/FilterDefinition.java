@@ -1,17 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
-import static io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider.type;
-import static org.eclipse.microprofile.openapi.models.media.Schema.SchemaType.*;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.JsonDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.builders.FilterClauseBuilder;
-import io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import java.util.Map;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
@@ -19,35 +14,27 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * allows for lazy deserialization into a {@link FilterClause}.
  */
 @Schema(
+    name = "FilterDefinition",
+    type = SchemaType.OBJECT,
+    implementation = Object.class,
+    nullable = true,
+    additionalProperties = Schema.True.class,
     description =
         "A Data API filter object mapping document paths to values or operator expressions, such as $eq, $gt, $in, $and, and $or.",
-    implementation = FilterDefinition.SchemaProvider.class,
-    ref = FilterDefinition.SchemaProvider.REF,
-    examples =
-        """
+    examples = {
+      """
+      {"age": {"$gt": 40}}
+      """,
+      """
        {"name": "Aaron", "country": {"$eq": "NZ"}, "age": {"$gt": 40}}
-        """)
+        """
+    })
 public class FilterDefinition extends JsonDefinition<FilterClause> {
-  @Schema(name = SchemaProvider.NAME)
-  @RegisterForReflection
-  public static class SchemaProvider implements ApiSchemaProvider {
-    public static final String NAME = "FilterDefinition";
-    public static final String REF = "#/components/schemas/" + NAME;
-
-    @Override
-    public org.eclipse.microprofile.openapi.models.media.Schema schema() {
-      return type(OBJECT, NULL)
-          .description(FilterDefinition.class.getAnnotation(Schema.class).description())
-          .additionalPropertiesBoolean(true)
-          .addExample(Map.of("age", Map.of("$gt", 40)))
-          .addExample(Map.of("name", "Aaron", "country", Map.of("$eq", "NZ")));
-    }
-  }
-
   /**
    * Lazily deserialized {@link FilterClause} from the JSON value. We need this due to existing
    * reliance on specific stateful instances of {@link FilterClause}.
    */
+  @Schema(hidden = true)
   private FilterClause filterClause;
 
   /**

@@ -1,21 +1,15 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
-import static io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider.type;
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
-import static org.eclipse.microprofile.openapi.models.media.Schema.SchemaType.*;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.JsonDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.builders.SortClauseBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
-import io.stargate.sgv2.jsonapi.api.model.schema.ApiSchemaProvider;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import java.util.List;
-import java.util.Map;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
@@ -23,36 +17,30 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * for lazy deserialization into a {@link SortClause}.
  */
 @Schema(
+    name = "SortDefinition",
+    type = SchemaType.OBJECT,
+    implementation = Object.class,
+    nullable = true,
+    additionalProperties = Schema.True.class,
     description =
         "A Data API sort object mapping paths to 1 (ascending) or -1 (descending). Collections also accept a single $vector, $vectorize, or $lexical sort. Tables use the vector or lexical column name.",
-    implementation = SortDefinition.SchemaProvider.class,
-    ref = SortDefinition.SchemaProvider.REF,
-    examples =
-        """
+    examples = {
+      """
                   {"user.age" : -1, "user.name" : 1}
-                  """)
+                  """,
+      """
+      {"$vector": [0.1, 0.2, 0.3]}
+      """,
+      """
+      {"$vectorize": "search text"}
+      """
+    })
 public class SortDefinition extends JsonDefinition<SortClause> {
-  @Schema(name = SchemaProvider.NAME)
-  @RegisterForReflection
-  public static class SchemaProvider implements ApiSchemaProvider {
-    public static final String NAME = "SortDefinition";
-    public static final String REF = "#/components/schemas/" + NAME;
-
-    @Override
-    public org.eclipse.microprofile.openapi.models.media.Schema schema() {
-      return type(OBJECT, NULL)
-          .description(SortDefinition.class.getAnnotation(Schema.class).description())
-          .additionalPropertiesBoolean(true)
-          .addExample(Map.of("user.age", -1, "user.name", 1))
-          .addExample(Map.of(VECTOR_EMBEDDING_FIELD, List.of(0.1, 0.2, 0.3)))
-          .addExample(Map.of(VECTOR_EMBEDDING_TEXT_FIELD, "search text"));
-    }
-  }
-
   /**
    * Lazily deserialized {@link SortClause} from the JSON value. We need this due to existing
    * reliance on specific stateful instances of {@link SortClause}.
    */
+  @Schema(hidden = true)
   private SortClause sortClause;
 
   /**
@@ -109,6 +97,7 @@ public class SortDefinition extends JsonDefinition<SortClause> {
    * Helper method needed for logging purposes, where caller does not have access to the {@link
    * CommandContext}.
    */
+  @Schema(hidden = true)
   public List<String> getSortExpressionPaths() {
     // We will either be wrapping the clause or have a json value:
     if (sortClause != null) {
