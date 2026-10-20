@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.v1.mcp;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.MissingNode;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
 import com.github.victools.jsonschema.generator.SchemaGenerator;
@@ -53,16 +52,13 @@ class McpSchemaCustomizerTest {
   @Schema(ref = "#/components/schemas/CustomizerTestSchema")
   record TestReferencedType(String internalValue) {}
 
-  @Schema(name = "CustomizerTestSchema")
-  static class SharedSchema {}
-
-  record TestImplementationValue(String internalValue) {}
+  record TestFieldValue(String internalValue) {}
 
   record TestSharedFields(
-      @Schema(implementation = SharedSchema.class, description = "First field")
-          TestImplementationValue first,
-      @Schema(implementation = SharedSchema.class, description = "Second field")
-          TestImplementationValue second) {}
+      @Schema(ref = "#/components/schemas/CustomizerTestSchema", description = "First field")
+          TestFieldValue first,
+      @Schema(ref = "#/components/schemas/CustomizerTestSchema", description = "Second field")
+          TestFieldValue second) {}
 
   @Test
   void shouldReferenceNamedComponentInsteadOfInternalJavaFields() {
@@ -78,7 +74,7 @@ class McpSchemaCustomizerTest {
   }
 
   @Test
-  void shouldReferenceFieldImplementationAndKeepFieldDescriptions() {
+  void shouldKeepFieldReferencesAndDescriptions() {
     var properties = schemaFor(TestSharedFields.class).path("properties");
 
     for (var name : new String[] {"first", "second"}) {
@@ -86,8 +82,8 @@ class McpSchemaCustomizerTest {
           "#/components/schemas/CustomizerTestSchema", properties.path(name).path("$ref").asText());
       assertFalse(properties.path(name).path("properties").has("internalValue"));
     }
-    assertEquals("First field", schemaValue(properties.path("first"), "description").asText());
-    assertEquals("Second field", schemaValue(properties.path("second"), "description").asText());
+    assertEquals("First field", properties.path("first").path("description").asText());
+    assertEquals("Second field", properties.path("second").path("description").asText());
     assertFalse(schemaFor(TestSharedType.class).has("description"));
   }
 
@@ -141,50 +137,32 @@ class McpSchemaCustomizerTest {
     new McpSchemaCustomizer().customize(configBuilder);
 
     var schema = new SchemaGenerator(configBuilder.build()).generateSchema(TestCreateTable.class);
-    var props = schemaValue(schema, "properties");
+    var props = schema.path("properties");
 
     // Level 1: top-level fields
-    assertEquals("Table definition", schemaValue(props.path("definition"), "description").asText());
-    assertEquals(
-        "Configuration options", schemaValue(props.path("options"), "description").asText());
+    assertEquals("Table definition", props.path("definition").path("description").asText());
+    assertEquals("Configuration options", props.path("options").path("description").asText());
     assertTrue(
-        schemaValue(props.path("noAnnotation"), "description").isMissingNode(),
+        props.path("noAnnotation").path("description").isMissingNode(),
         "Fields without @Schema should have no description");
 
     // Level 2: nested inside TestDefinition
-    var defProps = schemaValue(props.path("definition"), "properties");
+    var defProps = props.path("definition").path("properties");
     assertEquals(
-        "Column definitions for the table",
-        schemaValue(defProps.path("columns"), "description").asText());
+        "Column definitions for the table", defProps.path("columns").path("description").asText());
     assertEquals(
-        "Primary key definition", schemaValue(defProps.path("primaryKey"), "description").asText());
+        "Primary key definition", defProps.path("primaryKey").path("description").asText());
 
     // Level 2: nested inside TestOptions
-    var optProps = schemaValue(props.path("options"), "properties");
+    var optProps = props.path("options").path("properties");
     assertEquals(
         "Flag to ignore if already exists",
-        schemaValue(optProps.path("ifNotExists"), "description").asText());
+        optProps.path("ifNotExists").path("description").asText());
 
     // Level 3: nested inside TestPrimaryKey
-    var pkProps = schemaValue(defProps.path("primaryKey"), "properties");
-    assertEquals(
-        "Partition key columns", schemaValue(pkProps.path("keys"), "description").asText());
-    assertEquals(
-        "Clustering key ordering", schemaValue(pkProps.path("ordering"), "description").asText());
-  }
-
-  /** Metadata may accompany a schema in a separate allOf branch without merging its constraints. */
-  private static JsonNode schemaValue(JsonNode schema, String keyword) {
-    if (schema.has(keyword)) {
-      return schema.get(keyword);
-    }
-    for (var branch : schema.path("allOf")) {
-      var value = schemaValue(branch, keyword);
-      if (!value.isMissingNode()) {
-        return value;
-      }
-    }
-    return MissingNode.getInstance();
+    var pkProps = defProps.path("primaryKey").path("properties");
+    assertEquals("Partition key columns", pkProps.path("keys").path("description").asText());
+    assertEquals("Clustering key ordering", pkProps.path("ordering").path("description").asText());
   }
 
   @Test

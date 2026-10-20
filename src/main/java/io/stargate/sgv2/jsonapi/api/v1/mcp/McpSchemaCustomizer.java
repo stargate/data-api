@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.CustomDefinition;
 import com.github.victools.jsonschema.generator.CustomPropertyDefinition;
@@ -23,8 +23,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  */
 @Singleton
 public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
-  private static final ObjectMapper MAPPER = new ObjectMapper();
-
   @Override
   public void customize(SchemaGeneratorConfigBuilder builder) {
     builder
@@ -86,14 +84,10 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
     if (reference.isEmpty()) {
       var name = typeAnnotation ? annotation.name() : "";
       if (name.isEmpty()) {
-        var implementation = annotation.implementation().getAnnotation(Schema.class);
-        name = implementation == null ? "" : implementation.name();
-      }
-      if (name.isEmpty()) {
         return null;
       }
       reference = "#/components/schemas/" + name.replace("~", "~0").replace("/", "~1");
     }
-    return MAPPER.createObjectNode().put("$ref", reference);
+    return JsonNodeFactory.instance.objectNode().put("$ref", reference);
   }
 }
