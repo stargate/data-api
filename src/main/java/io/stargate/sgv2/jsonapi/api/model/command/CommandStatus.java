@@ -140,6 +140,13 @@ public enum CommandStatus {
   /** The internal tracing for processing the request. */
   @JsonProperty(Names.TRACE)
   TRACE(Names.TRACE),
+
+  /**
+   * Aggregation results returned by the {@code searchAggregate} command. Map of aggregation name →
+   * raw OpenSearch aggregation result object.
+   */
+  @JsonProperty(Names.AGGREGATIONS)
+  AGGREGATIONS(Names.AGGREGATIONS),
   ;
 
   private final String apiName;
@@ -184,5 +191,6 @@ public enum CommandStatus {
     String PROJECTION_SCHEMA = "projectionSchema";
     String SORTED_ROW_COUNT = "sortedRowCount";
     String TRACE = "trace";
+    String AGGREGATIONS = "aggregations";
   }
 }

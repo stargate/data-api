@@ -14,6 +14,7 @@ public enum CommandName {
   // they should not be DDL, they are not changing schema, we should add an CommandType.ADMIN for
   // them ?
 
+  ALTER_COLLECTION(Names.ALTER_COLLECTION, CommandType.DDL, CommandTarget.COLLECTION),
   ALTER_TABLE(Names.ALTER_TABLE, CommandType.DDL, CommandTarget.TABLE),
   ALTER_TYPE(Names.ALTER_TYPE, CommandType.DDL, CommandTarget.TABLE),
   COUNT_DOCUMENTS(Names.COUNT_DOCUMENTS, CommandType.DML, CommandTarget.COLLECTION),
@@ -58,7 +59,9 @@ public enum CommandName {
   BEGIN_OFFLINE_SESSION(Names.BEGIN_OFFLINE_SESSION, CommandType.DML, CommandTarget.SYSTEM),
   END_OFFLINE_SESSION(Names.END_OFFLINE_SESSION, CommandType.DML, CommandTarget.SYSTEM),
   OFFLINE_GET_STATUS(Names.OFFLINE_GET_STATUS, CommandType.DML, CommandTarget.SYSTEM),
-  OFFLINE_INSERT_MANY(Names.OFFLINE_INSERT_MANY, CommandType.DML, CommandTarget.SYSTEM);
+  OFFLINE_INSERT_MANY(Names.OFFLINE_INSERT_MANY, CommandType.DML, CommandTarget.SYSTEM),
+  SEARCH_AGGREGATE(Names.SEARCH_AGGREGATE, CommandType.DML, CommandTarget.COLLECTION),
+  CREATE_OPEN_SEARCH_INDEX(Names.CREATE_OPEN_SEARCH_INDEX, CommandType.DDL, CommandTarget.TABLE);
 
   private final String apiName;
   private final CommandType commandType;
@@ -107,6 +110,7 @@ public enum CommandName {
   }
 
   public interface Names {
+    String ALTER_COLLECTION = "alterCollection";
     String ALTER_TABLE = "alterTable";
     String ALTER_TYPE = "alterType";
     String COUNT_DOCUMENTS = "countDocuments";
@@ -149,5 +153,7 @@ public enum CommandName {
     String END_OFFLINE_SESSION = "endOfflineSession";
     String OFFLINE_GET_STATUS = "offlineGetStatus";
     String OFFLINE_INSERT_MANY = "offlineInsertMany";
+    String SEARCH_AGGREGATE = "searchAggregate";
+    String CREATE_OPEN_SEARCH_INDEX = "createOpenSearchIndex";
   }
 }

@@ -1367,7 +1367,7 @@ public class FilterClauseBuilderTest {
     public void validOpenSearchFilter() {
       String json =
           """
-          {"$search": {"match": {"title": "Widget"}}}
+          {"$openSearch": {"match": {"title": "Widget"}}}
           """;
       FilterClause filterClause =
           FilterClauseBuilder.builderFor(testConstants.OPEN_SEARCH_COLLECTION_SCHEMA_OBJECT)
@@ -1375,14 +1375,14 @@ public class FilterClauseBuilderTest {
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
       assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
-          .isEqualTo("$search");
+          .isEqualTo("$openSearch");
     }
 
     @Test
     public void mustFailOnSearchWhenDisabled() {
       String json =
           """
-          {"$search": {"match": {"title": "Widget"}}}
+          {"$openSearch": {"match": {"title": "Widget"}}}
           """;
       Throwable throwable = catchThrowable(() -> readCollectionFilterClause(json));
       assertThat(throwable)
@@ -1391,7 +1391,7 @@ public class FilterClauseBuilderTest {
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "The '$search' filter can only be used on collections for which the OpenSearch feature is enabled");
+                        "The '$openSearch' filter can only be used on collections for which the OpenSearch feature is enabled");
               });
     }
 
@@ -1400,7 +1400,7 @@ public class FilterClauseBuilderTest {
       String json =
           """
           {
-            "$search": {"match": {"title": "Widget"}},
+            "$openSearch": {"match": {"title": "Widget"}},
             "status": "published"
           }
           """;
@@ -1414,7 +1414,8 @@ public class FilterClauseBuilderTest {
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .contains("cannot combine '$search' with other filter expressions");
+                    .contains(
+                        "'$openSearch' filter cannot be combined with other filter operators");
               });
     }
   }

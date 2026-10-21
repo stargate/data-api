@@ -425,10 +425,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     // using the runningValue because this is what is used for DML ops
     var lexicalDesc = collectionSetting.lexicalDef().toApiDesc();
 
-    var openSearchDesc =
-        collectionSetting.openSearchDef().enabled()
-            ? collectionSetting.openSearchDef().toApiDesc()
-            : null;
+    var openSearchDesc = collectionSetting.openSearchDef().toApiDesc();
 
     // construct the CreateCollectionCommand.options.rerankDef
     var rerankDesc = collectionSetting.rerankDef().toApiDesc();

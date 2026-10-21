@@ -374,14 +374,17 @@ public class FindOneCommandResolverTest {
         """
         {
           "findOne": {
-            "filter" : {"$search" : {"match": {"title": "Widget"}}}
+            "filter" : {"$openSearch" : {"match": {"title": "Widget"}}}
           }
         }
         """;
 
     CommandContext<CollectionSchemaObject> osContext =
         testConstants.collectionContext(
-            testConstants.COMMAND_NAME, testConstants.OPEN_SEARCH_COLLECTION_SCHEMA_OBJECT);
+            testConstants.COMMAND_NAME,
+            testConstants.OPEN_SEARCH_COLLECTION_SCHEMA_OBJECT,
+            null,
+            null);
 
     FindOneCommand command = objectMapper.readValue(json, FindOneCommand.class);
     Operation operation = resolver.resolveCommand(osContext, command);

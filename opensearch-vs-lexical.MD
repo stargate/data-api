@@ -1,19 +1,19 @@
-# Why `$search` (OpenSearch) and `$lexical` / `$match` (SAI/BM25) Must Stay Separate
+# Why `$openSearch` (OpenSearch) and `$lexical` / `$match` (SAI/BM25) Must Stay Separate
 
 ## The question
 
 Could OpenSearch be used as the back-end for the `$lexical` block — i.e. replace `$match` with a dedicated OpenSearch operator — instead of having two completely distinct query paths?
 
-The short answer is **no**. This document explains the architectural reasons why, and why keeping them as two independent operators (`$match` for SAI-BM25, `$search` for OpenSearch) is the correct design.
+The short answer is **no**. This document explains the architectural reasons why, and why keeping them as two independent operators (`$match` for SAI-BM25, `$openSearch` for OpenSearch) is the correct design.
 
 ---
 
 ## 1. Fundamentally different consistency contracts
 
-| | SAI / `$lexical` + `$match` | OpenSearch / `$search` |
+| | SAI / `$lexical` + `$match` | OpenSearch / `$openSearch` |
 |---|---|---|
-| **Write → visible** | Synchronous. A document inserted in one request is immediately filterable by `$match` in the next. | Asynchronous. HCD buffers writes in a WAL and flushes them to OpenSearch via `BulkProcessor` (up to 1 000 docs, every ~1 second). A freshly written document may not appear in `$search` results for up to a second. |
-| **Failure model** | If Cassandra acknowledges the write, the index is updated. | If the OpenSearch cluster is down or slow, Cassandra still acknowledges the write but the document is silently absent from `$search` results until replication catches up. |
+| **Write → visible** | Synchronous. A document inserted in one request is immediately filterable by `$match` in the next. | Asynchronous. HCD buffers writes in a WAL and flushes them to OpenSearch via `BulkProcessor` (up to 1 000 docs, every ~1 second). A freshly written document may not appear in `$openSearch` results for up to a second. |
+| **Failure model** | If Cassandra acknowledges the write, the index is updated. | If the OpenSearch cluster is down or slow, Cassandra still acknowledges the write but the document is silently absent from `$openSearch` results until replication catches up. |
 
 `$lexical` is explicitly designed to follow the "write then filter" pattern — the same contract as every other Data API operator. Routing `$match` through OpenSearch would silently weaken that contract for users who did not opt into the OpenSearch path.
 
@@ -40,7 +40,7 @@ The BM25 design is a foundational building block for two higher-level features:
 - **`$hybrid`**: fuses ANN vector results with BM25 lexical results in a single query.
 - **`findAndReRank`** (planned): runs multiple find queries, joins the candidate sets, and calls a re-ranker.
 
-Both of these pipelines consume a candidate set produced by the Data API's own internal ANN or SAI paths. The current OpenSearch integration plan **explicitly blocks rerank** for `$search` because the `expr(...)` result set is owned and pre-ranked by OpenSearch — the Data API cannot intercept it at the right point in the pipeline.
+Both of these pipelines consume a candidate set produced by the Data API's own internal ANN or SAI paths. The current OpenSearch integration plan **explicitly blocks rerank** for `$openSearch` because the `expr(...)` result set is owned and pre-ranked by OpenSearch — the Data API cannot intercept it at the right point in the pipeline.
 
 If `$match` were backed by OpenSearch, the entire `$hybrid` and rerank system would become unusable without OpenSearch infrastructure.
 
@@ -56,7 +56,7 @@ If `$match` were backed by OpenSearch, the entire `$hybrid` and rerank system wo
 
 This is a **server-side ranked sort** — Cassandra itself orders the rows by BM25 score before returning them. It can be combined with other CQL sort terms and works inside the standard Data API sort pipeline.
 
-OpenSearch returns hits pre-ranked by relevance — there is no equivalent CQL-level BM25 sort for the `expr(...)` path. The Data API receives rows in whatever order HCD returns them after matching PKs against Cassandra, which is not guaranteed to preserve OpenSearch's relevance ordering end-to-end. A client-side `sort` on an `$search` result discards OpenSearch's relevance ordering entirely.
+OpenSearch returns hits pre-ranked by relevance — there is no equivalent CQL-level BM25 sort for the `expr(...)` path. The Data API receives rows in whatever order HCD returns them after matching PKs against Cassandra, which is not guaranteed to preserve OpenSearch's relevance ordering end-to-end. A client-side `sort` on an `$openSearch` result discards OpenSearch's relevance ordering entirely.
 
 These are two different sort contracts and cannot share a syntax.
 
@@ -64,7 +64,7 @@ These are two different sort contracts and cannot share a syntax.
 
 ## 5. Query shape diverges — they are different products
 
-| Capability | `$match` (SAI) | `$search` (OpenSearch DSL) |
+| Capability | `$match` (SAI) | `$openSearch` (OpenSearch DSL) |
 |---|---|---|
 | Single-field analyzed text match | ✅ | ✅ |
 | BM25 ranking in `sort` clause | ✅ via CQL `ORDER BY BM25 OF` | ❌ — relevance is implicit, not a sort key |
@@ -82,14 +82,14 @@ These are not two implementations of the same capability — they are two differ
 
 ## 6. The right model: complementary, not competing
 
-The correct framing is that `$match` and `$search` target **different user profiles**:
+The correct framing is that `$match` and `$openSearch` target **different user profiles**:
 
 | Profile | Needs | Right operator |
 |---|---|---|
 | Developer building a standard app | Simple keyword filter, immediate consistency, works with hybrid + rerank, zero infra | `$lexical` / `$match` |
-| Operator running a search-heavy workload | Advanced full-text: bool, fuzzy, multi-field; willing to run OpenSearch; eventual consistency acceptable | `$search` |
+| Operator running a search-heavy workload | Advanced full-text: bool, fuzzy, multi-field; willing to run OpenSearch; eventual consistency acceptable | `$openSearch` |
 
-A single collection can even have both enabled simultaneously — SAI-indexed fields for `$match` + `$hybrid`, OpenSearch-indexed fields for `$search` on richer queries. The two operators are independent and serve different query shapes in the same collection.
+A single collection can even have both enabled simultaneously — SAI-indexed fields for `$match` + `$hybrid`, OpenSearch-indexed fields for `$openSearch` on richer queries. The two operators are independent and serve different query shapes in the same collection.
 
 ---
 
@@ -102,4 +102,4 @@ Attempting to route `$match` or `$lexical` through OpenSearch would:
 3. Destroy the `$hybrid` and rerank pipeline, which is one of the primary motivations for the BM25 design.
 4. Conflate two query products with different sort contracts under one syntax.
 
-**Keep `$match` / `$lexical` on SAI. Keep `$search` on OpenSearch. Expose both as first-class, independent operators.**
+**Keep `$match` / `$lexical` on SAI. Keep `$openSearch` on OpenSearch. Expose both as first-class, independent operators.**

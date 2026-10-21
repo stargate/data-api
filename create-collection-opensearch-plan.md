@@ -4,7 +4,7 @@
 
 Extend `createCollection` with an optional `options.openSearch` configuration that creates an HCD `OpenSearchIndex` for a super-shredded collection. The implementation accepts the revised `mappings` contract from the authoritative HCD-to-Data-API specification, validates enabled and disabled configurations consistently with lexical options, persists enabled settings in a V3 collection comment, and emits the corresponding custom-index DDL.
 
-Scope is limited to `createCollection` support and its schema/introspection plumbing. It excludes `$search`, table-level `createOpenSearchIndex`, aggregations, and count support, which are separate commands in the specification.
+Scope is limited to `createCollection` support and its schema/introspection plumbing. It excludes `$openSearch`, table-level `createOpenSearchIndex`, aggregations, and count support, which are separate commands in the specification.
 
 ## Sub-tasks
 

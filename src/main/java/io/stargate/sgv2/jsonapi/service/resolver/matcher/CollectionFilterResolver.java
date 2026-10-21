@@ -53,7 +53,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
   private static final Object SUB_DOC_EQUALS = new Object();
   // For $match on $lexical
   private static final Object MATCH_GROUP = new Object();
-  // For $search on $search (OpenSearch)
+  // For $openSearch (OpenSearch)
   private static final Object SEARCH_GROUP = new Object();
 
   public CollectionFilterResolver(OperationsConfig operationsConfig) {
@@ -75,7 +75,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       populateSaiIndexName(resolved.target(), saiIndexName);
     } else {
       LOGGER.info(
-          "[CollectionFilterResolver] resolve() - no openSearchDef on schema, $search filter will have null saiIndexName");
+          "[CollectionFilterResolver] resolve() - no openSearchDef on schema, $openSearch filter will have null saiIndexName");
     }
     return resolved;
   }
@@ -112,12 +112,12 @@ public class CollectionFilterResolver<T extends Command & Filterable>
         .capture(ID_GROUP_IN)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
 
-    // Dedicated rule for $search placed BEFORE the GREEDY rule so that a $search filter is
+    // Dedicated rule for $openSearch placed BEFORE the GREEDY rule so that a $openSearch filter is
     // matched here and never stolen by the wildcard ("*") captures (DYNAMIC_TEXT_GROUP,
     // SUB_DOC_EQUALS, …) that come first inside the GREEDY capture list.
     // GREEDY is used because the two captures cover the two legal value shapes (String and
     // sub-document); only one will fire and GREEDY tolerates unmatched captures.
-    // $search is always the sole filter (enforced by CollectionFilterClauseBuilder), so
+    // $openSearch is always the sole filter (enforced by CollectionFilterClauseBuilder), so
     // unmatchedComparisonExpressionCount will reach 0 and the rule succeeds.
     matchRules
         .addMatchRule(CollectionFilterResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)

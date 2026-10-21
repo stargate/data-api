@@ -1392,6 +1392,19 @@ request-errors:
       
       Resend command with only '$vector' or '$vectorize'.
 
+  - scope: FILTER
+    code: INVALID_OPEN_SEARCH_FILTER
+    title: Invalid use of the '$openSearch' filter
+    body: |-
+      The '$openSearch' filter cannot be combined with other filter operators. '$openSearch' must be the only condition in the filter object.
+
+  - scope: SCHEMA
+    code: OPEN_SEARCH_AGGREGATION_TOO_LARGE
+    title: OpenSearch aggregation response too large
+    body: |-
+      The aggregation response from OpenSearch exceeded the maximum allowed size.
+      Reduce the aggregation scope (e.g. lower 'size' on 'terms') or add a 'query' to narrow the dataset.
+
   - scope: SCHEMA
     code: OPEN_SEARCH_CORRUPT_SCHEMA
     title: Invalid persisted OpenSearch collection configuration
@@ -1412,11 +1425,25 @@ request-errors:
       Reserved field names that cannot be used in OpenSearch mappings: '_id' (built-in OpenSearch metadata field), and any field starting with '$' (Data API internal fields such as '$vector' and '$lexical' are stored in dedicated Cassandra columns, not in the document JSON that OpenSearch indexes).
 
   - scope: SCHEMA
+    code: OPEN_SEARCH_INDEX_ALREADY_EXISTS
+    title: OpenSearch index already exists on the table
+    body: |-
+      Only one OpenSearch index is allowed per table.
+      The table ${keyspace}.${table} already has an OpenSearch index.
+
+  - scope: SCHEMA
     code: OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION
     title: OpenSearch search is not enabled for the collection
     body: |-
-      The '$search' filter can only be used on collections for which the OpenSearch feature is enabled.
+      The '$openSearch' filter can only be used on collections for which the OpenSearch feature is enabled.
       The collection ${keyspace}.${table} does not have OpenSearch enabled.
+
+  - scope: SCHEMA
+    code: OPEN_SEARCH_NOT_ENABLED_FOR_TABLE
+    title: OpenSearch search is not enabled for the table
+    body: |-
+      The '$openSearch' filter can only be used on tables that have an OpenSearch index.
+      Use createOpenSearchIndex to create one before using '$openSearch' on table ${keyspace}.${table}.
 
   - scope: SCHEMA
     code: LEXICAL_FEATURE_NOT_ENABLED

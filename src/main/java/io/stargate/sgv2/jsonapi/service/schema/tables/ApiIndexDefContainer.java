@@ -56,9 +56,10 @@ public class ApiIndexDefContainer implements Iterable<ApiIndexDef>, Recordable {
   public void put(ApiIndexDef indexDef) {
     Objects.requireNonNull(indexDef, "indexDef must not be null");
 
-    // if the index is unsupported we do not know the target column and we are not going to be using
-    // it anyway
-    if (!indexDef.isUnsupported()) {
+    // Only add to byTarget when a concrete single target column is known.
+    // Unsupported indexes have no known target; multi-column indexes (e.g. OpenSearch) return null
+    // from targetColumn() — both must be excluded from the by-target map.
+    if (!indexDef.isUnsupported() && indexDef.targetColumn() != null) {
       byTarget.put(indexDef.targetColumn(), indexDef);
     }
     byName.put(indexDef.indexName(), indexDef);

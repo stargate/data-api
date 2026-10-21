@@ -30,9 +30,14 @@ public abstract class IndexFactoryFromCql {
   public static ApiIndexDef create(ApiColumnDefContainer allColumns, IndexMetadata indexMetadata) {
 
     // This first check is to see if there is anyway we can support this index, because we are only
-    // supporting SAI indexes, later on we may find something that we could support but don't
+    // supporting SAI indexes and OpenSearch indexes.
     if (!isSupported(indexMetadata)) {
       return createUnsupported(indexMetadata);
+    }
+
+    // OpenSearch indexes do not target a single column — handle before the SAI column-parsing path
+    if (CQLSAIIndex.isOpenSearchIndex(indexMetadata)) {
+      return ApiOpenSearchIndex.fromCqlMetadata(indexMetadata);
     }
 
     // if we get this far, there is a chance we can support it
@@ -96,7 +101,7 @@ public abstract class IndexFactoryFromCql {
    * @return
    */
   public static boolean isSupported(IndexMetadata indexMetadata) {
-    return CQLSAIIndex.isSAIIndex(indexMetadata);
+    return CQLSAIIndex.isSAIIndex(indexMetadata) || CQLSAIIndex.isOpenSearchIndex(indexMetadata);
   }
 
   public static UnsupportedIndex createUnsupported(IndexMetadata indexMetadata) {

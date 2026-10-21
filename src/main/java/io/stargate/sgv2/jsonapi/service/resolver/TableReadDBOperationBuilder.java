@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingOperationFactory;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.RowSorter;
 import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
@@ -112,11 +113,13 @@ class TableReadDBOperationBuilder<
     taskBuilder.withSelect(WithWarnings.of(projection));
     taskBuilder.withProjection(projection);
 
+    // NOTE: the resolver also validates $openSearch (OpenSearch) and sets its SAI index name
+    WithWarnings<DBLogicalExpression> resolvedFilter =
+        tableFilterResolver.resolve(commandContext, command);
+
     // We will want the ability to turn a single find command into multiple tasks, this is why
     // the builder builds on the where clause
-    var where =
-        TableWhereCQLClause.forSelect(
-            commandContext.schemaObject(), tableFilterResolver.resolve(commandContext, command));
+    var where = TableWhereCQLClause.forSelect(commandContext.schemaObject(), resolvedFilter);
 
     // always parallel processing for the taskgroup
     var taskGroup = new TaskGroup<>(taskBuilder.build(where.target()));

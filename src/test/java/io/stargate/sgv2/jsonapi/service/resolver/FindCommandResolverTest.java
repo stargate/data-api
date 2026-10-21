@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
@@ -318,14 +319,17 @@ public class FindCommandResolverTest {
           """
           {
             "find": {
-              "filter" : {"$search" : {"match": {"title": "Widget"}}}
+              "filter" : {"$openSearch" : {"match": {"title": "Widget"}}}
             }
           }
           """;
 
       CommandContext<CollectionSchemaObject> osContext =
           testConstants.collectionContext(
-              TestConstants.COMMAND_NAME, testConstants.OPEN_SEARCH_COLLECTION_SCHEMA_OBJECT);
+              testConstants.COMMAND_NAME,
+              testConstants.OPEN_SEARCH_COLLECTION_SCHEMA_OBJECT,
+              null,
+              null);
 
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(osContext, findCommand);
@@ -344,7 +348,8 @@ public class FindCommandResolverTest {
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(osContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
-                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                // OpenSearch queries use the BM25 default as driver page size, not defaultPageSize
+                assertThat(find.pageSize()).isEqualTo(QueryBuilder.DEFAULT_BM25_LIMIT);
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
                 assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);

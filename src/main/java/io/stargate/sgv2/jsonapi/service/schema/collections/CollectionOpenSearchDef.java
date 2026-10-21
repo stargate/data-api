@@ -59,13 +59,27 @@ public record CollectionOpenSearchDef(
     }
 
     if (!openSearchDesc.enabled()) {
-      if (openSearchDesc.indexName() != null
-          || openSearchDesc.numShards() != null
-          || openSearchDesc.numReplicas() != null
-          || !mappingsNotDefined(openSearchDesc.mappings())) {
+      // Mirror the lexical pattern: report each offending field individually so the caller knows
+      // exactly which property to remove.  Acceptable values when disabled: absent or JSON null.
+      if (openSearchDesc.indexName() != null) {
         throw invalid(
-            "'openSearch' is disabled, but OpenSearch configuration properties were provided. "
-                + "When 'openSearch' is disabled, indexName, numShards, numReplicas, and mappings must be omitted.");
+            "'openSearch' is disabled, but 'openSearch.indexName' was provided. "
+                + "When 'openSearch' is disabled, 'openSearch.indexName' must be omitted.");
+      }
+      if (openSearchDesc.numShards() != null) {
+        throw invalid(
+            "'openSearch' is disabled, but 'openSearch.numShards' was provided. "
+                + "When 'openSearch' is disabled, 'openSearch.numShards' must be omitted.");
+      }
+      if (openSearchDesc.numReplicas() != null) {
+        throw invalid(
+            "'openSearch' is disabled, but 'openSearch.numReplicas' was provided. "
+                + "When 'openSearch' is disabled, 'openSearch.numReplicas' must be omitted.");
+      }
+      if (!mappingsNotDefined(openSearchDesc.mappings())) {
+        throw invalid(
+            "'openSearch' is disabled, but 'openSearch.mappings' was provided. "
+                + "When 'openSearch' is disabled, 'openSearch.mappings' must be omitted.");
       }
       return schemaFactory.currentVersion(DISABLED);
     }

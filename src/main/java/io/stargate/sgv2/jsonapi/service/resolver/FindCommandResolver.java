@@ -192,7 +192,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           includeSortVector);
     }
 
-    // OpenSearch $search: the expr(index, ?) predicate is fully evaluated inside OpenSearch before
+    // OpenSearch $openSearch: the expr(index, ?) predicate is fully evaluated inside OpenSearch
+    // before
     // Cassandra returns rows — a CQL LIMIT N would cap the result to N rows in a single shot and
     // cause hasMorePages()=false, so there would be no cursor for page 2.
     // Fix: emit NO CQL LIMIT (buildSelectQueries will pass null to QueryBuilder when it detects an

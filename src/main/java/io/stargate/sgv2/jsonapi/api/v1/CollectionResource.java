@@ -23,6 +23,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.ListIndexesCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.SearchAggregateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
@@ -138,6 +139,7 @@ public class CollectionResource {
                         InsertManyCommand.class,
                         UpdateManyCommand.class,
                         UpdateOneCommand.class,
+                        SearchAggregateCommand.class,
                         // Table Only commands
                         AlterTableCommand.class,
                         CreateIndexCommand.class,

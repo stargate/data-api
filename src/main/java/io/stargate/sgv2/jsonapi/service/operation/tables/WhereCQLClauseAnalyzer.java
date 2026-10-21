@@ -135,6 +135,19 @@ public class WhereCQLClauseAnalyzer {
 
     Objects.requireNonNull(whereCQLClause, "whereCQLClause cannot be null");
 
+    // OpenSearch expr() predicates bypass all standard column/index/PK analysis: the entire
+    // WHERE clause is a single expr(<saiIndexName>, '<dslJson>') fragment. Skip straight to
+    // a no-warning result when we detect an OpenSearchTableFilter.
+    boolean[] hasOpenSearch = {false};
+    whereCQLClause
+        .getLogicalExpression()
+        .visitAllFilters(
+            io.stargate.sgv2.jsonapi.service.operation.filters.table.OpenSearchTableFilter.class,
+            f -> hasOpenSearch[0] = true);
+    if (hasOpenSearch[0]) {
+      return new WhereClauseWithWarnings(whereCQLClause, List.of(), false);
+    }
+
     Map<CqlIdentifier, TableFilter> identifierToFilter = new HashMap<>();
     whereCQLClause
         .getLogicalExpression()

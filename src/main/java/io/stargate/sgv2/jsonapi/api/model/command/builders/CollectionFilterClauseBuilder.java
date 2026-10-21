@@ -59,10 +59,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
           || rootExpr.comparisonExpressions.size() != 1
           || !DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD.equals(
               rootExpr.comparisonExpressions.get(0).getPath())) {
-        throw FilterException.Code.FILTER_INVALID_EXPRESSION.get(
-            Map.of(
-                "message",
-                "cannot combine '$search' with other filter expressions: '$search' must be the only filter condition"));
+        throw FilterException.Code.INVALID_OPEN_SEARCH_FILTER.get();
       }
     }
   }
@@ -168,7 +165,7 @@ public class CollectionFilterClauseBuilder extends FilterClauseBuilder<Collectio
       ComparisonExpression comparisonExpression, IndexingProjector indexingProjector) {
     String path = comparisonExpression.getPath();
 
-    // $search is a virtual OpenSearch filter field, not a regular indexed document field;
+    // $openSearch is a virtual OpenSearch filter field, not a regular indexed document field;
     // skip standard indexing-projector validation
     if (DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD.equals(path)) {
       return;

@@ -20,13 +20,16 @@ public enum ApiIndexType {
   /** Index that uses a text analyzer on ascii or text columns */
   TEXT(Constants.TEXT),
   /** Index on a vector column */
-  VECTOR(Constants.VECTOR);
+  VECTOR(Constants.VECTOR),
+  /** OpenSearch full-text / aggregation index on one or more table columns */
+  OPEN_SEARCH(Constants.OPEN_SEARCH);
 
   /** Constants so the public HTTP API objects can use the same values. */
   public interface Constants {
     String REGULAR = "regular";
     String TEXT = "text";
     String VECTOR = "vector";
+    String OPEN_SEARCH = "openSearch";
   }
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ApiIndexType.class);

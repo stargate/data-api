@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Filter for the {@code $search} operator on OpenSearch-enabled collections.
+ * Filter for the {@code $openSearch} operator on OpenSearch-enabled collections.
  *
  * <p>Emits a CQL {@code expr(<saiIndexName>, '<dslJson>')} predicate which HCD's {@code
  * OpenSearchQueryHandler} intercepts and routes to OpenSearch.
@@ -34,7 +34,7 @@ public class OpenSearchCollectionFilter extends CollectionFilter {
   }
 
   public OpenSearchCollectionFilter(String saiIndexName, JsonNode queryDsl) {
-    super("$search");
+    super("$openSearch");
     this.saiIndexName = saiIndexName;
     Objects.requireNonNull(queryDsl, "queryDsl must not be null");
     JsonNode rewritten = OpenSearchDslIdRewriter.rewrite(queryDsl);

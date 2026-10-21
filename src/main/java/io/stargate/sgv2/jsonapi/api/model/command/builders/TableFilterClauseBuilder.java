@@ -49,7 +49,39 @@ public class TableFilterClauseBuilder extends FilterClauseBuilder<TableSchemaObj
 
   @Override
   protected FilterClause validateAndBuild(LogicalExpression implicitAnd) {
+    validateOpenSearchExclusivity(implicitAnd);
     return new FilterClause(implicitAnd);
+  }
+
+  private void validateOpenSearchExclusivity(LogicalExpression rootExpr) {
+    boolean hasSearch = hasOpenSearchField(rootExpr);
+    if (hasSearch) {
+      if (rootExpr.logicalExpressions.size() > 0
+          || rootExpr.comparisonExpressions.size() != 1
+          || !io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
+              .OPEN_SEARCH_CONTENT_FIELD
+              .equals(rootExpr.comparisonExpressions.get(0).getPath())) {
+        throw io.stargate.sgv2.jsonapi.exception.FilterException.Code.INVALID_OPEN_SEARCH_FILTER
+            .get();
+      }
+    }
+  }
+
+  private boolean hasOpenSearchField(LogicalExpression logicalExpression) {
+    for (io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression comp :
+        logicalExpression.comparisonExpressions) {
+      if (io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
+          .OPEN_SEARCH_CONTENT_FIELD
+          .equals(comp.getPath())) {
+        return true;
+      }
+    }
+    for (LogicalExpression subExpr : logicalExpression.logicalExpressions) {
+      if (hasOpenSearchField(subExpr)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override

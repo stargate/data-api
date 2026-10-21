@@ -38,6 +38,11 @@ public abstract class CQLSAIIndex {
   public static final String SAI_CLASS_NAME = "StorageAttachedIndex";
   private static final String SAI_CLASS_NAME_ENDS_WITH = "." + SAI_CLASS_NAME;
 
+  /** The class name used by HCD for OpenSearch custom indexes. */
+  public static final String OPEN_SEARCH_CLASS_NAME = "OpenSearchIndex";
+
+  private static final String OPEN_SEARCH_CLASS_NAME_ENDS_WITH = "." + OPEN_SEARCH_CLASS_NAME;
+
   /**
    * Checks if the indexMetadata describe an SAI index.
    *
@@ -53,6 +58,27 @@ public abstract class CQLSAIIndex {
     Objects.requireNonNull(indexMetadata, "indexMetadata must not be null");
     return indexMetadata.getKind() == IndexKind.CUSTOM
         && indexClassIsSai(getStringIfPresent(indexMetadata.getOptions(), Options.CLASS_NAME));
+  }
+
+  /**
+   * Checks if the indexMetadata describes an OpenSearch custom index.
+   *
+   * @param indexMetadata the index metadata to check
+   * @return true if the index is an OpenSearch index
+   */
+  public static boolean isOpenSearchIndex(IndexMetadata indexMetadata) {
+    Objects.requireNonNull(indexMetadata, "indexMetadata must not be null");
+    return indexMetadata.getKind() == IndexKind.CUSTOM
+        && indexClassIsOpenSearch(
+            getStringIfPresent(indexMetadata.getOptions(), Options.CLASS_NAME));
+  }
+
+  static boolean indexClassIsOpenSearch(String className) {
+    return switch (className) {
+      case OPEN_SEARCH_CLASS_NAME -> true;
+      case String s when s.endsWith(OPEN_SEARCH_CLASS_NAME_ENDS_WITH) -> true;
+      case null, default -> false;
+    };
   }
 
   /**

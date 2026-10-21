@@ -314,13 +314,13 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
               @ExampleObject(
                   name = "findArticlesOpenSearch",
                   summary =
-                      "`find` command using `$search` to query the OpenSearch articles collection",
+                      "`find` command using `$openSearch` to query the OpenSearch articles collection",
                   value =
                       """
                       {
                         "find": {
                           "filter": {
-                            "$search": "full-text search OpenSearch"
+                            "$openSearch": "full-text search OpenSearch"
                           },
                           "options": {
                             "limit": 10

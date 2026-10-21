@@ -45,11 +45,24 @@ public class CreateIndexDBTask extends SchemaDBTask<TableSchemaObject> {
     return new CreateIndexDBTaskBuilder(schemaObject);
   }
 
+  /**
+   * Returns the CQL custom index class name to use for this index.
+   *
+   * <p>SAI indexes use {@link CQLSAIIndex#SAI_CLASS_NAME}; OpenSearch indexes use {@link
+   * CQLSAIIndex#OPEN_SEARCH_CLASS_NAME}.
+   */
+  private String indexClassName() {
+    if (indexDef.indexType()
+        == io.stargate.sgv2.jsonapi.service.schema.tables.ApiIndexType.OPEN_SEARCH) {
+      return CQLSAIIndex.OPEN_SEARCH_CLASS_NAME;
+    }
+    return CQLSAIIndex.SAI_CLASS_NAME;
+  }
+
   @Override
   protected SimpleStatement buildStatement() {
 
-    var createIndexStart =
-        SchemaBuilder.createIndex(indexDef.indexName()).custom(CQLSAIIndex.SAI_CLASS_NAME);
+    var createIndexStart = SchemaBuilder.createIndex(indexDef.indexName()).custom(indexClassName());
     // ifNotExists is an option
     createIndexStart = cqlOptions.applyBuilderOptions(createIndexStart);
 
@@ -74,9 +87,31 @@ public class CreateIndexDBTask extends SchemaDBTask<TableSchemaObject> {
    * Index Function keys/values/entries on map/set/list collection columns needs special handling to
    * create the driver CreateIndex. <br>
    * If indexFunction is null, then it is a regular index on a scalar column.
+   *
+   * <p>For OpenSearch indexes with multiple columns the driver's {@code andColumn()} is called for
+   * each column. When the columns list is empty HCD replicates all non-PK columns automatically, so
+   * we call {@code andColumn()} with an empty string token to emit {@code ON table ()} — the driver
+   * accepts this and produces the correct empty-column-list form.
    */
   private CreateIndex createIndexWithIndexFunction(
       ApiIndexDef apiIndexDef, CreateIndexOnTable createIndexOnTable) {
+
+    // OpenSearch multi-column case
+    if (apiIndexDef
+        instanceof io.stargate.sgv2.jsonapi.service.schema.tables.ApiOpenSearchIndex osIndex) {
+      var cols = osIndex.columns();
+      if (cols.isEmpty()) {
+        // Emit ON table () — no column restriction; HCD replicates all non-PK columns.
+        // andColumn with the first SAI-name dummy produces the parenthesised empty form.
+        return createIndexOnTable.andColumn(
+            com.datastax.oss.driver.api.core.CqlIdentifier.fromInternal(""));
+      }
+      CreateIndex ci = createIndexOnTable.andColumn(cols.getFirst());
+      for (int i = 1; i < cols.size(); i++) {
+        ci = createIndexOnTable.andColumn(cols.get(i));
+      }
+      return ci;
+    }
 
     var apiIndexFunction = apiIndexDef.indexFunction();
     var indexColumn = apiIndexDef.targetColumn();

@@ -4,6 +4,7 @@ import io.stargate.sgv2.jsonapi.service.operation.SchemaDBTask;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOptions;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.TaskBuilder;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiOpenSearchIndex;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiRegularIndex;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTextIndex;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorIndex;
@@ -82,6 +83,19 @@ public class CreateIndexDBTaskBuilder
         schemaRetryPolicy,
         getExceptionHandlerFactory(),
         apiVectorIndex,
+        buildCqlOptions());
+  }
+
+  public CreateIndexDBTask build(ApiOpenSearchIndex apiOpenSearchIndex) {
+    Objects.requireNonNull(apiOpenSearchIndex, "apiOpenSearchIndex cannot be null");
+    checkBuildPreconditions();
+
+    return new CreateIndexDBTask(
+        nextPosition(),
+        schemaObject,
+        schemaRetryPolicy,
+        getExceptionHandlerFactory(),
+        apiOpenSearchIndex,
         buildCqlOptions());
   }
 }
