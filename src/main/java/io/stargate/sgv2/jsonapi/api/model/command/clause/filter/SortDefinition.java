@@ -21,7 +21,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     type = SchemaType.OBJECT,
     implementation = Object.class,
     nullable = true,
-    additionalProperties = Schema.True.class,
     description =
         "A Data API sort object mapping paths to 1 (ascending) or -1 (descending). Collections also accept a single $vector, $vectorize, or $lexical sort. Tables use the vector or lexical column name.",
     examples = {

@@ -19,7 +19,6 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     // FilterClause describes parsed state and would incorrectly reserve fields such as empty.
     implementation = Object.class,
     nullable = true,
-    additionalProperties = Schema.True.class,
     description =
         "A Data API filter object mapping document paths to values or operator expressions, such as $eq, $gt, $in, $and, and $or.",
     examples = {

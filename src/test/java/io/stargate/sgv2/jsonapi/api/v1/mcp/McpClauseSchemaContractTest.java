@@ -202,7 +202,6 @@ class McpClauseSchemaContractTest {
       assertEquals(
           objectMapper.readTree(annotation.examples()[i]), component.path("examples").get(i));
     }
-    assertTrue(component.path("additionalProperties").asBoolean());
     assertFalse(component.path("properties").has("json"));
     assertFalse(component.path("properties").has("filterClause"));
     assertSchemaAccepts(schema, objectMapper.readTree("null"));
