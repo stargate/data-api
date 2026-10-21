@@ -101,14 +101,16 @@ public class CreateIndexDBTask extends SchemaDBTask<TableSchemaObject> {
         instanceof io.stargate.sgv2.jsonapi.service.schema.tables.ApiOpenSearchIndex osIndex) {
       var cols = osIndex.columns();
       if (cols.isEmpty()) {
-        // Emit ON table () — no column restriction; HCD replicates all non-PK columns.
-        // andColumn with the first SAI-name dummy produces the parenthesised empty form.
-        return createIndexOnTable.andColumn(
-            com.datastax.oss.driver.api.core.CqlIdentifier.fromInternal(""));
+        // No column restriction: HCD replicates all non-PK columns. The driver builder has no
+        // column, ExtendedCreateIndex renders "ON table ()" for a custom index.
+        return (CreateIndex) createIndexOnTable;
       }
+      // Each andColumn() returns a new builder holding the columns added so far, so the next
+      // column must be added to the returned builder (DefaultCreateIndex implements both
+      // CreateIndex and CreateIndexOnTable), not to the original createIndexOnTable.
       CreateIndex ci = createIndexOnTable.andColumn(cols.getFirst());
       for (int i = 1; i < cols.size(); i++) {
-        ci = createIndexOnTable.andColumn(cols.get(i));
+        ci = ((CreateIndexOnTable) ci).andColumn(cols.get(i));
       }
       return ci;
     }

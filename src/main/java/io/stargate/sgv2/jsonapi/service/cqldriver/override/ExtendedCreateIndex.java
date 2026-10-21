@@ -48,7 +48,9 @@ public class ExtendedCreateIndex extends DefaultCreateIndex {
     } else {
       builder.append(" ON ");
       CqlHelper.qualify(this.getKeyspace(), this.getTable(), builder);
-      if (this.getColumnToIndexType().isEmpty()) {
+      // A custom index with no column (OpenSearch: replicate all non-PK columns) is rendered as
+      // "ON table ()" and must still carry its USING class and OPTIONS.
+      if (this.getColumnToIndexType().isEmpty() && this.getUsingClass() == null) {
         return builder.toString();
       } else {
         builder.append(" (");

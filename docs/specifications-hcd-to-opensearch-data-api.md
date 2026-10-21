@@ -3097,7 +3097,7 @@ Response:
 #### 4.5.5 Implementation Tips (server)
 
 **Behaviour rules**
-- `$openSearch` detection for tables follows the same pre-validation pattern as for collections, but occurs inside [`TableFilterResolver`](src/main/java/io/stargate/sgv2/jsonapi/service/resolver/matcher/TableFilterResolver.java) (or the `TableReadDBOperationBuilder` that calls it) rather than `CollectionFilterResolver`.
+- `$openSearch` detection for tables follows the same pre-validation pattern as for collections, but occurs inside [`TableFilterResolver`](src/main/java/io/stargate/sgv2/jsonapi/service/resolver/matcher/TableFilterResolver.java) rather than `CollectionFilterResolver`.
 - Before any column-level filter resolution, check whether the filter has `"$openSearch"` as its sole key. If other keys coexist, throw `INVALID_OPEN_SEARCH_FILTER`.
 - Look up `ApiOpenSearchIndex` from `tableSchemaObject.apiTableDef().indexes()` by type `OPEN_SEARCH`. If none exists, throw `OPEN_SEARCH_NOT_ENABLED`.
 - Build a new `OpenSearchTableFilter` (analogous to `OpenSearchCollectionFilter` but implementing `TableFilter` / `WhereCQLClause<Select>`) that wraps the DSL JSON and the **SAI index name** recovered from `ApiOpenSearchIndex.saiIndexName()`.
@@ -3107,7 +3107,7 @@ Response:
 
 **Todo list**
 1. Create `OpenSearchTableFilter` in `service/operation/filters/table` — implements `TableFilter`; constructor takes `String saiIndexName` (the Cassandra custom index identifier, from `ApiOpenSearchIndex.saiIndexName()`) and `JsonNode queryDsl`; renders `WHERE expr(<saiIndexName>, '<dslJson>')`.
-2. Add `$openSearch` interception logic to [`TableFilterResolver`](src/main/java/io/stargate/sgv2/jsonapi/service/resolver/matcher/TableFilterResolver.java) (or `TableReadDBOperationBuilder`) — check for `"$openSearch"` in the filter before standard column matching; validate exclusivity; look up `ApiOpenSearchIndex`; construct `OpenSearchTableFilter`.
+2. Add `$openSearch` interception logic to [`TableFilterResolver`](src/main/java/io/stargate/sgv2/jsonapi/service/resolver/matcher/TableFilterResolver.java) (this runs inside `resolve(...)`, so `find`, `findOne`, `updateOne`, `deleteOne` and `deleteMany` all share it) — check for `"$openSearch"` in the filter before standard column matching; validate exclusivity; look up `ApiOpenSearchIndex`; construct `OpenSearchTableFilter`.
 3. Update [`WhereCQLClauseAnalyzer.StatementType.SELECT`](src/main/java/io/stargate/sgv2/jsonapi/service/operation/tables/WhereCQLClauseAnalyzer.java) strategy to short-circuit all validation rules when the where clause contains an `OpenSearchTableFilter` — the standard PK and indexing checks do not apply.
 4. Update `TableReadDBOperationBuilder` to bypass the `WhereCQLClauseAnalyzer` (or pass through a no-op strategy) when an `OpenSearchTableFilter` is detected.
 5. Add `OPEN_SEARCH_NOT_ENABLED` and `INVALID_OPEN_SEARCH_FILTER` to table-path error code enum if not already shared with the collection path.
