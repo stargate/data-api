@@ -57,7 +57,7 @@ public record FindAndRerankSort(
     @JsonIgnore CommandFeatures commandFeatures)
     implements Recordable {
 
-  // Java annotations reference helper classes to describe nested schemas.
+  // These classes carry nested schema annotations and are never instantiated by the parser.
   @Schema(
       name = "HybridSort",
       type = SchemaType.OBJECT,

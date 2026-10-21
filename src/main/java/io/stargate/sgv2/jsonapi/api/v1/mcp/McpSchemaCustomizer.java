@@ -82,6 +82,7 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
     }
     var reference = annotation.ref();
     if (reference.isEmpty()) {
+      // A type name identifies an OpenAPI component. A field name only names that property.
       var name = typeAnnotation ? annotation.name() : "";
       if (name.isEmpty()) {
         return null;

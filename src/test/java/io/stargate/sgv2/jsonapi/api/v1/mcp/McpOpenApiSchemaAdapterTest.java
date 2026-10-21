@@ -55,6 +55,80 @@ class McpOpenApiSchemaAdapterTest {
   }
 
   @Test
+  void shouldResolveFallbackDefinitionsWithinEachToolArgument() throws Exception {
+    var input =
+        MAPPER.readTree(
+            """
+            {
+              "type":"object",
+              "properties":{
+                "options/~":{
+                  "type":"object",
+                  "properties":{
+                    "value":{"$ref":"#/$defs/Local"},
+                    "shared":{"$ref":"#/components/schemas/Value"}
+                  },
+                  "$defs":{"Local":{
+                    "type":"object",
+                    "properties":{
+                      "name":{"type":"string"},
+                      "next":{"$ref":"#/$defs/Local"}
+                    }
+                  }},
+                  "examples":[{"value":{"$ref":"#/$defs/Local"}}]
+                },
+                "other":{
+                  "type":"object",
+                  "properties":{"value":{"$ref":"#/$defs/Local"}},
+                  "$defs":{"Local":{"type":"integer"}}
+                }
+              }
+            }
+            """);
+    var original = input.deepCopy();
+    var schema = new McpOpenApiSchemaAdapter(fixtureDocument()).adapt(input);
+
+    assertEquals(original, input);
+    assertEquals(
+        "#/properties/options~1~0/$defs/Local",
+        schema.at("/properties/options~1~0/properties/value/$ref").asText());
+    assertEquals(
+        original.at("/properties/options~1~0/examples"),
+        schema.at("/properties/options~1~0/examples"));
+    assertAccepts(
+        schema,
+        """
+        {"options/~":{"value":{"name":"first","next":{"name":"second"}},"shared":10},
+         "other":{"value":2}}
+        """);
+    assertRejects(schema, "{\"options/~\":{\"value\":{\"next\":{\"name\":2}}}}");
+    assertRejects(schema, "{\"options/~\":{\"shared\":15}}");
+    assertRejects(schema, "{\"other\":{\"value\":\"wrong\"}}");
+  }
+
+  @Test
+  void shouldPreserveValidRootReferencesWhenArgumentDefinitionsHaveTheSameName() throws Exception {
+    var input =
+        MAPPER.readTree(
+            """
+        {
+          "type":"object",
+          "properties":{"options":{
+            "type":"object",
+            "properties":{"value":{"$ref":"#/$defs/Local"}},
+            "$defs":{"Local":{"type":"integer"}}
+          }},
+          "$defs":{"Local":{"type":"string"}}
+        }
+        """);
+    var schema = new McpOpenApiSchemaAdapter(fixtureDocument()).adapt(input);
+
+    assertEquals(input, schema);
+    assertAccepts(schema, "{\"options\":{\"value\":\"text\"}}");
+    assertRejects(schema, "{\"options\":{\"value\":5}}");
+  }
+
+  @Test
   void shouldRetainExistingDefinitionsWhenAddingOpenApiComponents() throws Exception {
     var schema =
         adapt(

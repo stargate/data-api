@@ -16,6 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     name = "FilterDefinition",
     type = SchemaType.OBJECT,
+    // FilterClause describes parsed state and would incorrectly reserve fields such as empty.
     implementation = Object.class,
     nullable = true,
     additionalProperties = Schema.True.class,

@@ -13,6 +13,7 @@ import jakarta.decorator.Delegate;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Shares Swagger's generated schemas with MCP while retaining the existing tool generator.
@@ -66,6 +67,7 @@ public class McpOpenApiSchemaAdapter implements GlobalInputSchemaGenerator {
 
   ObjectNode adapt(JsonNode input) {
     ObjectNode result = input.deepCopy();
+    rebaseArgumentReferences(result);
     var definitions = MAPPER.createObjectNode();
     collectDefinitions(result, definitions);
     if (!definitions.isEmpty()) {
@@ -84,40 +86,70 @@ public class McpOpenApiSchemaAdapter implements GlobalInputSchemaGenerator {
     return result;
   }
 
+  private static void rebaseArgumentReferences(ObjectNode input) {
+    // The fallback generator nests each argument's $defs but leaves its references root-relative.
+    // Keep argument-local definitions separate to avoid name collisions.
+    for (var argument : input.path("properties").properties()) {
+      var schema = argument.getValue();
+      if (!schema.path("$defs").isObject()) {
+        continue;
+      }
+      var prefix = "#/properties/" + argument.getKey().replace("~", "~0").replace("/", "~1");
+      visitSchemas(
+          schema,
+          nested -> {
+            var reference = nested.path("$ref").asText();
+            if (reference.startsWith("#/$defs/")
+                && input.at(reference.substring(1)).isMissingNode()
+                && !schema.at(reference.substring(1)).isMissingNode()) {
+              nested.put("$ref", prefix + reference.substring(1));
+            }
+          });
+    }
+  }
+
   private void collectDefinitions(JsonNode node, ObjectNode definitions) {
+    visitSchemas(
+        node,
+        schema -> {
+          var reference = schema.path("$ref").asText();
+          if (reference.startsWith(OPEN_API_REF)) {
+            var suffix = reference.substring(OPEN_API_REF.length());
+            var component = suffix.split("/", 2)[0];
+            var name = DEFINITION_PREFIX + component.replace("~1", "/").replace("~0", "~");
+            var document = openApi();
+            if (document.at(reference.substring(1)).isMissingNode()) {
+              throw new IllegalStateException("Unresolved OpenAPI schema reference " + reference);
+            }
+            schema.put("$ref", "#/$defs/" + DEFINITION_PREFIX + suffix);
+            if (!definitions.has(name)) {
+              var definition = document.at("/components/schemas/" + component).deepCopy();
+              // Register before recursion to handle cyclic references.
+              definitions.set(name, definition);
+              collectDefinitions(definition, definitions);
+            }
+          }
+        });
+  }
+
+  private static void visitSchemas(JsonNode node, Consumer<ObjectNode> visitor) {
     if (!(node instanceof ObjectNode schema)) {
       return;
     }
-    var reference = schema.path("$ref").asText();
-    if (reference.startsWith(OPEN_API_REF)) {
-      var suffix = reference.substring(OPEN_API_REF.length());
-      var component = suffix.split("/", 2)[0];
-      var name = DEFINITION_PREFIX + component.replace("~1", "/").replace("~0", "~");
-      var document = openApi();
-      if (document.at(reference.substring(1)).isMissingNode()) {
-        throw new IllegalStateException("Unresolved OpenAPI schema reference " + reference);
-      }
-      schema.put("$ref", "#/$defs/" + DEFINITION_PREFIX + suffix);
-      if (!definitions.has(name)) {
-        var definition = document.at("/components/schemas/" + component).deepCopy();
-        // Register before following dependencies so recursive definitions are copied only once.
-        definitions.set(name, definition);
-        collectDefinitions(definition, definitions);
-      }
-    }
+    visitor.accept(schema);
     // Examples, defaults, and property names can contain literal $ref values. Visit schemas only.
     for (var keyword : SCHEMA_MAPS) {
       if (schema.path(keyword).isObject()) {
-        schema.path(keyword).forEach(value -> collectDefinitions(value, definitions));
+        schema.path(keyword).forEach(value -> visitSchemas(value, visitor));
       }
     }
     for (var keyword : SCHEMA_ARRAYS) {
       if (schema.path(keyword).isArray()) {
-        schema.path(keyword).forEach(value -> collectDefinitions(value, definitions));
+        schema.path(keyword).forEach(value -> visitSchemas(value, visitor));
       }
     }
     for (var keyword : SCHEMA_VALUES) {
-      collectDefinitions(schema.path(keyword), definitions);
+      visitSchemas(schema.path(keyword), visitor);
     }
   }
 
