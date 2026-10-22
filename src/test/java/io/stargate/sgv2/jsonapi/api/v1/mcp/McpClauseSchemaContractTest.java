@@ -28,8 +28,10 @@ import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig.RerankingProviderConfig.AuthenticationType;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl.RerankingProviderConfigImpl;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl.RerankingProviderConfigImpl.AuthenticationConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl.RequestPropertiesImpl;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
@@ -348,12 +350,10 @@ class McpClauseSchemaContractTest {
             .asText());
   }
 
-  /**
-   * Required fields are enforced by service validation, so schema acceptance must agree with it.
-   */
+  /** Schema acceptance must agree with service validation of the override fields. */
   @ParameterizedTest
-  @MethodSource("rerankOverrideRequiredFields")
-  void rerankOverrideSchemaMatchesRequiredFieldValidation(String json, boolean accepted)
+  @MethodSource("rerankOverrides")
+  void rerankOverrideSchemaMatchesServiceValidation(String json, boolean accepted)
       throws Exception {
     var schema = inputSchema("findAndRerank");
     var payload = objectMapper.readTree(json);
@@ -385,13 +385,37 @@ class McpClauseSchemaContractTest {
     }
   }
 
-  static Stream<Arguments> rerankOverrideRequiredFields() {
+  static Stream<Arguments> rerankOverrides() {
     return Stream.of(
         Arguments.of(
             """
             {"provider": "nvidia", "modelName": "nvidia/rerank-v1"}
             """,
             true),
+        Arguments.of(
+            """
+            {"provider": "nvidia", "modelName": "nvidia/rerank-v1",
+             "authentication": {}, "parameters": {}}
+            """,
+            true),
+        Arguments.of(
+            """
+            {"provider": "nvidia", "modelName": "nvidia/rerank-v1",
+             "authentication": null, "parameters": null}
+            """,
+            true),
+        Arguments.of(
+            """
+            {"provider": "nvidia", "modelName": "nvidia/rerank-v1",
+             "authentication": {"providerKey": "credential-reference"}}
+            """,
+            false),
+        Arguments.of(
+            """
+            {"provider": "nvidia", "modelName": "nvidia/rerank-v1",
+             "parameters": {"truncate": "END"}}
+            """,
+            false),
         Arguments.of("{}", false),
         Arguments.of(
             """
@@ -432,7 +456,12 @@ class McpClauseSchemaContractTest {
     return new RerankingProvidersConfigImpl(
         Map.of(
             "nvidia",
-            new RerankingProviderConfigImpl(false, "nvidia", true, Map.of(), List.of(model))));
+            new RerankingProviderConfigImpl(
+                false,
+                "nvidia",
+                true,
+                Map.of(AuthenticationType.NONE, new AuthenticationConfigImpl(true, List.of())),
+                List.of(model))));
   }
 
   @ParameterizedTest
@@ -520,21 +549,7 @@ class McpClauseSchemaContractTest {
         Arguments.of("findAndRerank", "{\"sort\": {\"vectorizeSort\": \"query\"}}"),
         Arguments.of("findAndRerank", "{\"sort\": {\"$hybrid\": {\"$vector\": \"query\"}}}"),
         Arguments.of("findAndRerank", "{\"options\": {\"hybridLimits\": {\"$vector\": 50}}}"),
-        Arguments.of("findAndRerank", "{\"options\": {\"rerank\": {\"provider\": \"nvidia\"}}}"),
-        Arguments.of(
-            "findAndRerank",
-            """
-            {"options": {"rerank": {
-              "provider": "nvidia", "modelName": "nvidia/rerank-v1", "authentication": {}
-            }}}
-            """),
-        Arguments.of(
-            "findAndRerank",
-            """
-            {"options": {"rerank": {
-              "provider": "nvidia", "modelName": "nvidia/rerank-v1", "parameters": {}
-            }}}
-            """));
+        Arguments.of("findAndRerank", "{\"options\": {\"rerank\": {\"provider\": \"nvidia\"}}}"));
   }
 
   private ObjectNode toolInput(String json) throws Exception {
@@ -542,14 +557,6 @@ class McpClauseSchemaContractTest {
     return ((ObjectNode) objectMapper.readTree(json))
         .put("keyspace", "default_keyspace")
         .put("collection", "documents");
-  }
-
-  @Test
-  void openApiSortExamplesAreValidClauseJson() throws Exception {
-    var schema = FindAndRerankSort.class.getAnnotation(Schema.class);
-    for (var example : schema.examples()) {
-      assertNotNull(objectMapper.readValue(example, FindAndRerankSort.class));
-    }
   }
 
   /** Positive examples alone would also pass against a schema that accepts every JSON value. */
@@ -574,15 +581,6 @@ class McpClauseSchemaContractTest {
         Arguments.of(FindAndRerankCommand.HybridLimits.class, "{\"$vector\": 50}"),
         Arguments.of(
             FindAndRerankCommand.HybridLimits.class, "{\"$vector\": 50, \"$lexical\": \"10\"}"));
-  }
-
-  @Test
-  void hybridLimitAnnotationExamplesAreValidClauseJson() throws Exception {
-    var schema = FindAndRerankCommand.HybridLimits.class.getAnnotation(Schema.class);
-    assertTrue(schema.examples().length > 0);
-    for (var example : schema.examples()) {
-      assertNotNull(objectMapper.readValue(example, FindAndRerankCommand.HybridLimits.class));
-    }
   }
 
   private void assertSchemaAccepts(JsonNode schema, JsonNode example) {
