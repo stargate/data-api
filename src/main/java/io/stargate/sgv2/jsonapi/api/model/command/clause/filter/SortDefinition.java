@@ -17,17 +17,29 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * for lazy deserialization into a {@link SortClause}.
  */
 @Schema(
+    name = "SortDefinition",
     type = SchemaType.OBJECT,
-    implementation = SortClause.class,
-    examples =
-        """
+    implementation = Object.class,
+    nullable = true,
+    description =
+        "A Data API sort object mapping paths to 1 (ascending) or -1 (descending). Collections also accept a single $vector, $vectorize, or $lexical sort. Tables use the vector or lexical column name.",
+    examples = {
+      """
                   {"user.age" : -1, "user.name" : 1}
-                  """)
+                  """,
+      """
+      {"$vector": [0.1, 0.2, 0.3]}
+      """,
+      """
+      {"$vectorize": "search text"}
+      """
+    })
 public class SortDefinition extends JsonDefinition<SortClause> {
   /**
    * Lazily deserialized {@link SortClause} from the JSON value. We need this due to existing
    * reliance on specific stateful instances of {@link SortClause}.
    */
+  @Schema(hidden = true)
   private SortClause sortClause;
 
   /**
@@ -84,6 +96,7 @@ public class SortDefinition extends JsonDefinition<SortClause> {
    * Helper method needed for logging purposes, where caller does not have access to the {@link
    * CommandContext}.
    */
+  @Schema(hidden = true)
   public List<String> getSortExpressionPaths() {
     // We will either be wrapping the clause or have a json value:
     if (sortClause != null) {

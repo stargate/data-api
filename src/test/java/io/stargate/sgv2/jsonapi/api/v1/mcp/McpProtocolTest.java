@@ -1,12 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
-import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.completeResult;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.request;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.rpcPayload;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.restassured.http.ContentType;
-import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -15,45 +15,19 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 class McpProtocolTest {
-  private static final String PROTOCOL_VERSION = "2026-07-28";
-
   @Test
   void listsToolsWithoutInitializationOrSession() {
     // Each POST is independent. clientInfo, discovery and initialization are deliberately absent.
     for (int id = 1; id <= 2; id++) {
-      Response response = request("tools/list", PROTOCOL_VERSION, id);
-      assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
+      var response =
+          request("tools/list")
+              // Existing header identity fixture only. OAuth admission is tracked in #2642.
+              .header("Token", "protocol-test-credential")
+              .body(rpcPayload(id, "tools/list", Map.of()))
+              .post("/v1/mcp");
+      completeResult(response, id);
       assertThat(response.header("Mcp-Session-Id")).isNull();
-      assertThat(response.jsonPath().getInt("id")).isEqualTo(id);
       assertThat(response.jsonPath().getList("result.tools.name")).isNotEmpty();
-      assertThat(response.jsonPath().getString("result.resultType")).isEqualTo("complete");
     }
-  }
-
-  private Response request(String method, String version, int id) {
-    return given()
-        .contentType(ContentType.JSON)
-        .accept("application/json, text/event-stream")
-        // Existing header identity fixture only. OAuth admission is tracked separately in #2642.
-        .header("Token", "protocol-test-credential")
-        .header("MCP-Protocol-Version", version)
-        .header("Mcp-Method", method)
-        .body(
-            Map.of(
-                "jsonrpc",
-                "2.0",
-                "id",
-                id,
-                "method",
-                method,
-                "params",
-                Map.of(
-                    "_meta",
-                    Map.of(
-                        "io.modelcontextprotocol/protocolVersion",
-                        version,
-                        "io.modelcontextprotocol/clientCapabilities",
-                        Map.of()))))
-        .post("/v1/mcp");
   }
 }

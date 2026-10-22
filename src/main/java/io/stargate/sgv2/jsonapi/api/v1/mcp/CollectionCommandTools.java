@@ -148,16 +148,15 @@ public class CollectionCommandTools {
     return mcpResource.processCollectionCommand(keyspace, collection, command);
   }
 
-  @Tool(
-      description =
-          "Finds documents using using vector and lexical sorting, then reranks the results.")
+  @Tool(description = "Finds documents using vector and lexical sorting, then reranks the results.")
   public Uni<ToolResponse> findAndRerank(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection/table") String collection,
       @ToolArg(description = "filter", required = false) FilterDefinition filter,
       @ToolArg(description = "projection", required = false) JsonNode projection,
-      @ToolArg(description = "sort", required = false) FindAndRerankSort sort,
-      @ToolArg(description = "options", required = false) FindAndRerankCommand.Options options) {
+      @ToolArg(required = false) FindAndRerankSort sort,
+      @ToolArg(description = "Reranking options", required = false)
+          FindAndRerankCommand.Options options) {
 
     var command = new FindAndRerankCommand(filter, projection, sort, options);
     return mcpResource.processCollectionCommand(keyspace, collection, command);

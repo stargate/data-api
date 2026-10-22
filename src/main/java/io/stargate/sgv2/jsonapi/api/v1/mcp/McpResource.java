@@ -145,7 +145,7 @@ public class McpResource {
                           contextBuilderSupplier
                               .getBuilder(keyspaceSchemaObject)
                               .withCommandName(command.getClass().getSimpleName())
-                              .withRequestContext(createRequestContext())
+                              .withRequestContext(requestContext)
                               .build());
             });
   }
@@ -230,10 +230,17 @@ public class McpResource {
     return contextUni
         .onItemOrFailure()
         .transformToUni(
-            (context, failure) -> {
-              if (failure != null) {
-                return handleSetupFailure(failure);
-              }
+            (context, failure) ->
+                failure == null
+                    ? executeCommand(context, command)
+                    : handleSetupFailure(failure))
+        .map(result -> result.toToolResponse(objectMapper));
+  }
+
+  private Uni<CommandResult> executeCommand(CommandContext<?> context, Command command) {
+    return Uni.createFrom()
+        .deferred(
+            () -> {
               if (!context.apiFeatures().isFeatureEnabled(ApiFeature.MCP)) {
                 return Uni.createFrom()
                     .item(
@@ -243,7 +250,18 @@ public class McpResource {
               }
               return meteredCommandProcessor.processCommand(context, command);
             })
-        .map(result -> result.toToolResponse(objectMapper));
+        .onTermination()
+        .invoke(
+            () -> {
+              try {
+                context.close();
+              } catch (Exception e) {
+                LOGGER.error(
+                    "Error closing the command context for requestContext={}",
+                    context.requestContext(),
+                    e);
+              }
+            });
   }
 
   private Uni<CommandResult> handleSetupFailure(Throwable failure) {
