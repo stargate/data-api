@@ -118,7 +118,7 @@ public record FindAndRerankCommand(
           @JsonProperty("rerank")
           CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
 
-  // Empty authentication and parameter maps preserve service descriptor compatibility.
+  // Authentication support depends on the provider. Parameters allow only empty maps or null.
   @Schema(
       name = RerankOverrideSchema.NAME,
       type = SchemaType.OBJECT,
@@ -133,7 +133,7 @@ public record FindAndRerankCommand(
             name = AUTHENTICATION,
             type = SchemaType.OBJECT,
             nullable = true,
-            additionalProperties = Schema.False.class),
+            additionalProperties = String.class),
         @SchemaProperty(
             name = PARAMETERS,
             type = SchemaType.OBJECT,
