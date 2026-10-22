@@ -93,6 +93,40 @@ class McpResourceTest {
   }
 
   @Test
+  void closesContextWhenProcessorThrowsSynchronously() throws Exception {
+    var context = commandContext(true);
+    var command = mock(KeyspaceCommand.class);
+    var failure = new IllegalStateException("processor failed before returning a Uni");
+    when(commandProcessor.processCommand(context, command)).thenThrow(failure);
+
+    assertThatThrownBy(
+            () ->
+                mcpResource()
+                    .processCommand(Uni.createFrom().item(context), command)
+                    .await()
+                    .atMost(Duration.ofSeconds(5)))
+        .isSameAs(failure);
+    verify(context).close();
+  }
+
+  @Test
+  void closesContextWhenFeatureConfigurationIsInvalid() throws Exception {
+    var context = commandContext(true);
+    when(context.apiFeatures())
+        .thenReturn(ApiFeatures.fromConfigAndRequest(Map.of(ApiFeature.MCP, "invalid"), null));
+
+    assertThatThrownBy(
+            () ->
+                mcpResource()
+                    .processCommand(Uni.createFrom().item(context), mock(KeyspaceCommand.class))
+                    .await()
+                    .atMost(Duration.ofSeconds(5)))
+        .isInstanceOf(IllegalArgumentException.class);
+    verifyNoInteractions(commandProcessor);
+    verify(context).close();
+  }
+
+  @Test
   void closesContextWhenFeatureDisabled() throws Exception {
     var context = commandContext(false);
     var command = mock(KeyspaceCommand.class);
