@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.Objects;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
  * Value type enclosing JSON-encoded representation of something to build into full model object,
@@ -15,7 +16,8 @@ import java.util.Objects;
  * @param <T> Type of the value object to be deserialized from the JSON value
  */
 public abstract class JsonDefinition<T> {
-  /** The wrapped JSON value */
+  /** The whole clause value. Clients do not send a nested json property. */
+  @Schema(hidden = true)
   private final JsonNode json;
 
   protected JsonDefinition(JsonNode json) {
