@@ -34,7 +34,7 @@ public class GeneralCommandTools {
           CreateKeyspaceCommand.Options options) {
 
     var command = new CreateKeyspaceCommand(name, options);
-    return mcpResource.processCommand(mcpResource.buildDatabaseContext(command), command);
+    return mcpResource.processCommand(() -> mcpResource.buildDatabaseContext(command), command);
   }
 
   @Tool(
@@ -49,7 +49,7 @@ public class GeneralCommandTools {
       @ToolArg(description = "Required name of the Keyspace to remove") @NotEmpty String name) {
 
     var command = new DropKeyspaceCommand(name);
-    return mcpResource.processCommand(mcpResource.buildDatabaseContext(command), command);
+    return mcpResource.processCommand(() -> mcpResource.buildDatabaseContext(command), command);
   }
 
   @Tool(
@@ -63,7 +63,7 @@ public class GeneralCommandTools {
   public Uni<ToolResponse> findKeyspaces() {
 
     var command = new FindKeyspacesCommand();
-    return mcpResource.processCommand(mcpResource.buildDatabaseContext(command), command);
+    return mcpResource.processCommand(() -> mcpResource.buildDatabaseContext(command), command);
   }
 
   @Tool(
@@ -82,7 +82,7 @@ public class GeneralCommandTools {
           FindEmbeddingProvidersCommand.Options options) {
 
     var command = new FindEmbeddingProvidersCommand(options);
-    return mcpResource.processCommand(mcpResource.buildDatabaseContext(command), command);
+    return mcpResource.processCommand(() -> mcpResource.buildDatabaseContext(command), command);
   }
 
   @Tool(
@@ -101,6 +101,6 @@ public class GeneralCommandTools {
           FindRerankingProvidersCommand.Options options) {
 
     var command = new FindRerankingProvidersCommand(options);
-    return mcpResource.processCommand(mcpResource.buildDatabaseContext(command), command);
+    return mcpResource.processCommand(() -> mcpResource.buildDatabaseContext(command), command);
   }
 }

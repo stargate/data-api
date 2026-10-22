@@ -72,7 +72,7 @@ class McpResourceTest {
 
     var response =
         mcpResource()
-            .processCommand(Uni.createFrom().item(context), command)
+            .processCommand(() -> Uni.createFrom().item(context), command)
             .await()
             .atMost(Duration.ofSeconds(5));
 
@@ -90,7 +90,7 @@ class McpResourceTest {
     assertThatThrownBy(
             () ->
                 mcpResource()
-                    .processCommand(Uni.createFrom().item(context), command)
+                    .processCommand(() -> Uni.createFrom().item(context), command)
                     .await()
                     .atMost(Duration.ofSeconds(5)))
         .hasMessage("processor failed");
@@ -107,7 +107,7 @@ class McpResourceTest {
     assertThatThrownBy(
             () ->
                 mcpResource()
-                    .processCommand(Uni.createFrom().item(context), command)
+                    .processCommand(() -> Uni.createFrom().item(context), command)
                     .await()
                     .atMost(Duration.ofSeconds(5)))
         .isSameAs(failure);
@@ -123,7 +123,7 @@ class McpResourceTest {
     assertThatThrownBy(
             () ->
                 mcpResource()
-                    .processCommand(Uni.createFrom().item(context), keyspaceCommand())
+                    .processCommand(() -> Uni.createFrom().item(context), keyspaceCommand())
                     .await()
                     .atMost(Duration.ofSeconds(5)))
         .isInstanceOf(IllegalArgumentException.class);
@@ -138,7 +138,7 @@ class McpResourceTest {
 
     var response =
         mcpResource()
-            .processCommand(Uni.createFrom().item(context), command)
+            .processCommand(() -> Uni.createFrom().item(context), command)
             .await()
             .atMost(Duration.ofSeconds(5));
 
@@ -156,7 +156,7 @@ class McpResourceTest {
 
     var cancellable =
         mcpResource()
-            .processCommand(Uni.createFrom().item(context), command)
+            .processCommand(() -> Uni.createFrom().item(context), command)
             .subscribe()
             .with(response -> {}, failure -> {});
     cancellable.cancel();
@@ -175,7 +175,7 @@ class McpResourceTest {
 
     var response =
         mcpResource()
-            .processCommand(Uni.createFrom().item(context), command)
+            .processCommand(() -> Uni.createFrom().item(context), command)
             .await()
             .atMost(Duration.ofSeconds(5));
 
@@ -194,7 +194,7 @@ class McpResourceTest {
     assertThatThrownBy(
             () ->
                 mcpResource()
-                    .processCommand(Uni.createFrom().item(context), command)
+                    .processCommand(() -> Uni.createFrom().item(context), command)
                     .await()
                     .atMost(Duration.ofSeconds(5)))
         .hasMessage("processor failed");
@@ -234,7 +234,7 @@ class McpResourceTest {
     try (var logs = new LoggerTestWrapper(McpRequestLogging.class)) {
       var response =
           mcpResource()
-              .processCommand(Uni.createFrom().item(context), command)
+              .processCommand(() -> Uni.createFrom().item(context), command)
               .await()
               .atMost(Duration.ofSeconds(5));
       assertThat(response.isError()).isTrue();

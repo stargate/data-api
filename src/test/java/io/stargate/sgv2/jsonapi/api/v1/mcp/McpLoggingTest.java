@@ -23,8 +23,14 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 @QuarkusTest
 @TestProfile(McpLoggingTest.LoggingProfile.class)
@@ -114,18 +120,19 @@ class McpLoggingTest {
   @Test
   void asynchronousCommandErrorsStayOutOfLogs() throws IOException {
     when(commandProcessor.processCommand(any(), any()))
-        .thenReturn(
-            Uni.createFrom()
-                .item(1)
-                .onItem()
-                .delayIt()
-                .by(Duration.ofMillis(1))
-                .map(
-                    ignored ->
-                        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
-                            .addThrowable(
-                                new IllegalArgumentException("synthetic-command-error-secret"))
-                            .build()));
+        .thenAnswer(
+            invocation ->
+                Uni.createFrom()
+                    .item(1)
+                    .onItem()
+                    .delayIt()
+                    .by(Duration.ofMillis(1))
+                    .map(
+                        ignored ->
+                            CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+                                .addThrowable(
+                                    new IllegalArgumentException("synthetic-command-error-secret"))
+                                .build()));
     long start = Files.size(LOG_FILE);
 
     callProviderTool();
@@ -138,16 +145,17 @@ class McpLoggingTest {
   @Test
   void asynchronousCommandFailuresStayOutOfLogs() throws IOException {
     when(commandProcessor.processCommand(any(), any()))
-        .thenReturn(
-            Uni.createFrom()
-                .item(1)
-                .onItem()
-                .delayIt()
-                .by(Duration.ofMillis(1))
-                .map(
-                    ignored -> {
-                      throw new IllegalStateException("synthetic-command-failure-secret");
-                    }));
+        .thenAnswer(
+            invocation ->
+                Uni.createFrom()
+                    .item(1)
+                    .onItem()
+                    .delayIt()
+                    .by(Duration.ofMillis(1))
+                    .map(
+                        ignored -> {
+                          throw new IllegalStateException("synthetic-command-failure-secret");
+                        }));
     long start = Files.size(LOG_FILE);
 
     callProviderTool();
@@ -155,6 +163,47 @@ class McpLoggingTest {
     assertThat(logsSince(start))
         .contains("MCP command failed", "command=findEmbeddingProviders")
         .doesNotContain("synthetic-");
+  }
+
+  @Test
+  void driverThreadCallbacksKeepRequestIdAndRestoreWorkerContext() throws Exception {
+    try (var worker = Executors.newSingleThreadExecutor()) {
+      // Start the worker before a request can contribute inherited context.
+      assertThat(worker.submit(() -> MDC.get(McpRequestLogging.REQUEST_ID)).get()).isNull();
+      var completed = new CompletableFuture<Integer>();
+      when(commandProcessor.processCommand(any(), any()))
+          .thenAnswer(
+              ignored ->
+                  Uni.createFrom()
+                      .completionStage(completed)
+                      .map(
+                          value -> {
+                            LoggerFactory.getLogger(McpLoggingTest.class)
+                                .info("synthetic-driver-payload-secret");
+                            return CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).build();
+                          }));
+      var completion =
+          worker.submit(
+              () -> {
+                await()
+                    .atMost(Duration.ofSeconds(10))
+                    .until(() -> completed.getNumberOfDependents() > 0);
+                completed.complete(1);
+                return MDC.get(McpRequestLogging.REQUEST_ID);
+              });
+      long start = Files.size(LOG_FILE);
+
+      callProviderTool();
+
+      assertThat(completion.get(10, TimeUnit.SECONDS)).isNull();
+      String logs = logsSince(start);
+      var requestId = Pattern.compile("MCP request completed requestId=([a-f0-9-]+)").matcher(logs);
+      assertThat(requestId.find()).isTrue();
+      assertThat(logs.contains("MCP event details redacted")).isTrue();
+      assertThat(logs.contains("MCP command completed requestId=" + requestId.group(1))).isTrue();
+      assertThat(logs.contains("synthetic-")).as("Payloads stay out of logs").isFalse();
+      assertThat(logs.contains("requestId=null")).isFalse();
+    }
   }
 
   private void callProviderTool() {
