@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
+import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.AUTHENTICATION;
 import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.MODEL_NAME;
+import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.PARAMETERS;
 import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.PROVIDER;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -116,8 +118,7 @@ public record FindAndRerankCommand(
           @JsonProperty("rerank")
           CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
 
-  // Collection creation uses the same service record but also accepts authentication and
-  // parameters.
+  // Empty authentication and parameter maps preserve service descriptor compatibility.
   @Schema(
       name = RerankOverrideSchema.NAME,
       type = SchemaType.OBJECT,
@@ -127,7 +128,17 @@ public record FindAndRerankCommand(
       requiredProperties = {PROVIDER, MODEL_NAME},
       properties = {
         @SchemaProperty(name = PROVIDER, type = SchemaType.STRING),
-        @SchemaProperty(name = MODEL_NAME, type = SchemaType.STRING)
+        @SchemaProperty(name = MODEL_NAME, type = SchemaType.STRING),
+        @SchemaProperty(
+            name = AUTHENTICATION,
+            type = SchemaType.OBJECT,
+            nullable = true,
+            additionalProperties = Schema.False.class),
+        @SchemaProperty(
+            name = PARAMETERS,
+            type = SchemaType.OBJECT,
+            nullable = true,
+            additionalProperties = Schema.False.class)
       },
       examples =
           """
