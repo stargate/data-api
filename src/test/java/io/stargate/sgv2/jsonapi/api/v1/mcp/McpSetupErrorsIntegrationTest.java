@@ -1,12 +1,14 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
-import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.completeResult;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.readableResult;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.rpcPayload;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.toolPayload;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkiverse.mcp.server.JsonRpcErrorCodes;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
@@ -15,7 +17,6 @@ import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.vertx.core.json.JsonObject;
-import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -27,8 +28,6 @@ import org.junit.jupiter.api.Test;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
 class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
-  private static final String PROTOCOL_VERSION = "2026-07-28";
-
   @BeforeAll
   void createTestKeyspace() {
     createKeyspace(keyspaceName);
@@ -100,7 +99,7 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
 
   @Test
   void missingArgumentRemainsAFrameworkToolError() {
-    var result = completeToolResult(callTool(11, CommandName.Names.FIND_COLLECTIONS, Map.of()), 11);
+    var result = completeResult(callTool(11, CommandName.Names.FIND_COLLECTIONS, Map.of()), 11);
 
     // The framework's default input-validation strategy returns a plain tool error.
     assertThat(result.getBoolean("isError")).isTrue();
@@ -115,7 +114,7 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
 
   private void assertProviderDiscoverySucceeds(int id) {
     var result =
-        completeToolResult(callTool(id, CommandName.Names.FIND_EMBEDDING_PROVIDERS, Map.of()), id);
+        completeResult(callTool(id, CommandName.Names.FIND_EMBEDDING_PROVIDERS, Map.of()), id);
     assertThat(result.getBoolean("isError")).isFalse();
     var status = result.getJsonObject("_meta").getJsonObject("status");
     assertThat(status.getJsonObject("embeddingProviders")).isNotNull();
@@ -123,7 +122,7 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
   }
 
   private static void assertApplicationError(Response response, int id, SchemaException.Code code) {
-    var result = completeToolResult(response, id);
+    var result = completeResult(response, id);
     assertThat(result.getBoolean("isError")).isTrue();
     var structured = result.getJsonObject("structuredContent");
     var errors = structured.getJsonArray("errors");
@@ -131,23 +130,6 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
     assertThat(errors.getJsonObject(0).getString("errorCode")).isEqualTo(code.name());
     assertThat(errors.getJsonObject(0).getString("message")).isNotBlank();
     assertThat(readableResult(result)).isEqualTo(structured);
-  }
-
-  private static JsonObject readableResult(JsonObject result) {
-    var content = result.getJsonArray("content");
-    assertThat(content).hasSize(1);
-    assertThat(content.getJsonObject(0).getString("type")).isEqualTo("text");
-    return new JsonObject(content.getJsonObject(0).getString("text"));
-  }
-
-  private static JsonObject completeToolResult(Response response, int id) {
-    assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
-    var body = new JsonObject(response.asString());
-    assertThat(body.getInteger("id")).isEqualTo(id);
-    assertThat(body.containsKey("error")).isFalse();
-    var result = body.getJsonObject("result");
-    assertThat(result.getString("resultType")).isEqualTo("complete");
-    return result;
   }
 
   private static void assertProtocolError(Response response, Integer id, int errorCode) {
@@ -164,12 +146,7 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
 
   private RequestSpecification request(String method, String tool, boolean authenticated) {
     var request =
-        given()
-            .contentType(ContentType.JSON)
-            .accept("application/json, text/event-stream")
-            .header(ApiFeature.MCP.httpHeaderName(), "true")
-            .header("MCP-Protocol-Version", PROTOCOL_VERSION)
-            .header("Mcp-Method", method);
+        McpHttpTestSupport.request(method).header(ApiFeature.MCP.httpHeaderName(), "true");
     if (tool != null) {
       request.header("Mcp-Name", tool);
     }
@@ -179,22 +156,5 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
       }
     }
     return request;
-  }
-
-  private static Map<String, Object> toolPayload(
-      int id, String tool, Map<String, Object> arguments) {
-    return rpcPayload(id, "tools/call", Map.of("name", tool, "arguments", arguments));
-  }
-
-  private static Map<String, Object> rpcPayload(int id, String method, Map<String, Object> params) {
-    var requestParams = new HashMap<>(params);
-    requestParams.put(
-        "_meta",
-        Map.of(
-            "io.modelcontextprotocol/protocolVersion",
-            PROTOCOL_VERSION,
-            "io.modelcontextprotocol/clientCapabilities",
-            Map.of()));
-    return Map.of("jsonrpc", "2.0", "id", id, "method", method, "params", requestParams);
   }
 }
