@@ -44,6 +44,7 @@ import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Provider;
+import jakarta.validation.Validator;
 import java.security.Principal;
 import java.time.Duration;
 import java.util.Map;
@@ -285,6 +286,7 @@ class McpResourceTest {
       Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
     return new McpResource(
         objectMapper,
+        mock(Validator.class),
         commandProcessor,
         mock(MeterRegistry.class),
         mock(JsonProcessingMetricsReporter.class),
