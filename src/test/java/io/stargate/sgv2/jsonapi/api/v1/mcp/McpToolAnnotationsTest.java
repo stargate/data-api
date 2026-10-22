@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
-import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.request;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.rpcPayload;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.HashMap;
 import java.util.List;
@@ -29,28 +29,9 @@ class McpToolAnnotationsTest {
       return;
     }
     List<Map<String, Object>> registeredTools =
-        given()
-            .contentType(ContentType.JSON)
-            .accept("application/json, text/event-stream")
+        request("tools/list")
             .header("Token", "annotations-test-credential")
-            .header("MCP-Protocol-Version", "2026-07-28")
-            .header("Mcp-Method", "tools/list")
-            .body(
-                Map.of(
-                    "jsonrpc",
-                    "2.0",
-                    "id",
-                    1,
-                    "method",
-                    "tools/list",
-                    "params",
-                    Map.of(
-                        "_meta",
-                        Map.of(
-                            "io.modelcontextprotocol/protocolVersion",
-                            "2026-07-28",
-                            "io.modelcontextprotocol/clientCapabilities",
-                            Map.of()))))
+            .body(rpcPayload(1, "tools/list", Map.of()))
             .post("/v1/mcp")
             .then()
             .statusCode(200)
