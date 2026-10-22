@@ -203,8 +203,7 @@ public class CollectionCommandTools {
   }
 
   @Tool(
-      description =
-          "Finds documents using vector and lexical sorting, then reranks the results.",
+      description = "Finds documents using vector and lexical sorting, then reranks the results.",
       annotations =
           @Tool.Annotations(
               readOnlyHint = true,
