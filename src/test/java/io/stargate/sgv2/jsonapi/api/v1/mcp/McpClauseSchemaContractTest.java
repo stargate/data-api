@@ -51,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -366,17 +367,7 @@ class McpClauseSchemaContractTest {
     assertEquals(
         accepted, errors.isEmpty(), () -> "Schema validation for " + json + " returned " + errors);
 
-    var override =
-        objectMapper.treeToValue(payload, CreateCollectionCommand.Options.RerankServiceDesc.class);
-    Executable validate =
-        () ->
-            CollectionRerankDef.validateServiceDesc(
-                supportedRerankingProvider(),
-                override.provider(),
-                override.modelName(),
-                override.authentication(),
-                override.parameters(),
-                RequestException.Code.INVALID_RERANK_OVERRIDE);
+    Executable validate = () -> validateRerankOverride(payload, AuthenticationType.NONE);
     if (accepted) {
       assertDoesNotThrow(validate);
     } else {
@@ -404,12 +395,6 @@ class McpClauseSchemaContractTest {
              "authentication": null, "parameters": null}
             """,
             true),
-        Arguments.of(
-            """
-            {"provider": "nvidia", "modelName": "nvidia/rerank-v1",
-             "authentication": {"providerKey": "credential-reference"}}
-            """,
-            false),
         Arguments.of(
             """
             {"provider": "nvidia", "modelName": "nvidia/rerank-v1",
@@ -444,7 +429,45 @@ class McpClauseSchemaContractTest {
             false));
   }
 
-  private static RerankingProvidersConfig supportedRerankingProvider() {
+  /** The schema allows credentials because the provider configuration determines support. */
+  @ParameterizedTest
+  @EnumSource(AuthenticationType.class)
+  void rerankAuthenticationValidationDependsOnProvider(AuthenticationType authenticationType)
+      throws Exception {
+    var payload =
+        objectMapper.readTree(
+            """
+            {"provider": "nvidia", "modelName": "nvidia/rerank-v1",
+             "authentication": {"providerKey": "credential-reference"}}
+            """);
+    var command = toolInput("{}");
+    command.putObject("options").set("rerank", payload);
+    assertSchemaAccepts(inputSchema("findAndRerank"), command);
+
+    Executable validate = () -> validateRerankOverride(payload, authenticationType);
+    if (authenticationType == AuthenticationType.SHARED_SECRET) {
+      assertDoesNotThrow(validate);
+    } else {
+      var error = assertThrows(RequestException.class, validate);
+      assertEquals(RequestException.Code.INVALID_RERANK_OVERRIDE.name(), error.code);
+    }
+  }
+
+  private CollectionRerankDef.RerankServiceDef validateRerankOverride(
+      JsonNode payload, AuthenticationType authenticationType) throws Exception {
+    var override =
+        objectMapper.treeToValue(payload, CreateCollectionCommand.Options.RerankServiceDesc.class);
+    return CollectionRerankDef.validateServiceDesc(
+        supportedRerankingProvider(authenticationType),
+        override.provider(),
+        override.modelName(),
+        override.authentication(),
+        override.parameters(),
+        RequestException.Code.INVALID_RERANK_OVERRIDE);
+  }
+
+  private static RerankingProvidersConfig supportedRerankingProvider(
+      AuthenticationType authenticationType) {
     var model =
         new ModelConfigImpl(
             "nvidia/rerank-v1",
@@ -460,7 +483,7 @@ class McpClauseSchemaContractTest {
                 false,
                 "nvidia",
                 true,
-                Map.of(AuthenticationType.NONE, new AuthenticationConfigImpl(true, List.of())),
+                Map.of(authenticationType, new AuthenticationConfigImpl(true, List.of())),
                 List.of(model))));
   }
 
