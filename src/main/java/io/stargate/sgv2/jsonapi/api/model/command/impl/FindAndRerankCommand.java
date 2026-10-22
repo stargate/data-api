@@ -1,7 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
+import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.AUTHENTICATION;
+import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.MODEL_NAME;
+import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.PARAMETERS;
+import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.PROVIDER;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.core.JsonParser;
@@ -28,10 +33,9 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 
-@Schema(
-    description =
-        "Finds documents using using vector and lexical sorting, then reranks the results.")
+@Schema(description = "Finds documents using vector and lexical sorting, then reranks the results.")
 @JsonTypeName(CommandName.Names.FIND_AND_RERANK)
 public record FindAndRerankCommand(
     @Valid @JsonProperty("filter") FilterDefinition filterDefinition,
@@ -70,15 +74,7 @@ public record FindAndRerankCommand(
               implementation = Integer.class)
           Integer limit,
       /** ---- */
-      @Schema(
-              description =
-                  "The maximum number of documents to read for the vector and lexical queries that feed into the reranking. May be a number or an object with $vector and $lexical fields. The accepted range is determined by server configuration.",
-              examples =
-                  """
-                {"hybridLimits" : 100}
-                {"hybridLimits" : {"$vector" : 100, "$lexical" : 10}}
-                """)
-          HybridLimits hybridLimits,
+      @Schema(ref = HybridLimits.REF) HybridLimits hybridLimits,
       /** ---- */
       @Schema(
               description =
@@ -117,17 +113,65 @@ public record FindAndRerankCommand(
                   "Optional override for the reranking service. Completely replaces the"
                       + " collection-level reranking configuration when provided. Both 'provider' and"
                       + " 'modelName' are required.",
-              implementation = CreateCollectionCommand.Options.RerankServiceDesc.class)
+              implementation = RerankOverrideSchema.class,
+              ref = RerankOverrideSchema.REF)
           @JsonProperty("rerank")
           CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
 
+  // Authentication support depends on the provider. Parameters allow only empty maps or null.
+  @Schema(
+      name = RerankOverrideSchema.NAME,
+      type = SchemaType.OBJECT,
+      implementation = Object.class,
+      nullable = true,
+      additionalProperties = Schema.False.class,
+      requiredProperties = {PROVIDER, MODEL_NAME},
+      properties = {
+        @SchemaProperty(name = PROVIDER, type = SchemaType.STRING),
+        @SchemaProperty(name = MODEL_NAME, type = SchemaType.STRING),
+        @SchemaProperty(
+            name = AUTHENTICATION,
+            type = SchemaType.OBJECT,
+            nullable = true,
+            additionalProperties = String.class),
+        @SchemaProperty(
+            name = PARAMETERS,
+            type = SchemaType.OBJECT,
+            nullable = true,
+            additionalProperties = Schema.False.class)
+      },
+      examples =
+          """
+          {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"}
+          """)
+  public static class RerankOverrideSchema {
+    public static final String NAME = "RerankServiceOverride";
+    public static final String REF = "#/components/schemas/" + NAME;
+  }
+
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
+  // Keep the scanner from inferring an object type for this union.
+  @Schema(
+      name = HybridLimits.NAME,
+      description =
+          "Candidate read limits as one integer for both legs, or an object containing both $vector and $lexical integer limits. Accepted bounds are determined by server configuration.",
+      implementation = Void.class,
+      anyOf = {Integer.class, HybridLimitValuesSchema.class},
+      examples = {
+        "50",
+        """
+        {"$vector": 50, "$lexical": 10}
+        """
+      })
   public record HybridLimits(
       @JsonProperty(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) int vectorLimit,
       /** ---- */
       @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit,
-      CommandFeatures commandFeatures)
+      @JsonIgnore CommandFeatures commandFeatures)
       implements Recordable {
+
+    public static final String NAME = "HybridLimits";
+    public static final String REF = "#/components/schemas/" + NAME;
 
     public static final HybridLimits DEFAULT =
         new HybridLimits(
@@ -143,6 +187,18 @@ public record FindAndRerankCommand(
           .append("commandFeatures", commandFeatures);
     }
   }
+
+  @Schema(
+      name = "HybridLimitValues",
+      type = SchemaType.OBJECT,
+      nullable = true,
+      additionalProperties = Schema.False.class,
+      requiredProperties = {VECTOR_EMBEDDING_FIELD, LEXICAL_CONTENT_FIELD},
+      properties = {
+        @SchemaProperty(name = VECTOR_EMBEDDING_FIELD, type = SchemaType.INTEGER),
+        @SchemaProperty(name = LEXICAL_CONTENT_FIELD, type = SchemaType.INTEGER)
+      })
+  public static class HybridLimitValuesSchema {}
 
   /** Deserializer for the `hybridLimits` option, the limits for the inner reads. */
   public static class HybridLimitsDeserializer extends StdDeserializer<HybridLimits> {

@@ -2,11 +2,10 @@ package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import io.quarkus.vertx.http.runtime.filters.Filters;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.quarkiverse.mcp.server.ToolResponse;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import java.net.URI;
 import java.util.Set;
 import java.util.UUID;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -21,28 +20,19 @@ public class McpRequestLogging {
   private static final Logger LOGGER = LoggerFactory.getLogger(McpRequestLogging.class);
   private static final Set<String> METHODS = Set.of("server/discover", "tools/list", "tools/call");
 
-  @ConfigProperty(name = "quarkus.mcp.server.http.root-path")
-  String rootPath;
-
-  @ConfigProperty(name = "quarkus.http.root-path", defaultValue = "/")
-  String httpRootPath;
-
-  private String endpointPath;
+  @ConfigProperty(name = McpEndpointConfigSourceFactory.ENDPOINT_PATH)
+  String endpointPath;
 
   void register(@Observes Filters filters) {
-    String httpRoot = httpRootPath.endsWith("/") ? httpRootPath : httpRootPath + "/";
-    String mcpRoot = rootPath.startsWith("/") ? rootPath.substring(1) : rootPath;
-    endpointPath = URI.create(httpRoot).resolve(mcpRoot).normalize().getPath();
-    if (endpointPath.endsWith("/") && endpointPath.length() > 1) {
-      endpointPath = endpointPath.substring(0, endpointPath.length() - 1);
-    }
     // Run before authentication and MCP parsing, so failures there are protected too.
     filters.register(this::handle, Integer.MAX_VALUE);
   }
 
   void handle(RoutingContext context) {
     String path = context.normalizedPath();
-    if (!path.equals(endpointPath) && !path.startsWith(endpointPath + "/")) {
+    if (!endpointPath.equals("/")
+        && !path.equals(endpointPath)
+        && !path.startsWith(endpointPath + "/")) {
       context.next();
       return;
     }
@@ -72,12 +62,16 @@ public class McpRequestLogging {
     }
   }
 
-  static void commandCompleted(Command command, CommandResult result) {
+  static void commandCompleted(Command command, ToolResponse result) {
     LOGGER.info(
-        "MCP command completed requestId={} command={} errors={}",
+        "MCP command completed requestId={} command={} isError={}",
         MDC.get(REQUEST_ID),
         command.commandName().getApiName(),
-        result.errors() == null ? 0 : result.errors().size());
+        result.isError());
+  }
+
+  static void setupFailed() {
+    LOGGER.warn("MCP setup failed requestId={} category=unexpected", MDC.get(REQUEST_ID));
   }
 
   static void commandFailed(Command command) {

@@ -14,7 +14,6 @@ class McpCustomPathLoggingTest extends McpLoggingTest {
       var overrides = new HashMap<>(super.getConfigOverrides());
       overrides.put("quarkus.http.root-path", "/service");
       overrides.put("quarkus.mcp.server.http.root-path", "/tools");
-      overrides.put("quarkus.http.access-log.exclude-pattern", "/service/tools(/.*)?");
       overrides.put(
           "quarkus.http.auth.permission.default.paths", "/service/tools,/service/tools/*");
       return overrides;

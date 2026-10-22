@@ -104,7 +104,7 @@ class McpLoggingTest {
 
     assertThat(logsSince(start))
         .contains(
-            "MCP command completed", "command=findEmbeddingProviders", "errors=0", "requestId=")
+            "MCP command completed", "command=findEmbeddingProviders", "isError=false", "requestId=")
         .doesNotContain("synthetic-");
   }
 
@@ -128,7 +128,7 @@ class McpLoggingTest {
     callProviderTool();
 
     assertThat(logsSince(start))
-        .contains("MCP command completed", "command=findEmbeddingProviders", "errors=1")
+        .contains("MCP command completed", "command=findEmbeddingProviders", "isError=true")
         .doesNotContain("synthetic-");
   }
 
@@ -155,33 +155,10 @@ class McpLoggingTest {
   }
 
   private void callProviderTool() {
-    given()
-        .contentType(ContentType.JSON)
-        .accept("application/json, text/event-stream")
+    McpHttpTestSupport.request("tools/call")
         .header("Token", "synthetic-header-secret")
-        .header("MCP-Protocol-Version", "2026-07-28")
-        .header("Mcp-Method", "tools/call")
         .header("Mcp-Name", "findEmbeddingProviders")
-        .body(
-            Map.of(
-                "jsonrpc",
-                "2.0",
-                "id",
-                1,
-                "method",
-                "tools/call",
-                "params",
-                Map.of(
-                    "name",
-                    "findEmbeddingProviders",
-                    "arguments",
-                    Map.of(),
-                    "_meta",
-                    Map.of(
-                        "io.modelcontextprotocol/protocolVersion",
-                        "2026-07-28",
-                        "io.modelcontextprotocol/clientCapabilities",
-                        Map.of()))))
+        .body(McpHttpTestSupport.toolPayload(1, "findEmbeddingProviders", Map.of()))
         .post(mcpPath())
         .then()
         .statusCode(200);

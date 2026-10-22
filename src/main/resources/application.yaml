@@ -87,9 +87,7 @@ quarkus:
     access-log:
       enabled: true
       pattern: "%h %l %t \"%r\" %s %b"
-      # MCP request summaries omit URLs, which can contain OAuth credentials. If the HTTP
-      # root is changed, update this exclusion to the full deployed MCP path as well.
-      exclude-pattern: "\\Q${quarkus.mcp.server.http.root-path}\\E(/.*)?"
+      # McpEndpointConfigSourceFactory excludes the effective MCP path from access logs.
 
     # every /v1 path is authenticated by default
     # adapt if changing the authentication mechanism

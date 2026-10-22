@@ -86,10 +86,12 @@ replaced with request summaries. Structured billing events keep their existing l
 Raw framework traffic logging is disabled. The `mcp-safe-logging` filter also discards that category
 if `quarkus.mcp.server.traffic-logging.enabled` is overridden. It is attached to the standard console,
 file, syslog and socket handlers. Any added handler or log exporter must apply the same filter
-before publishing records. Keep these filters in deployment overrides. If the HTTP root or MCP
-path changes, set `quarkus.http.access-log.exclude-pattern` to match the full normalized MCP path
-and its descendants, alongside the authentication path configuration. For example, an endpoint at
-`/service/tools` needs `/service/tools(/.*)?`. Ordinary HTTP API logging is unaffected.
+before publishing records. Keep these filters in deployment overrides. The MCP endpoint and its
+access-log exclusion are derived together from `quarkus.http.root-path` and
+`quarkus.mcp.server.http.root-path`. Changing either path requires no separate logging configuration.
+Keep the authentication path configuration aligned with the endpoint. Explicit
+`quarkus.http.access-log.exclude-pattern` overrides replace the generated exclusion and must also
+exclude the MCP endpoint and its descendants. Ordinary HTTP API logging is unaffected.
 
 For a diagnostic session, set `stargate.jsonapi.mcp.diagnostics-until` (environment variable
 `STARGATE_JSONAPI_MCP_DIAGNOSTICS_UNTIL`) to an absolute ISO-8601 UTC timestamp no more than 15 minutes
