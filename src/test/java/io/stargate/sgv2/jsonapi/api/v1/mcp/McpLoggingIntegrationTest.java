@@ -5,9 +5,9 @@ import static org.awaitility.Awaitility.await;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import io.vertx.core.MultiMap;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -81,7 +81,7 @@ class McpLoggingIntegrationTest extends McpIntegrationTestBase {
     }
   }
 
-  public static class LoggingProfile implements NoGlobalResourcesTestProfile {
+  public static class LoggingProfile implements QuarkusTestProfile {
     @Override
     public Map<String, String> getConfigOverrides() {
       return Map.of(
