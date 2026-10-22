@@ -231,9 +231,7 @@ public class McpResource {
         .onItemOrFailure()
         .transformToUni(
             (context, failure) ->
-                failure == null
-                    ? executeCommand(context, command)
-                    : handleSetupFailure(failure))
+                failure == null ? executeCommand(context, command) : handleSetupFailure(failure))
         .map(result -> result.toToolResponse(objectMapper));
   }
 
