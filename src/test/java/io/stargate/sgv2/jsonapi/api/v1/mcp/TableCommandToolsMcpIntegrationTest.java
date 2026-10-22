@@ -273,6 +273,7 @@ public class TableCommandToolsMcpIntegrationTest extends McpIntegrationTestBase 
               JsonArray embedding = doc.getJsonArray("embedding");
               assertNotNull(embedding, "embedding should not be null");
               assertEquals(5, embedding.size());
+              assertEquals(0.1, embedding.getDouble(0), 1e-6);
             },
             status -> {
               // Table findOne returns projectionSchema describing all returned columns

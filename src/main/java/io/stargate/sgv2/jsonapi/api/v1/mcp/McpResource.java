@@ -165,7 +165,7 @@ public class McpResource {
                     CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
                         .addThrowable(throwable)
                         .build();
-                return Uni.createFrom().item(errorResult.toToolResponse());
+                return Uni.createFrom().item(errorResult.toToolResponse(objectMapper));
               } else {
                 VectorColumnDefinition vectorColDef = null;
                 if (schemaObject.type() == SchemaObjectType.COLLECTION) {
@@ -211,14 +211,12 @@ public class McpResource {
   }
 
   /**
-   * Process a general or keyspace command and return the CommandResult directly.
+   * Process a command and map its result to an MCP tool response with readable text and structured
+   * content.
    *
-   * <p>The Quarkus MCP Server framework automatically encodes the {@link CommandResult} to JSON via
-   * its built-in encoder (Jackson), so no manual serialization is needed.
-   *
-   * @param contextUni The command context (from buildGeneralContext or buildKeyspaceContext)
+   * @param contextUni The command context
    * @param command The command to execute
-   * @return Uni of CommandResult
+   * @return Uni of ToolResponse
    */
   public Uni<ToolResponse> processCommand(Uni<CommandContext<?>> contextUni, Command command) {
 
@@ -234,7 +232,7 @@ public class McpResource {
               }
               return meteredCommandProcessor.processCommand(context, command);
             })
-        .map(CommandResult::toToolResponse);
+        .map(result -> result.toToolResponse(objectMapper));
   }
 
   /**
