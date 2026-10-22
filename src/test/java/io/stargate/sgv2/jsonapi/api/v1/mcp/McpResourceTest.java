@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -15,6 +16,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
@@ -48,6 +50,8 @@ import jakarta.validation.Validator;
 import java.security.Principal;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -163,6 +167,50 @@ class McpResourceTest {
     cancellable.cancel();
 
     verify(context, times(1)).close();
+  }
+
+  @Test
+  void cancelingOneOfTwoSubscriptionsDoesNotCloseOrReplaceTheOther() throws Exception {
+    var canceledContext = commandContext(true);
+    var survivingContext = commandContext(true);
+    var command = keyspaceCommand();
+    var canceledResult = new CompletableFuture<CommandResult>();
+    var survivingResult = new CompletableFuture<CommandResult>();
+    when(commandProcessor.processCommand(canceledContext, command))
+        .thenReturn(Uni.createFrom().completionStage(canceledResult));
+    when(commandProcessor.processCommand(survivingContext, command))
+        .thenReturn(Uni.createFrom().completionStage(survivingResult));
+    var resource = mcpResource();
+    var canceledResponse = new CompletableFuture<ToolResponse>();
+    var canceledSubscription =
+        resource
+            .processCommand(() -> Uni.createFrom().item(canceledContext), command)
+            .subscribe()
+            .with(canceledResponse::complete, canceledResponse::completeExceptionally);
+    var survivingResponse =
+        resource
+            .processCommand(() -> Uni.createFrom().item(survivingContext), command)
+            .subscribeAsCompletionStage();
+
+    verify(commandProcessor).processCommand(canceledContext, command);
+    verify(commandProcessor).processCommand(survivingContext, command);
+    verify(canceledContext, never()).close();
+    verify(survivingContext, never()).close();
+
+    canceledSubscription.cancel();
+
+    verify(canceledContext).close();
+    verify(survivingContext, never()).close();
+    assertThat(canceledResponse).isNotDone();
+    assertThat(survivingResponse).isNotDone();
+
+    var result = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).build();
+    survivingResult.complete(result);
+
+    assertThat(survivingResponse.get(5, TimeUnit.SECONDS).isError()).isFalse();
+    assertThat(canceledResponse).isNotDone();
+    verify(canceledContext, times(1)).close();
+    verify(survivingContext, times(1)).close();
   }
 
   @Test

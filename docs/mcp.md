@@ -26,6 +26,14 @@ The [endpoint comparison tests](../src/test/java/io/stargate/sgv2/jsonapi/api/v1
 
 Use the schemas returned by `tools/list` for accepted arguments. The [query specification](dataapi-spec.md) describes command semantics, and the [configuration guide](../CONFIGURATION.md#operations-configuration) records configurable operation limits.
 
+## Request isolation and tracing
+
+Send `Feature-Flag-request-tracing` with value `true` to include diagnostic events for a command. Each call has its own request context, generated request ID, and diagnostic trace. The [overlapping-call tests](../src/test/java/io/stargate/sgv2/jsonapi/api/v1/mcp/McpLoggingTest.java) check that callbacks and returned events stay with their original call. The [subscription cancellation test](../src/test/java/io/stargate/sgv2/jsonapi/api/v1/mcp/McpResourceTest.java) checks cleanup while another command remains active.
+
+These diagnostic events are separate from distributed tracing. The current build does not include the OpenTelemetry extension. It does not import `traceparent`, `tracestate`, or `baggage` from request `_meta` or HTTP headers into a distributed trace. Those fields do not supply authentication or the generated request IDs.
+
+Quarkiverse MCP 2.0.3 has a [native metadata instrumenter](https://github.com/quarkiverse/quarkus-mcp-server/blob/2.0.3/core/runtime/src/main/java/io/quarkiverse/mcp/server/runtime/tracing/McpTracingInstrumenter.java), which is [registered only when OpenTelemetry tracing is enabled](https://github.com/quarkiverse/quarkus-mcp-server/blob/2.0.3/core/deployment/src/main/java/io/quarkiverse/mcp/server/deployment/McpServerProcessor.java). Enabling that integration requires allowed baggage keys, size limits, and interleaving and cancellation checks for distributed traces. That work remains tracked in [#2629](https://github.com/stargate/data-api/issues/2629).
+
 ## Diagnostics
 
 Follow [MCP logging](../CONFIGURATION.md#mcp-logging) for request correlation, redaction, and temporary diagnostics. That section also covers custom endpoint paths and log handlers.

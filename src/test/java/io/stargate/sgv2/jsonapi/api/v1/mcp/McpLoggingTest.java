@@ -1,9 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.completeResult;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.readableResult;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -11,22 +14,30 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
+import io.vertx.core.json.JsonObject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
@@ -166,43 +177,208 @@ class McpLoggingTest {
   }
 
   @Test
-  void driverThreadCallbacksKeepRequestIdAndRestoreWorkerContext() throws Exception {
-    try (var worker = Executors.newSingleThreadExecutor()) {
-      // Start the worker before a request can contribute inherited context.
-      assertThat(worker.submit(() -> MDC.get(McpRequestLogging.REQUEST_ID)).get()).isNull();
-      var completed = new CompletableFuture<Integer>();
-      when(commandProcessor.processCommand(any(), any()))
-          .thenAnswer(
-              ignored ->
-                  Uni.createFrom()
-                      .completionStage(completed)
-                      .map(
-                          value -> {
-                            LoggerFactory.getLogger(McpLoggingTest.class)
-                                .info("synthetic-driver-payload-secret");
-                            return CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).build();
-                          }));
-      var completion =
-          worker.submit(
-              () -> {
-                await()
-                    .atMost(Duration.ofSeconds(10))
-                    .until(() -> completed.getNumberOfDependents() > 0);
-                completed.complete(1);
-                return MDC.get(McpRequestLogging.REQUEST_ID);
-              });
+  void interleavedHttpCallsKeepTheirRequestTracingAndLogContext() throws Exception {
+    var firstCompletion = new CompletableFuture<Integer>();
+    var secondCompletion = new CompletableFuture<Integer>();
+    var completions =
+        Map.of("synthetic-token-1", firstCompletion, "synthetic-token-2", secondCompletion);
+    var started = new LinkedBlockingQueue<PendingCall>();
+    when(commandProcessor.processCommand(any(), any()))
+        .thenAnswer(
+            invocation -> {
+              CommandContext<?> context = invocation.getArgument(0);
+              var callbackMdc = new CompletableFuture<Map<String, String>>();
+              var call = new PendingCall(context, MDC.getCopyOfContextMap(), callbackMdc);
+              return Uni.createFrom()
+                  .<Integer>emitter(
+                      emitter -> {
+                        completions
+                            .get(context.requestContext().authToken())
+                            .thenAccept(emitter::complete);
+                        // Both requests remain open until the test completes their futures.
+                        started.add(call);
+                      })
+                  .map(
+                      value -> {
+                        callbackMdc.complete(MDC.getCopyOfContextMap());
+                        context.requestTracing().maybeTrace("completed-call-" + value);
+                        LoggerFactory.getLogger(McpLoggingTest.class)
+                            .info("synthetic-driver-payload-secret");
+                        var result =
+                            CommandResult.statusOnlyBuilder(context.requestTracing())
+                                .addStatus(CommandStatus.OK, value);
+                        if (value == 2) {
+                          result.addThrowable(
+                              new IllegalArgumentException("synthetic-call-2-error"));
+                        }
+                        return result.build();
+                      });
+            });
+
+    try (var clients = Executors.newFixedThreadPool(2);
+        var worker = Executors.newSingleThreadExecutor()) {
+      // Start the worker before either request can contribute inherited context.
+      worker.submit(() -> MDC.put(McpRequestLogging.REQUEST_ID, "worker-context")).get();
       long start = Files.size(LOG_FILE);
+      try {
+        var firstResponse =
+            clients.submit(
+                () ->
+                    tracedProviderRequest(1).header("Token", "synthetic-token-1").post(mcpPath()));
+        var first = awaitStarted(started, firstResponse);
+        var secondResponse =
+            clients.submit(
+                () ->
+                    tracedProviderRequest(2).header("Token", "synthetic-token-2").post(mcpPath()));
+        var second = awaitStarted(started, secondResponse);
 
-      callProviderTool();
+        assertThat(first.context().requestContext()).isNotSameAs(second.context().requestContext());
+        assertThat(first.context().requestContext().requestId())
+            .isNotEqualTo(second.context().requestContext().requestId());
+        assertThat(first.context().requestTracing().enabled()).isTrue();
+        assertThat(second.context().requestTracing().enabled()).isTrue();
+        assertThat(first.context().requestTracing().getSession().orElseThrow())
+            .isNotSameAs(second.context().requestTracing().getSession().orElseThrow());
+        assertThat(first.logRequestId())
+            .matches("[a-f0-9-]{36}")
+            .isNotEqualTo(second.logRequestId());
+        assertThat(second.logRequestId()).matches("[a-f0-9-]{36}");
 
-      assertThat(completion.get(10, TimeUnit.SECONDS)).isNull();
-      String logs = logsSince(start);
-      var requestId = Pattern.compile("MCP request completed requestId=([a-f0-9-]+)").matcher(logs);
-      assertThat(requestId.find()).isTrue();
-      assertThat(logs.contains("MCP event details redacted")).isTrue();
-      assertThat(logs.contains("MCP command completed requestId=" + requestId.group(1))).isTrue();
-      assertThat(logs.contains("synthetic-")).as("Payloads stay out of logs").isFalse();
-      assertThat(logs.contains("requestId=null")).isFalse();
+        assertThat(
+                worker
+                    .submit(
+                        () -> {
+                          secondCompletion.complete(2);
+                          return MDC.get(McpRequestLogging.REQUEST_ID);
+                        })
+                    .get(10, TimeUnit.SECONDS))
+            .isEqualTo("worker-context");
+        var secondResult = completeResult(secondResponse.get(10, TimeUnit.SECONDS), 2);
+        assertThat(firstResponse.isDone()).isFalse();
+        assertThat(firstCompletion.isDone()).isFalse();
+        assertThat(
+                worker
+                    .submit(
+                        () -> {
+                          firstCompletion.complete(1);
+                          return MDC.get(McpRequestLogging.REQUEST_ID);
+                        })
+                    .get(10, TimeUnit.SECONDS))
+            .isEqualTo("worker-context");
+        var firstResult = completeResult(firstResponse.get(10, TimeUnit.SECONDS), 1);
+
+        assertIsolatedResult(first, firstResult, 1);
+        assertIsolatedResult(second, secondResult, 2);
+        var logs = logsSince(start);
+        for (var call : List.of(first, second)) {
+          assertThat(logs).contains("MCP request completed requestId=" + call.logRequestId());
+          traceMetadata(call == first ? 1 : 2)
+              .values()
+              .forEach(value -> assertThat(logs).doesNotContain(value));
+        }
+        assertThat(logs)
+            .contains(
+                "MCP command completed requestId="
+                    + first.logRequestId()
+                    + " command=findEmbeddingProviders isError=false",
+                "MCP command completed requestId="
+                    + second.logRequestId()
+                    + " command=findEmbeddingProviders isError=true",
+                "MCP event details redacted")
+            .doesNotContain("synthetic-", "requestId=null");
+      } finally {
+        firstCompletion.complete(1);
+        secondCompletion.complete(2);
+      }
+    }
+  }
+
+  @Test
+  void traceMetadataCannotAuthenticateAToolCall() throws IOException {
+    long start = Files.size(LOG_FILE);
+    var response = tracedProviderRequest(1).post(mcpPath());
+
+    assertThat(response.statusCode()).isEqualTo(401);
+    verifyNoInteractions(commandProcessor);
+    assertThat(response.asString()).doesNotContain("synthetic-");
+    var logs = logsSince(start);
+    assertThat(logs).contains("status=401").doesNotContain("synthetic-");
+    traceMetadata(1)
+        .values()
+        .forEach(
+            value -> {
+              assertThat(response.asString()).doesNotContain(value);
+              assertThat(logs).doesNotContain(value);
+            });
+  }
+
+  private static PendingCall awaitStarted(
+      LinkedBlockingQueue<PendingCall> started, Future<Response> response) throws Exception {
+    var call = started.poll(10, TimeUnit.SECONDS);
+    if (call == null && response.isDone()) {
+      throw new AssertionError(
+          "The request ended before reaching the command processor: " + response.get().asString());
+    }
+    assertThat(call).as("The command processor received the request").isNotNull();
+    return call;
+  }
+
+  private void assertIsolatedResult(PendingCall call, JsonObject result, int id) throws Exception {
+    assertThat(result.getBoolean("isError")).isEqualTo(id == 2);
+    var status = readableResult(result).getJsonObject("status");
+    assertThat(status.getInteger("ok")).isEqualTo(id);
+    var trace = status.getJsonObject("trace").getJsonObject("TraceSession");
+    assertThat(trace.getString("requestId")).isEqualTo(call.context().requestContext().requestId());
+    assertThat(trace.getJsonArray("events")).hasSize(1);
+    assertThat(
+            trace
+                .getJsonArray("events")
+                .getJsonObject(0)
+                .getJsonObject("TraceEvent")
+                .getString("message"))
+        .isEqualTo("completed-call-" + id);
+    var callbackMdc = call.callbackMdc().get(10, TimeUnit.SECONDS);
+    assertThat(callbackMdc).containsEntry(McpRequestLogging.REQUEST_ID, call.logRequestId());
+    for (var mdc : List.of(call.startMdc(), callbackMdc)) {
+      assertThat(mdc)
+          .doesNotContainKeys("traceId", "spanId", "traceparent", "tracestate", "baggage");
+    }
+    for (int otherId : List.of(1, 2)) {
+      for (String value : traceMetadata(otherId).values()) {
+        assertThat(result.encode()).doesNotContain(value);
+        assertThat(call.startMdc()).doesNotContainValue(value);
+        assertThat(callbackMdc).doesNotContainValue(value);
+      }
+    }
+  }
+
+  private RequestSpecification tracedProviderRequest(int id) {
+    var payload =
+        new JsonObject(McpHttpTestSupport.toolPayload(id, "findEmbeddingProviders", Map.of()))
+            .copy();
+    var meta = payload.getJsonObject("params").getJsonObject("_meta");
+    traceMetadata(id).forEach(meta::put);
+    return McpHttpTestSupport.request("tools/call")
+        .header("Mcp-Name", "findEmbeddingProviders")
+        .header(ApiFeature.REQUEST_TRACING.httpHeaderName(), "true")
+        .headers(traceMetadata(id))
+        .body(payload.encode());
+  }
+
+  private static Map<String, String> traceMetadata(int id) {
+    return Map.of(
+        "traceparent",
+            "00-" + String.valueOf(id).repeat(32) + "-" + String.valueOf(id).repeat(16) + "-01",
+        "tracestate", "vendor=synthetic-state-" + id,
+        "baggage", "token=synthetic-baggage-token-" + id);
+  }
+
+  private record PendingCall(
+      CommandContext<?> context,
+      Map<String, String> startMdc,
+      CompletableFuture<Map<String, String>> callbackMdc) {
+    String logRequestId() {
+      return startMdc.get(McpRequestLogging.REQUEST_ID);
     }
   }
 
