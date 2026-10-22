@@ -25,53 +25,53 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
         "A Data API update object mapping operators such as $set and $unset to objects of document paths and values. Operators may be combined on distinct paths. Supported operations depend on the target collection or table.",
     properties = {
       @SchemaProperty(
-          name = "$set",
+          name = UpdateOperator.Names.SET,
           type = SchemaType.OBJECT,
           description =
               "Sets paths to JSON values, including null, arrays, objects, and extended JSON."),
       @SchemaProperty(
-          name = "$setOnInsert",
+          name = UpdateOperator.Names.SET_ON_INSERT,
           type = SchemaType.OBJECT,
           description = "Sets paths only when an upsert inserts a document."),
       @SchemaProperty(
-          name = "$unset",
+          name = UpdateOperator.Names.UNSET,
           type = SchemaType.OBJECT,
           description = "Removes paths. The values supplied for them are ignored."),
       @SchemaProperty(
-          name = "$inc",
+          name = UpdateOperator.Names.INC,
           type = SchemaType.OBJECT,
           description = "Maps paths to numeric increments, including fractions."),
       @SchemaProperty(
-          name = "$mul",
+          name = UpdateOperator.Names.MUL,
           type = SchemaType.OBJECT,
           description = "Maps paths to numeric multipliers, including fractions."),
       @SchemaProperty(
-          name = "$min",
+          name = UpdateOperator.Names.MIN,
           type = SchemaType.OBJECT,
           description = "Updates paths when the supplied values are smaller."),
       @SchemaProperty(
-          name = "$max",
+          name = UpdateOperator.Names.MAX,
           type = SchemaType.OBJECT,
           description = "Updates paths when the supplied values are larger."),
       @SchemaProperty(
-          name = "$rename",
+          name = UpdateOperator.Names.RENAME,
           type = SchemaType.OBJECT,
           description = "Maps existing paths to new path strings."),
       @SchemaProperty(
-          name = "$currentDate",
+          name = UpdateOperator.Names.CURRENT_DATE,
           type = SchemaType.OBJECT,
           description = "Sets paths to the current date using true or {\"$type\": \"date\"}."),
       @SchemaProperty(
-          name = "$pop",
+          name = UpdateOperator.Names.POP,
           type = SchemaType.OBJECT,
           description = "Removes the first (-1) or last (1) element of arrays."),
       @SchemaProperty(
-          name = "$push",
+          name = UpdateOperator.Names.PUSH,
           type = SchemaType.OBJECT,
           description =
               "Appends array values. Use $each for multiple values and optional $position."),
       @SchemaProperty(
-          name = "$addToSet",
+          name = UpdateOperator.Names.ADD_TO_SET,
           type = SchemaType.OBJECT,
           description = "Adds unique array values. Use {\"$each\": [...]} for multiple values.")
     },
