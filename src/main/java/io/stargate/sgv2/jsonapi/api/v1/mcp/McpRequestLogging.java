@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
+import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkus.vertx.http.runtime.filters.Filters;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.quarkiverse.mcp.server.ToolResponse;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;

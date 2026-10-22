@@ -42,8 +42,10 @@ public class McpEndpointConfigSourceFactory implements ConfigSourceFactory {
     return List.of(
         new PropertiesConfigSource(
             Map.of(
-                ENDPOINT_PATH, endpointPath,
-                "quarkus.http.access-log.exclude-pattern", excludePattern),
+                ENDPOINT_PATH,
+                endpointPath,
+                "quarkus.http.access-log.exclude-pattern",
+                excludePattern),
             "MCP endpoint"));
   }
 }
