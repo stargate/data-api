@@ -1,7 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkiverse.mcp.server.MetaKey;
+import io.quarkiverse.mcp.server.TextContent;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import jakarta.ws.rs.core.Response;
@@ -101,18 +104,21 @@ public record CommandResult(
   /**
    * Create a {@link ToolResponse} from this {@link CommandResult} for MCP tool responses.
    *
-   * <p>Mapping rules:
+   * <p>Text content contains the complete Data API response. Structured content and status metadata
+   * retain their existing shapes for clients that consume them.
    *
-   * <ul>
-   *   <li>{@link #errors()} → {@link ToolResponse#isError()} and error content in {@link
-   *       ToolResponse#structuredContent()}
-   *   <li>{@link #data()} → {@link ToolResponse#structuredContent()} (when no errors)
-   *   <li>{@link #status()} → {@link ToolResponse#_meta()} with key {@code "status"}
-   * </ul>
-   *
+   * @param objectMapper the configured Data API response mapper
    * @return A new {@link ToolResponse} representing this command result.
    */
-  public ToolResponse toToolResponse() {
+  public ToolResponse toToolResponse(ObjectMapper objectMapper) {
+
+    final String text;
+    try {
+      text = objectMapper.writeValueAsString(this);
+    } catch (JsonProcessingException e) {
+      // Neither the partial response nor the exception message is safe to return here.
+      return ToolResponse.error("Unable to serialize the command result.");
+    }
 
     boolean hasErrors = errors != null && !errors.isEmpty();
 
@@ -120,10 +126,11 @@ public record CommandResult(
     Map<MetaKey, Object> meta =
         (status != null && !status.isEmpty()) ? Map.of(MetaKey.of("status"), status) : Map.of();
 
-    // Map "errors" or "data" to structuredContent
-    // Also, structuredContent is expected to be a Record (a plain JSON object {})
     return new ToolResponse(
-        hasErrors, List.of(), hasErrors ? Map.of("errors", errors) : data, meta);
+        hasErrors,
+        List.of(new TextContent(text)),
+        hasErrors ? Map.of("errors", errors) : data,
+        meta);
   }
 
   /**

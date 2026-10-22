@@ -2,21 +2,6 @@
 
 The tool catalog publishes all four MCP behavior hints for every registered tool. They describe the full range of accepted arguments, including collection and table behavior. They do not change execution, authorize requests, or deduplicate retries.
 
-| Tools | Read only | Destructive | Idempotent | Open world |
-| --- | --- | --- | --- | --- |
-| findKeyspaces, findCollections, listTables, listTypes, listIndexes | true | false | true | false |
-| findEmbeddingProviders, findRerankingProviders | true | false | true | false |
-| countDocuments, estimatedDocumentCount | true | false | true | false |
-| find, findOne, findAndRerank | true | false | false | true |
-| createKeyspace, createCollection, createTable, createType | false | false | true | false |
-| createIndex, createTextIndex, createVectorIndex | false | false | true | false |
-| dropKeyspace, deleteCollection, dropTable, dropType, dropIndex | false | true | true | false |
-| alterTable, alterType | false | true | false | false |
-| deleteMany | false | true | false | false |
-| deleteOne, findOneAndDelete | false | true | false | true |
-| insertOne, insertMany | false | true | false | true |
-| updateOne, updateMany, findOneAndUpdate, findOneAndReplace | false | true | false | true |
-
 ## Behavior behind the hints
 
 Provider listing reads configured provider descriptions. It does not invoke embedding or reranking models. Schema validation and database or credential-service access remain within the managed service boundary. Open world identifies tools that can send input to an embedding or reranking provider.

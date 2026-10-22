@@ -204,7 +204,7 @@ public class CollectionCommandTools {
 
   @Tool(
       description =
-          "Finds documents using using vector and lexical sorting, then reranks the results.",
+          "Finds documents using vector and lexical sorting, then reranks the results.",
       annotations =
           @Tool.Annotations(
               readOnlyHint = true,
@@ -216,8 +216,9 @@ public class CollectionCommandTools {
       @ToolArg(description = "Name of the collection/table") String collection,
       @ToolArg(description = "filter", required = false) FilterDefinition filter,
       @ToolArg(description = "projection", required = false) JsonNode projection,
-      @ToolArg(description = "sort", required = false) FindAndRerankSort sort,
-      @ToolArg(description = "options", required = false) FindAndRerankCommand.Options options) {
+      @ToolArg(required = false) FindAndRerankSort sort,
+      @ToolArg(description = "Reranking options", required = false)
+          FindAndRerankCommand.Options options) {
 
     var command = new FindAndRerankCommand(filter, projection, sort, options);
     return mcpResource.processCollectionCommand(keyspace, collection, command);

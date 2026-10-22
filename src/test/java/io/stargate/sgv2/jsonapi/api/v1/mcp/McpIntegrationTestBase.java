@@ -142,18 +142,18 @@ public abstract class McpIntegrationTestBase {
 
   /**
    * Assert that the response is a successful status-only (ok:1) response with no error, no
-   * structured content, and no text content.
+   * structured content, and a readable Data API response.
    */
   protected Consumer<ToolResponse> assertStatusOnlyOk() {
     return response -> {
       assertFalse(response.isError());
       assertNotNull(response._meta());
       assertNull(response.structuredContent());
-      assertThat(response.content()).isEmpty();
 
       var status = (JsonObject) response._meta().get(MetaKey.of("status"));
       assertNotNull(status, "Status should not be null");
       assertEquals(1, status.getInteger("ok"), "Status should contain ok:1");
+      assertThat(readableResult(response)).isEqualTo(new JsonObject().put("status", status));
     };
   }
 
@@ -168,11 +168,11 @@ public abstract class McpIntegrationTestBase {
       assertFalse(response.isError());
       assertNotNull(response._meta());
       assertNull(response.structuredContent());
-      assertThat(response.content()).isEmpty();
 
       var status = (JsonObject) response._meta().get(MetaKey.of("status"));
       assertNotNull(status, "Status should not be null");
       statusAssertions.accept(status);
+      assertThat(readableResult(response)).isEqualTo(new JsonObject().put("status", status));
     };
   }
 
@@ -184,14 +184,13 @@ public abstract class McpIntegrationTestBase {
   }
 
   /**
-   * Assert error response structure is valid (server metadata and no text content), then apply
+   * Assert error response structure is valid with server metadata and readable content, then apply
    * additional assertions on the error JsonArray extracted from structuredContent.
    *
    * @param errorsAssertions additional assertions to run on the error JsonArray
    */
   protected Consumer<ToolResponse> assertErrorOnly(Consumer<JsonArray> errorsAssertions) {
     return response -> {
-      assertThat(response.content()).isEmpty();
       assertServerInfoOnly(response);
       assertTrue(response.isError());
       assertThat(response.structuredContent()).isNotNull();
@@ -201,11 +200,12 @@ public abstract class McpIntegrationTestBase {
       var errorsArray = errors.getJsonArray("errors");
       assertThat(errorsArray).isNotEmpty();
       errorsAssertions.accept(errorsArray);
+      assertThat(readableResult(response)).isEqualTo(errors);
     };
   }
 
   /**
-   * Assert data only response is valid (server metadata, no text content or error), then apply
+   * Assert data only response is valid with server metadata and readable content, then apply
    * additional assertions on the structuredContent holds the data.
    *
    * @param dataAssertions additional assertions to run on the data JsonObject
@@ -213,18 +213,20 @@ public abstract class McpIntegrationTestBase {
   protected Consumer<ToolResponse> assertDataOnly(Consumer<JsonObject> dataAssertions) {
     return response -> {
       assertFalse(response.isError());
-      assertThat(response.content()).isEmpty();
       assertServerInfoOnly(response);
       assertNotNull(response.structuredContent());
 
       var data = (JsonObject) response.structuredContent();
       dataAssertions.accept(data);
+      var readable = readableResult(response);
+      assertThat(readable.fieldNames()).containsExactly("data");
+      dataAssertions.accept(readable.getJsonObject("data"));
     };
   }
 
   /**
-   * Assert data and status response is valid (no content and error), then apply additional
-   * assertions on the structuredContent holds the data and meta_ contains the status.
+   * Assert data and status response is valid with readable content and no error, then apply
+   * additional assertions on the structuredContent holds the data and meta_ contains the status.
    *
    * @param dataAssertions additional assertions to run on the data JsonObject
    * @param statusAssertions additional assertions to run on the status JsonObject
@@ -233,7 +235,6 @@ public abstract class McpIntegrationTestBase {
       Consumer<JsonObject> dataAssertions, Consumer<JsonObject> statusAssertions) {
     return response -> {
       assertFalse(response.isError());
-      assertThat(response.content()).isEmpty();
       assertNotNull(response._meta());
       assertNotNull(response.structuredContent());
 
@@ -241,7 +242,17 @@ public abstract class McpIntegrationTestBase {
       dataAssertions.accept(data);
       var status = (JsonObject) response._meta().get(MetaKey.of("status"));
       statusAssertions.accept(status);
+      var readable = readableResult(response);
+      assertThat(readable.fieldNames()).containsExactlyInAnyOrder("data", "status");
+      // The Data API and MCP encoders format float vectors differently. Check the data behavior.
+      dataAssertions.accept(readable.getJsonObject("data"));
+      assertThat(readable.getJsonObject("status")).isEqualTo(status);
     };
+  }
+
+  private static JsonObject readableResult(ToolResponse response) {
+    assertThat(response.content()).hasSize(1);
+    return new JsonObject(response.firstContent().asText().text());
   }
 
   /**

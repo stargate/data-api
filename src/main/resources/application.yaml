@@ -87,6 +87,7 @@ quarkus:
     access-log:
       enabled: true
       pattern: "%h %l %t \"%r\" %s %b"
+      # McpEndpointConfigSourceFactory excludes the effective MCP path from access logs.
 
     # every /v1 path is authenticated by default
     # adapt if changing the authentication mechanism
@@ -114,6 +115,13 @@ quarkus:
   log:
     console:
       format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %c:%L - %m%n"
+      filter: mcp-safe-logging
+    file:
+      filter: mcp-safe-logging
+    syslog:
+      filter: mcp-safe-logging
+    socket:
+      filter: mcp-safe-logging
 
     handler:
       console:
@@ -222,8 +230,8 @@ quarkus:
           # https://docs.quarkiverse.io/quarkus-mcp-server/1.13.x/reference-configuration.html#quarkus-mcp-server-http_quarkus-mcp-server-http-streamable-auto-init
           auto-init: true
       traffic-logging:
-        enabled: true
-        text-limit: 1000
+        # Never log raw MCP messages, even for diagnostics.
+        enabled: false
 
 "%dev":
    quarkus:
