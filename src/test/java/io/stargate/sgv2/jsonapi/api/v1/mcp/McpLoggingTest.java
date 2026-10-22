@@ -104,7 +104,10 @@ class McpLoggingTest {
 
     assertThat(logsSince(start))
         .contains(
-            "MCP command completed", "command=findEmbeddingProviders", "isError=false", "requestId=")
+            "MCP command completed",
+            "command=findEmbeddingProviders",
+            "isError=false",
+            "requestId=")
         .doesNotContain("synthetic-");
   }
 

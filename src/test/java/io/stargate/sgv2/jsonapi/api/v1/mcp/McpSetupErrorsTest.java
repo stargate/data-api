@@ -264,14 +264,19 @@ class McpSetupErrorsTest {
     MDC.put(McpRequestLogging.REQUEST_ID, "server-generated-test-request");
 
     try (var logs = new LoggerTestWrapper(McpRequestLogging.class)) {
-      assertSetupError(call(CommandScope.COLLECTION), ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+      assertSetupError(
+          call(CommandScope.COLLECTION), ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
       assertThat(logs.logRecords())
           .filteredOn(record -> record.getMessage().contains("MCP setup failed"))
-          .singleElement().satisfies(record -> {
-            assertThat(record.getMessage()).contains("category=unexpected").doesNotContain(SECRET);
-            assertThat(record.getParameters()).containsExactly("server-generated-test-request");
-            assertThat(record.getThrown()).isNull();
-          });
+          .singleElement()
+          .satisfies(
+              record -> {
+                assertThat(record.getMessage())
+                    .contains("category=unexpected")
+                    .doesNotContain(SECRET);
+                assertThat(record.getParameters()).containsExactly("server-generated-test-request");
+                assertThat(record.getThrown()).isNull();
+              });
     }
   }
 

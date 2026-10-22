@@ -225,19 +225,29 @@ class McpResourceTest {
     var context = commandContext(true);
     var command = keyspaceCommand();
     when(commandProcessor.processCommand(context, command))
-        .thenReturn(Uni.createFrom().item(CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).build()));
+        .thenReturn(
+            Uni.createFrom().item(CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).build()));
     doThrow(new JsonProcessingException("synthetic-serialization-secret") {})
-        .when(objectMapper).writeValueAsString(any());
+        .when(objectMapper)
+        .writeValueAsString(any());
 
     try (var logs = new LoggerTestWrapper(McpRequestLogging.class)) {
-      var response = mcpResource().processCommand(Uni.createFrom().item(context), command)
-          .await().atMost(Duration.ofSeconds(5));
+      var response =
+          mcpResource()
+              .processCommand(Uni.createFrom().item(context), command)
+              .await()
+              .atMost(Duration.ofSeconds(5));
       assertThat(response.isError()).isTrue();
-      assertThat(logs.logRecords()).singleElement().satisfies(record -> {
-        assertThat(record.getMessage()).contains("MCP command completed");
-        assertThat(record.getParameters()).contains(true).doesNotContain("synthetic-serialization-secret");
-        assertThat(record.getThrown()).isNull();
-      });
+      assertThat(logs.logRecords())
+          .singleElement()
+          .satisfies(
+              record -> {
+                assertThat(record.getMessage()).contains("MCP command completed");
+                assertThat(record.getParameters())
+                    .contains(true)
+                    .doesNotContain("synthetic-serialization-secret");
+                assertThat(record.getThrown()).isNull();
+              });
     }
     verify(context).close();
   }
