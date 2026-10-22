@@ -10,6 +10,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.config.DatabaseType;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
@@ -25,8 +26,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -218,28 +217,19 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     // Add optimized CqlVector codec (see [data-api#1775])
     builder = builder.addTypeCodecs(SubtypeOnlyFloatVectorToArrayCodec.instance());
 
-    // when we are handling the result of the buildAsync() we need the tenant passed along.
-    // simple recompose the functions so they match signature from the framework
-    BiFunction<CqlSession, Throwable, CqlSession> partialUnwrapBuildException =
-        (session, throwable) -> unwrapBuildException(tenant, session, throwable);
-    Function<CqlSession, CompletionStage<CqlSession>> partialValidateSession =
-        (session) -> validateSession(tenant, session);
-
-    return builder
-        .buildAsync()
-        .handle(partialUnwrapBuildException)
-        .thenCompose(partialValidateSession);
+    // Uni callbacks preserve the request context when the driver completes session creation.
+    return Uni.createFrom()
+        .completionStage(builder.buildAsync())
+        .onFailure()
+        .transform(throwable -> mapBuildFailure(tenant, throwable))
+        .flatMap(session -> Uni.createFrom().completionStage(validateSession(tenant, session)))
+        .subscribeAsCompletionStage()
+        // Preserve the dependent stage's cancellation isolation from session creation.
+        .copy();
   }
 
-  /**
-   * Process any throwable that was thrown from buildAsync(), pass through the session if no error.
-   */
-  private static CqlSession unwrapBuildException(
-      Tenant tenant, CqlSession cqlSession, Throwable throwable) {
-
-    if (throwable == null) {
-      return cqlSession;
-    }
+  /** Maps a failed session creation to the corresponding Data API error. */
+  private static Throwable mapBuildFailure(Tenant tenant, Throwable throwable) {
 
     // there was an error starting the session, often a token is invalid
     // When the driver throws it's error passes through CompletionStage's and so is
@@ -250,7 +240,7 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
             ? throwable.getCause()
             : throwable;
     LOGGER.debug(
-        "unwrapBuildException() - throwable not null. tenant={}, throwable={}, toHandle={}",
+        "mapBuildFailure() - throwable not null. tenant={}, throwable={}, toHandle={}",
         tenant,
         throwable.toString(),
         toHandle.toString());
@@ -258,10 +248,8 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     var err =
         new DatabaseDriverExceptionHandler(new DatabaseSchemaObject(tenant)).maybeHandle(toHandle);
     LOGGER.debug(
-        "unwrapBuildException() - session build error mapped to APIException. tenant={}",
-        tenant,
-        err);
-    throw err;
+        "mapBuildFailure() - session build error mapped to APIException. tenant={}", tenant, err);
+    return err;
   }
 
   /**
@@ -328,9 +316,10 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
     // NOTE: while throwing the error will prevent the session from getting into the
     // CqlSessionCache we use ExceptionFlags.UNRELIABLE_DB_SESSION tells the CommandProcessor we
     // want to evict the session when from cache when the request is over as belt and braces
-    return cqlSession
-        .closeAsync()
-        .handle(
+    return Uni.createFrom()
+        .completionStage(cqlSession.closeAsync())
+        .onItemOrFailure()
+        .<CqlSession>transformToUni(
             (ignored, closeError) -> {
               if (closeError != null) {
                 LOGGER.error(
@@ -339,8 +328,13 @@ public class CqlSessionFactory implements CQLSessionCache.SessionFactory {
                     closeError);
               }
               // this is the real error we want to get back to the user
-              throw DatabaseException.Code.FAILED_TO_READ_METADATA.get(
-                  EnumSet.of(ExceptionFlags.UNRELIABLE_DB_SESSION));
-            });
+              return Uni.createFrom()
+                  .failure(
+                      DatabaseException.Code.FAILED_TO_READ_METADATA.get(
+                          EnumSet.of(ExceptionFlags.UNRELIABLE_DB_SESSION)));
+            })
+        .subscribeAsCompletionStage()
+        // The invalid session still needs to close if its caller cancels.
+        .copy();
   }
 }

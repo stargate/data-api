@@ -78,7 +78,7 @@ Other Quarkus properties that are specifically relevant for the service:
 ## MCP logging
 
 Normal MCP logs contain generated request IDs, fixed protocol/command categories, HTTP status,
-error counts, logger names and exception class names. They exclude document/query contents,
+tool error flags, logger names and exception class names. They exclude document/query contents,
 request/response bodies, client-supplied RPC IDs, credential headers, exception messages and
 user-controlled logging context. MCP access URLs are excluded from the standard access log and
 replaced with request summaries. Structured billing events keep their existing logging path.

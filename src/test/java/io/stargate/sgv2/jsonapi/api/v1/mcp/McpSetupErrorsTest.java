@@ -170,7 +170,7 @@ class McpSetupErrorsTest {
         assertDoesNotThrow(
             () ->
                 resource.processCommand(
-                    resource.buildKeyspaceContext(null, keyspaceCommand), keyspaceCommand));
+                    () -> resource.buildKeyspaceContext(null, keyspaceCommand), keyspaceCommand));
 
     verifyNoInteractions(tenantResolver, schemaObjectCache, commandProcessor);
     assertSetupError(response, ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
@@ -391,10 +391,11 @@ class McpSetupErrorsTest {
   private Uni<ToolResponse> call(CommandScope scope) {
     return switch (scope) {
       case DATABASE ->
-          resource.processCommand(resource.buildDatabaseContext(generalCommand), generalCommand);
+          resource.processCommand(
+              () -> resource.buildDatabaseContext(generalCommand), generalCommand);
       case KEYSPACE ->
           resource.processCommand(
-              resource.buildKeyspaceContext(TEST_CONSTANTS.KEYSPACE_NAME, keyspaceCommand),
+              () -> resource.buildKeyspaceContext(TEST_CONSTANTS.KEYSPACE_NAME, keyspaceCommand),
               keyspaceCommand);
       case COLLECTION ->
           resource.processCollectionCommand(
