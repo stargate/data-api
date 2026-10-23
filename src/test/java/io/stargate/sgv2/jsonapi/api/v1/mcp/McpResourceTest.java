@@ -211,8 +211,6 @@ class McpResourceTest {
     // The schema lookup and the built command context must see the same request, so the
     // call has one request ID from start to finish.
     assertThat(context.requestContext()).isSameAs(requestContextCaptor.getValue());
-    assertThat(context.requestContext().requestId())
-        .isEqualTo(requestContextCaptor.getValue().requestId());
   }
 
   @SuppressWarnings("unchecked")

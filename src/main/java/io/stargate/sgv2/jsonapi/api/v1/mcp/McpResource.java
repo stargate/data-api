@@ -211,14 +211,11 @@ public class McpResource {
   }
 
   /**
-   * Process a general or keyspace command and return the CommandResult directly.
+   * Process a command and map its result to an MCP tool response.
    *
-   * <p>The Quarkus MCP Server framework automatically encodes the {@link CommandResult} to JSON via
-   * its built-in encoder (Jackson), so no manual serialization is needed.
-   *
-   * @param contextUni The command context (from buildGeneralContext or buildKeyspaceContext)
+   * @param contextUni The command context
    * @param command The command to execute
-   * @return Uni of CommandResult
+   * @return Uni of ToolResponse
    */
   public Uni<ToolResponse> processCommand(Uni<CommandContext<?>> contextUni, Command command) {
 
@@ -228,6 +225,7 @@ public class McpResource {
   }
 
   private Uni<CommandResult> executeCommand(CommandContext<?> context, Command command) {
+    // Defer the feature check and processor call so synchronous failures still close the context.
     return Uni.createFrom()
         .deferred(
             () -> {
