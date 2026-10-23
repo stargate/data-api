@@ -374,7 +374,9 @@ class McpLoggingTest {
     var status = readableResult(result).getJsonObject("status");
     assertThat(status.getInteger("ok")).isEqualTo(id);
     var trace = status.getJsonObject("trace").getJsonObject("TraceSession");
-    assertThat(trace.getString("requestId")).isEqualTo(call.context().requestContext().requestId());
+    assertThat(trace.getString("requestId"))
+        .isEqualTo(call.context().requestContext().requestId())
+        .isEqualTo(call.logRequestId());
     assertThat(trace.getJsonArray("events")).hasSize(1);
     assertThat(
             trace

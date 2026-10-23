@@ -32,7 +32,7 @@ Send `Feature-Flag-request-tracing` with value `true` to include diagnostic even
 
 These diagnostic events are separate from distributed tracing. The current build does not include the OpenTelemetry extension. It does not import `traceparent`, `tracestate`, or `baggage` from request `_meta` or HTTP headers into a distributed trace. Those fields do not supply authentication or the generated request IDs.
 
-Quarkiverse MCP 2.0.3 has a [native metadata instrumenter](https://github.com/quarkiverse/quarkus-mcp-server/blob/2.0.3/core/runtime/src/main/java/io/quarkiverse/mcp/server/runtime/tracing/McpTracingInstrumenter.java), which is [registered only when OpenTelemetry tracing is enabled](https://github.com/quarkiverse/quarkus-mcp-server/blob/2.0.3/core/deployment/src/main/java/io/quarkiverse/mcp/server/deployment/McpServerProcessor.java). Enabling that integration requires allowed baggage keys, size limits, and interleaving and cancellation checks for distributed traces. That work remains tracked in [#2629](https://github.com/stargate/data-api/issues/2629).
+Enabling distributed tracing and defining allowed baggage keys and size limits remain tracked in [#2629](https://github.com/stargate/data-api/issues/2629).
 
 ## Diagnostics
 
