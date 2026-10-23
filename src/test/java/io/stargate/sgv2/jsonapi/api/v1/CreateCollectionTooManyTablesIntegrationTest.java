@@ -39,6 +39,12 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceInteg
     public int getIndexesPerDBOverride() {
       return COLLECTIONS_TO_CREATE * 20;
     }
+
+    // The limit counts the collections of the whole database, so the test needs an empty one
+    @Override
+    protected boolean needsDedicatedContainer() {
+      return true;
+    }
   }
 
   @Test

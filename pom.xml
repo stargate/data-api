@@ -496,6 +496,8 @@
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <testing.db.lexical-disabled>${stargate.int-test.lexical-disabled}</testing.db.lexical-disabled>
                 <maven.home>${maven.home}</maven.home>
+                <!-- Run classes that share test resources together, so Quarkus restarts less often -->
+                <quarkus.test.class-orderer>io.stargate.sgv2.jsonapi.testresource.TestResourceGroupingClassOrderer</quarkus.test.class-orderer>
               </systemPropertyVariables>
               <includes>
                 <include>**/*IntegrationTest.*</include>

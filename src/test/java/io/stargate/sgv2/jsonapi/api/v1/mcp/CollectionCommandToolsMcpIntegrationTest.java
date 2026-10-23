@@ -1,11 +1,17 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.tomakehurst.wiremock.WireMockServer;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import io.stargate.sgv2.jsonapi.testresource.RerankingTestResource;
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import java.util.List;
@@ -18,13 +24,27 @@ import org.junit.jupiter.api.*;
  */
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class)
+@QuarkusTestResource(value = RerankingTestResource.class, restrictToAnnotatedClass = true)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTestBase {
+
+  private WireMockServer reranker;
+
+  @Override
+  protected MultiMap authHeaders() {
+    return super.authHeaders()
+        .add(
+            HttpConstants.RERANKING_AUTHENTICATION_TOKEN_HEADER_NAME,
+            RerankingTestResource.API_KEY);
+  }
 
   @BeforeAll
   public void createCollection() {
     createKeyspace(keyspaceName);
-    createCollection(keyspaceName, collectionName, Map.of("vector", Map.of("dimension", 5)));
+    createCollection(
+        keyspaceName,
+        collectionName,
+        Map.of("vector", Map.of("dimension", 5), "rerank", Map.of("enabled", true)));
   }
 
   @AfterAll
@@ -55,6 +75,8 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
                 "NYC",
                 "active",
                 true,
+                "content",
+                "score:1 Alice passage",
                 "$vector",
                 List.of(0.25, 0.25, 0.25, 0.25, 0.25))),
         assertStatusOnlyWithJson(
@@ -86,6 +108,8 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
                         "LA",
                         "active",
                         true,
+                        "content",
+                        "score:2 Bob passage",
                         "$vector",
                         List.of(0.10, 0.10, 0.10, 0.10, 0.10)),
                     Map.of(
@@ -99,6 +123,8 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
                         "NYC",
                         "active",
                         false,
+                        "content",
+                        "score:3 Charlie passage",
                         "$vector",
                         List.of(0.50, 0.50, 0.50, 0.50, 0.50)),
                     Map.of(
@@ -112,6 +138,8 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
                         "Chicago",
                         "active",
                         true,
+                        "content",
+                        "score:4 Diana passage",
                         "$vector",
                         List.of(0.75, 0.75, 0.75, 0.75, 0.75)))),
         assertStatusOnlyWithJson(
@@ -191,6 +219,7 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
   @Test
   @Order(7)
   void testFindAndRerankToolCall() {
+    reranker.resetRequests();
     callToolAndAssert(
         CommandName.Names.FIND_AND_RERANK,
         Map.of(
@@ -201,15 +230,20 @@ public class CollectionCommandToolsMcpIntegrationTest extends McpIntegrationTest
             "sort",
             Map.of("$hybrid", Map.of("$vector", List.of(0.25, 0.25, 0.25, 0.25, 0.25))),
             "options",
-            Map.of("rerankQuery", "I like cheese", "rerankOn", "content")),
+            Map.of("rerankQuery", "I like cheese", "rerankOn", "content", "limit", 2)),
         assertDataOnly(
             data -> {
-              // Use an inexistent field "content" in rerankOn, so it will not do the actual rerank
-              // operation(cannot call reranker) and return an empty result
               JsonArray docs = data.getJsonArray("documents");
               assertNotNull(docs);
-              assertEquals(0, docs.size());
+              assertEquals(2, docs.size());
+              assertEquals("4", docs.getJsonObject(0).getString("_id"));
+              assertEquals("3", docs.getJsonObject(1).getString("_id"));
             }));
+    reranker.verify(
+        1,
+        postRequestedFor(urlEqualTo(RerankingTestResource.PATH))
+            .withRequestBody(matchingJsonPath("$.query.text", equalTo("I like cheese")))
+            .withRequestBody(matchingJsonPath("$.passages[?(@.text == 'score:4 Diana passage')]")));
   }
 
   @Test

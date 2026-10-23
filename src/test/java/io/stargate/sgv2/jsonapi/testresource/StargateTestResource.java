@@ -2,14 +2,20 @@ package io.stargate.sgv2.jsonapi.testresource;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.CASSANDRA_CQL_HOST_PROP;
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP;
+import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassandraPassword;
+import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassandraUsername;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -37,6 +43,18 @@ public abstract class StargateTestResource
 
   /** The backend database container (Cassandra, DSE, or HCD). */
   private GenericContainer<?> cassandraContainer;
+
+  /**
+   * Database container shared by the test classes that do not need their own, see {@link
+   * #needsDedicatedContainer()}. When Quarkus restarts the application for a test class with other
+   * test resources, it stops every test resource, but this container keeps running and only its
+   * leftover keyspaces are dropped. If they cannot be dropped, a new container replaces it.
+   * Testcontainers removes the container when the JVM exits.
+   */
+  private static GenericContainer<?> sharedCassandraContainer;
+
+  /** Keyspaces of the shared database right after it started. */
+  private static Set<CqlIdentifier> initialKeyspaces;
 
   /**
    * Called by Quarkus to inject the DevServicesContext, allowing us to detect if we are running
@@ -102,9 +120,20 @@ public abstract class StargateTestResource
 
   @Override
   public void stop() {
-    if (null != cassandraContainer && !cassandraContainer.isShouldBeReused()) {
+    // The shared container keeps running for the next test classes
+    if (null != cassandraContainer
+        && cassandraContainer != sharedCassandraContainer
+        && !cassandraContainer.isShouldBeReused()) {
       cassandraContainer.stop();
     }
+  }
+
+  /**
+   * Whether the test class needs a database container of its own instead of the shared one, for
+   * example because it stops the database or needs a database without other collections.
+   */
+  protected boolean needsDedicatedContainer() {
+    return false;
   }
 
   public abstract int getMaxCollectionsPerDBOverride();
@@ -154,9 +183,32 @@ public abstract class StargateTestResource
   }
 
   private ImmutableMap.Builder<String, String> startWithoutContainerNetwork(boolean reuse) {
-    return startContainer(reuse, container -> container.withNetwork(network()));
+    if (needsDedicatedContainer()) {
+      return startContainer(reuse, container -> container.withNetwork(network()));
+    }
+    synchronized (StargateTestResource.class) {
+      if (sharedCassandraContainer != null && !dropKeyspacesLeftByEarlierClasses()) {
+        LOG.warn(
+            "Replacing the shared database container {}",
+            sharedCassandraContainer.getContainerId());
+        sharedCassandraContainer.stop();
+        sharedCassandraContainer = null;
+      }
+      if (sharedCassandraContainer == null) {
+        startContainer(reuse, container -> container.withNetwork(network()));
+        try (CqlSession session = openSession(cassandraContainer)) {
+          initialKeyspaces = Set.copyOf(session.getMetadata().getKeyspaces().keySet());
+        }
+        sharedCassandraContainer = cassandraContainer;
+      } else {
+        cassandraContainer = sharedCassandraContainer;
+        LOG.info("Reusing the shared database container {}", cassandraContainer.getContainerId());
+      }
+    }
+    return ImmutableMap.builder();
   }
 
+  // Each application launch in a container gets a new network, so the database cannot be shared
   private ImmutableMap.Builder<String, String> startWithContainerNetwork(
       String networkId, boolean reuse) {
     return startContainer(reuse, container -> container.withNetworkMode(networkId));
@@ -167,7 +219,42 @@ public abstract class StargateTestResource
     cassandraContainer = baseCassandraContainer(reuse);
     networkConfig.accept(cassandraContainer);
     cassandraContainer.start();
+    LOG.info("Started a new database container {}", cassandraContainer.getContainerId());
     return ImmutableMap.builder();
+  }
+
+  /**
+   * Drops the keyspaces that earlier test classes left in the shared database, so the application
+   * restarts on a clean database, as it did with a new container.
+   *
+   * @return {@code false} if the keyspaces could not be dropped, for example because the database
+   *     is not reachable
+   */
+  private static boolean dropKeyspacesLeftByEarlierClasses() {
+    try (CqlSession session = openSession(sharedCassandraContainer)) {
+      var leftovers =
+          session.getMetadata().getKeyspaces().keySet().stream()
+              .filter(keyspace -> !initialKeyspaces.contains(keyspace))
+              .toList();
+      if (!leftovers.isEmpty()) {
+        LOG.info("Dropping keyspaces left in the shared database: {}", leftovers);
+        for (CqlIdentifier keyspace : leftovers) {
+          session.execute("DROP KEYSPACE IF EXISTS " + keyspace.asCql(true));
+        }
+      }
+      return true;
+    } catch (RuntimeException e) {
+      LOG.warn("Could not drop the keyspaces left in the shared database", e);
+      return false;
+    }
+  }
+
+  private static CqlSession openSession(GenericContainer<?> container) {
+    return CqlSession.builder()
+        .addContactPoint(new InetSocketAddress(container.getHost(), container.getMappedPort(9042)))
+        .withLocalDatacenter(isDse() || isHcd() ? "dc1" : "datacenter1")
+        .withAuthCredentials(getCassandraUsername(), getCassandraPassword())
+        .build();
   }
 
   protected GenericContainer<?> baseCassandraContainer(boolean reuse) {
