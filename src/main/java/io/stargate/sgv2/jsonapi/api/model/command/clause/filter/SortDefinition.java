@@ -22,11 +22,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     implementation = Object.class,
     nullable = true,
     description =
-        "A Data API sort object mapping paths to 1 (ascending) or -1 (descending). Collections also accept a single $vector, $vectorize, or $lexical sort. Tables use the vector or lexical column name.",
+        "A sort to order selected documents. Supports sorting document fields by ascending or descending, or sorting by $vector, $vectorize, or $lexical. See examples.",
     examples = {
       """
-                  {"user.age" : -1, "user.name" : 1}
-                  """,
+      {"user.age" : -1, "user.name" : 1}
+      """,
       """
       {"$vector": [0.1, 0.2, 0.3]}
       """,

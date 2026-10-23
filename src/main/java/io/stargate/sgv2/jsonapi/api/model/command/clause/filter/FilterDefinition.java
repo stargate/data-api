@@ -19,15 +19,14 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     // FilterClause describes parsed state and would incorrectly reserve fields such as empty.
     implementation = Object.class,
     nullable = true,
-    description =
-        "A Data API filter object mapping document paths to values or operator expressions, such as $eq, $gt, $in, $and, and $or.",
+    description = "A filter to select documents, see examples.",
     examples = {
       """
       {"age": {"$gt": 40}}
       """,
       """
-       {"name": "Aaron", "country": {"$eq": "NZ"}, "age": {"$gt": 40}}
-        """
+      {"name": "Aaron", "country": {"$eq": "NZ"}, "age": {"$gt": 40}}
+      """
     })
 public class FilterDefinition extends JsonDefinition<FilterClause> {
   /**

@@ -16,7 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * @param <T> Type of the value object to be deserialized from the JSON value
  */
 public abstract class JsonDefinition<T> {
-  /** The whole clause value. Clients do not send a nested json property. */
+  /** The wrapped JSON value */
   @Schema(hidden = true)
   private final JsonNode json;
 

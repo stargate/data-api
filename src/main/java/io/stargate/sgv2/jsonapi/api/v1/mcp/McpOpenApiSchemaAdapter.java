@@ -28,7 +28,7 @@ public class McpOpenApiSchemaAdapter implements GlobalInputSchemaGenerator {
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String OPEN_API_REF = "#/components/schemas/";
   private static final String DEFINITION_PREFIX = "_openapi_";
-  private static final Set<String> SCHEMA_MAPS =
+  private static final Set<String> SCHEMA_OBJECTS =
       Set.of("properties", "patternProperties", "$defs", "dependentSchemas");
   private static final Set<String> SCHEMA_ARRAYS = Set.of("allOf", "anyOf", "oneOf", "prefixItems");
   private static final Set<String> SCHEMA_VALUES =
@@ -138,7 +138,7 @@ public class McpOpenApiSchemaAdapter implements GlobalInputSchemaGenerator {
     }
     visitor.accept(schema);
     // Examples, defaults, and property names can contain literal $ref values. Visit schemas only.
-    for (var keyword : SCHEMA_MAPS) {
+    for (var keyword : SCHEMA_OBJECTS) {
       if (schema.path(keyword).isObject()) {
         schema.path(keyword).forEach(value -> visitSchemas(value, visitor));
       }
@@ -159,7 +159,6 @@ public class McpOpenApiSchemaAdapter implements GlobalInputSchemaGenerator {
       if (loader == null) {
         loader = Thread.currentThread().getContextClassLoader();
       }
-      // Quarkus packages the same build-time document for JVM and native applications.
       try (var stream = loader.getResourceAsStream(OpenApiConstants.BASE_NAME + ".JSON")) {
         if (stream == null) {
           throw new IllegalStateException("The generated OpenAPI document is unavailable");

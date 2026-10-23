@@ -34,8 +34,7 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
             anyOf = {String.class, FindAndRerankSort.HybridSortSchema.class}),
     description =
         "Use $hybrid with a query string or an object containing $vectorize or $vector, and optionally $lexical."
-            + " $vector and $vectorize cannot be used together."
-            + " Query text and required collection capabilities are checked when resolving the command.",
+            + " $vector and $vectorize cannot be used together.",
     examples = {
       """
       {"$hybrid": "Same query for vectorize and BM25 sorting"}

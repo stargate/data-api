@@ -20,6 +20,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  *
  * <p>Named {@code @Schema} definitions refer to the schemas Quarkus already generates for Swagger.
  * {@link McpOpenApiSchemaAdapter} packages those definitions into the complete MCP input schema.
+ *
+ * <p>This class also includes the field description resolver that was previously in {@code
+ * McpSchemaDescriptionCustomizer}.
  */
 @Singleton
 public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
@@ -30,7 +33,7 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
         .withDescriptionResolver(
             field -> {
               var schema = field.getAnnotationConsideringFieldAndGetter(Schema.class);
-              return schema != null && !schema.description().isEmpty()
+              return schema != null && !schema.description().isBlank()
                   ? schema.description()
                   : null;
             })
@@ -60,7 +63,7 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
         .withDescriptionResolver(
             type -> {
               var schema = type.getType().getErasedType().getAnnotation(Schema.class);
-              return schema != null && !schema.description().isEmpty()
+              return schema != null && !schema.description().isBlank()
                   ? schema.description()
                   : null;
             })
@@ -81,10 +84,10 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
       return null;
     }
     var reference = annotation.ref();
-    if (reference.isEmpty()) {
+    if (reference.isBlank()) {
       // A type name identifies an OpenAPI component. A field name only names that property.
       var name = typeAnnotation ? annotation.name() : "";
-      if (name.isEmpty()) {
+      if (name.isBlank()) {
         return null;
       }
       reference = "#/components/schemas/" + name.replace("~", "~0").replace("/", "~1");

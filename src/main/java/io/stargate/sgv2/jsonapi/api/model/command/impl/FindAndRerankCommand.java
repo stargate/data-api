@@ -154,7 +154,7 @@ public record FindAndRerankCommand(
   @Schema(
       name = HybridLimits.NAME,
       description =
-          "Candidate read limits as one integer for both legs, or an object containing both $vector and $lexical integer limits. Accepted bounds are determined by server configuration.",
+          "Candidate read limits as one integer for both legs, or an object containing both $vector and $lexical integer limits.",
       implementation = Void.class,
       anyOf = {Integer.class, HybridLimitValuesSchema.class},
       examples = {
