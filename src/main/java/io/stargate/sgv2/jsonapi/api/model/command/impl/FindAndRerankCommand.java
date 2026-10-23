@@ -1,7 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
+import static io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants.Components.SCHEMA_REF_PREFIX;
+import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.AUTHENTICATION;
+import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.MODEL_NAME;
+import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.PARAMETERS;
+import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.PROVIDER;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.core.JsonParser;
@@ -28,10 +34,9 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 
-@Schema(
-    description =
-        "Finds documents using using vector and lexical sorting, then reranks the results.")
+@Schema(description = "Finds documents using vector and lexical sorting, then reranks the results.")
 @JsonTypeName(CommandName.Names.FIND_AND_RERANK)
 public record FindAndRerankCommand(
     @Valid @JsonProperty("filter") FilterDefinition filterDefinition,
@@ -70,15 +75,7 @@ public record FindAndRerankCommand(
               implementation = Integer.class)
           Integer limit,
       /** ---- */
-      @Schema(
-              description =
-                  "The maximum number of documents to read for the vector and lexical queries that feed into the reranking. May be a number or an object with $vector and $lexical fields. The accepted range is determined by server configuration.",
-              examples =
-                  """
-                {"hybridLimits" : 100}
-                {"hybridLimits" : {"$vector" : 100, "$lexical" : 10}}
-                """)
-          HybridLimits hybridLimits,
+      @Schema(ref = HybridLimits.REF) HybridLimits hybridLimits,
       /** ---- */
       @Schema(
               description =
@@ -117,17 +114,66 @@ public record FindAndRerankCommand(
                   "Optional override for the reranking service. Completely replaces the"
                       + " collection-level reranking configuration when provided. Both 'provider' and"
                       + " 'modelName' are required.",
-              implementation = CreateCollectionCommand.Options.RerankServiceDesc.class)
+              implementation = RerankOverrideSchema.class,
+              ref = RerankOverrideSchema.REF)
           @JsonProperty("rerank")
           CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
 
+  // Matches the override validation in CollectionRerankDef. Update both together.
+  @Schema(
+      name = RerankOverrideSchema.NAME,
+      type = SchemaType.OBJECT,
+      implementation = Object.class,
+      nullable = true,
+      additionalProperties = Schema.False.class,
+      requiredProperties = {PROVIDER, MODEL_NAME},
+      properties = {
+        @SchemaProperty(name = PROVIDER, type = SchemaType.STRING),
+        @SchemaProperty(name = MODEL_NAME, type = SchemaType.STRING),
+        @SchemaProperty(
+            name = AUTHENTICATION,
+            type = SchemaType.OBJECT,
+            nullable = true,
+            additionalProperties = String.class),
+        @SchemaProperty(
+            name = PARAMETERS,
+            type = SchemaType.OBJECT,
+            nullable = true,
+            additionalProperties = Schema.False.class)
+      },
+      examples =
+          """
+          {"provider": "nvidia", "modelName": "nvidia/llama-3.2-nv-rerankqa-1b-v2"}
+          """)
+  public static class RerankOverrideSchema {
+    public static final String NAME = "RerankServiceOverride";
+    public static final String REF = SCHEMA_REF_PREFIX + NAME;
+  }
+
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
+  @Schema(
+      name = HybridLimits.NAME,
+      description =
+          "Candidate read limits as one integer for both legs, or an object containing both $vector and $lexical integer limits.",
+      // Void is the annotation default, but the OpenAPI scanner only sees values set in source.
+      // Setting it stops the scanner adding the record fields as an object type next to anyOf.
+      implementation = Void.class,
+      anyOf = {Integer.class, HybridLimits.ValuesSchema.class},
+      examples = {
+        "50",
+        """
+        {"$vector": 50, "$lexical": 10}
+        """
+      })
   public record HybridLimits(
       @JsonProperty(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) int vectorLimit,
       /** ---- */
       @JsonProperty(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD) int lexicalLimit,
-      CommandFeatures commandFeatures)
+      @JsonIgnore CommandFeatures commandFeatures)
       implements Recordable {
+
+    public static final String NAME = "HybridLimits";
+    public static final String REF = SCHEMA_REF_PREFIX + NAME;
 
     public static final HybridLimits DEFAULT =
         new HybridLimits(
@@ -142,6 +188,19 @@ public record FindAndRerankCommand(
           .append("lexicalLimit", lexicalLimit)
           .append("commandFeatures", commandFeatures);
     }
+
+    /** Schema for the object form of the limits, the second branch of the anyOf above. */
+    @Schema(
+        name = "HybridLimitValues",
+        type = SchemaType.OBJECT,
+        nullable = true,
+        additionalProperties = Schema.False.class,
+        requiredProperties = {VECTOR_EMBEDDING_FIELD, LEXICAL_CONTENT_FIELD},
+        properties = {
+          @SchemaProperty(name = VECTOR_EMBEDDING_FIELD, type = SchemaType.INTEGER),
+          @SchemaProperty(name = LEXICAL_CONTENT_FIELD, type = SchemaType.INTEGER)
+        })
+    public static class ValuesSchema {}
   }
 
   /** Deserializer for the `hybridLimits` option, the limits for the inner reads. */
