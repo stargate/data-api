@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -39,8 +40,7 @@ public class SortDefinition extends JsonDefinition<SortClause> {
    * Lazily deserialized {@link SortClause} from the JSON value. We need this due to existing
    * reliance on specific stateful instances of {@link SortClause}.
    */
-  @Schema(hidden = true)
-  private SortClause sortClause;
+  @JsonIgnore private SortClause sortClause;
 
   /**
    * To deserialize the whole JSON value, need to ensure DELEGATING mode (instead of PROPERTIES).
@@ -96,7 +96,7 @@ public class SortDefinition extends JsonDefinition<SortClause> {
    * Helper method needed for logging purposes, where caller does not have access to the {@link
    * CommandContext}.
    */
-  @Schema(hidden = true)
+  @JsonIgnore
   public List<String> getSortExpressionPaths() {
     // We will either be wrapping the clause or have a json value:
     if (sortClause != null) {

@@ -118,7 +118,7 @@ public record FindAndRerankCommand(
           @JsonProperty("rerank")
           CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
 
-  // Authentication support depends on the provider. Parameters allow only empty maps or null.
+  // Matches the override validation in CollectionRerankDef. Update both together.
   @Schema(
       name = RerankOverrideSchema.NAME,
       type = SchemaType.OBJECT,
@@ -150,13 +150,14 @@ public record FindAndRerankCommand(
   }
 
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
-  // Keep the scanner from inferring an object type for this union.
   @Schema(
       name = HybridLimits.NAME,
       description =
           "Candidate read limits as one integer for both legs, or an object containing both $vector and $lexical integer limits.",
+      // Void is the annotation default, but the OpenAPI scanner only sees values set in source.
+      // Setting it stops the scanner adding the record fields as an object type next to anyOf.
       implementation = Void.class,
-      anyOf = {Integer.class, HybridLimitValuesSchema.class},
+      anyOf = {Integer.class, HybridLimits.ValuesSchema.class},
       examples = {
         "50",
         """
@@ -186,19 +187,20 @@ public record FindAndRerankCommand(
           .append("lexicalLimit", lexicalLimit)
           .append("commandFeatures", commandFeatures);
     }
-  }
 
-  @Schema(
-      name = "HybridLimitValues",
-      type = SchemaType.OBJECT,
-      nullable = true,
-      additionalProperties = Schema.False.class,
-      requiredProperties = {VECTOR_EMBEDDING_FIELD, LEXICAL_CONTENT_FIELD},
-      properties = {
-        @SchemaProperty(name = VECTOR_EMBEDDING_FIELD, type = SchemaType.INTEGER),
-        @SchemaProperty(name = LEXICAL_CONTENT_FIELD, type = SchemaType.INTEGER)
-      })
-  public static class HybridLimitValuesSchema {}
+    /** Schema for the object form of the limits, the second branch of the anyOf above. */
+    @Schema(
+        name = "HybridLimitValues",
+        type = SchemaType.OBJECT,
+        nullable = true,
+        additionalProperties = Schema.False.class,
+        requiredProperties = {VECTOR_EMBEDDING_FIELD, LEXICAL_CONTENT_FIELD},
+        properties = {
+          @SchemaProperty(name = VECTOR_EMBEDDING_FIELD, type = SchemaType.INTEGER),
+          @SchemaProperty(name = LEXICAL_CONTENT_FIELD, type = SchemaType.INTEGER)
+        })
+    public static class ValuesSchema {}
+  }
 
   /** Deserializer for the `hybridLimits` option, the limits for the inner reads. */
   public static class HybridLimitsDeserializer extends StdDeserializer<HybridLimits> {

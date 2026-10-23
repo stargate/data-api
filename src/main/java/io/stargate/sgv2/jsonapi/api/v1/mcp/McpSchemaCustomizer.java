@@ -14,6 +14,10 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 /**
  * Generates MCP schemas using Data API clause definitions and Jackson and OpenAPI annotations.
  *
+ * <p>The MCP server builds its generator with the victools PLAIN_JSON preset and no modules, so by
+ * default it reads no annotations at all. Without this class, MCP schemas would use Java field
+ * names, include fields Jackson ignores, and drop every {@code @Schema} description.
+ *
  * <p>MCP clients use these schemas to build tool arguments. Custom deserialization can accept JSON
  * shapes that differ from the Java fields, so those types need overrides. Ordinary records still
  * use field-based generation.
@@ -30,6 +34,7 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
   public void customize(SchemaGeneratorConfigBuilder builder) {
     builder
         .forFields()
+        // Field descriptions come from @Schema, as they do for Swagger.
         .withDescriptionResolver(
             field -> {
               var schema = field.getAnnotationConsideringFieldAndGetter(Schema.class);
@@ -37,12 +42,14 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
                   ? schema.description()
                   : null;
             })
+        // Leave out fields that are not part of the request JSON.
         .withIgnoreCheck(
             field -> {
               var ignore = field.getAnnotationConsideringFieldAndGetter(JsonIgnore.class);
               var schema = field.getAnnotationConsideringFieldAndGetter(Schema.class);
               return (ignore != null && ignore.value()) || (schema != null && schema.hidden());
             })
+        // A field with @Schema(ref) uses that OpenAPI component instead of its Java type.
         .withCustomDefinitionProvider(
             (field, context) -> {
               var schema =
@@ -51,6 +58,7 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
                   ? null
                   : new CustomPropertyDefinition(schema, CustomDefinition.AttributeInclusion.YES);
             })
+        // Property names come from @JsonProperty, so MCP sees the JSON names clients send.
         .withPropertyNameOverrideResolver(
             field -> {
               var property = field.getAnnotationConsideringFieldAndGetter(JsonProperty.class);
@@ -60,6 +68,7 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
 
     builder
         .forTypesInGeneral()
+        // Type descriptions come from @Schema on the class.
         .withDescriptionResolver(
             type -> {
               var schema = type.getType().getErasedType().getAnnotation(Schema.class);
@@ -67,6 +76,7 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
                   ? schema.description()
                   : null;
             })
+        // A type with a named @Schema uses that OpenAPI component instead of its Java fields.
         .withCustomDefinitionProvider(
             (javaType, context) -> {
               var schema = schemaNode(javaType.getErasedType().getAnnotation(Schema.class), true);

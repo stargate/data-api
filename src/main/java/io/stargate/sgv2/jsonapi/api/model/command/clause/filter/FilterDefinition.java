@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.JsonDefinition;
@@ -33,8 +34,7 @@ public class FilterDefinition extends JsonDefinition<FilterClause> {
    * Lazily deserialized {@link FilterClause} from the JSON value. We need this due to existing
    * reliance on specific stateful instances of {@link FilterClause}.
    */
-  @Schema(hidden = true)
-  private FilterClause filterClause;
+  @JsonIgnore private FilterClause filterClause;
 
   /**
    * To deserialize the whole JSON value, need to ensure DELEGATING mode (instead of PROPERTIES).

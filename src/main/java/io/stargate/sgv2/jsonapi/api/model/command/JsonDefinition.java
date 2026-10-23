@@ -1,9 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.Objects;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
  * Value type enclosing JSON-encoded representation of something to build into full model object,
@@ -11,14 +11,15 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * intermediate form ({@link JsonNode}) from which actual deserialization and validation can be
  * deferred until we have context we need
  *
+ * <p>Fields are {@code @JsonIgnore} so OpenAPI and MCP describe only the clause JSON.
+ *
  * @see io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition
  * @see io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition
  * @param <T> Type of the value object to be deserialized from the JSON value
  */
 public abstract class JsonDefinition<T> {
   /** The wrapped JSON value */
-  @Schema(hidden = true)
-  private final JsonNode json;
+  @JsonIgnore private final JsonNode json;
 
   protected JsonDefinition(JsonNode json) {
     this.json = Objects.requireNonNull(json);
