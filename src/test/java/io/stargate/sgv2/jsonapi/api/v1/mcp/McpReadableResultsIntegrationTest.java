@@ -61,7 +61,6 @@ class McpReadableResultsIntegrationTest {
   private JsonObject callTool(boolean mcpEnabled) {
     var response =
         request("tools/call")
-            // Existing token fixture. OAuth admission is tracked separately in #2642.
             .header("Token", "readable-result-test-credential")
             .header(ApiFeature.MCP.httpHeaderName(), mcpEnabled)
             .header(ApiFeature.RERANKING.httpHeaderName(), "true")

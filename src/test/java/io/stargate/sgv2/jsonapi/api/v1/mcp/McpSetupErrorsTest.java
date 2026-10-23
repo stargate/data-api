@@ -44,6 +44,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsResolver;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
@@ -69,6 +70,7 @@ import jakarta.validation.Validator;
 import jakarta.ws.rs.WebApplicationException;
 import java.security.Principal;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
@@ -95,6 +97,7 @@ class McpSetupErrorsTest {
   private final EmbeddingProviderFactory embeddingProviderFactory =
       mock(EmbeddingProviderFactory.class);
   private final RequestTenantResolver tenantResolver = mock(RequestTenantResolver.class);
+  private final RoutingContext routingContext = mock(RoutingContext.class);
   private final GeneralCommand generalCommand = mock(GeneralCommand.class);
   private final KeyspaceCommand keyspaceCommand = mock(KeyspaceCommand.class);
   private final CollectionCommand collectionCommand = mock(CollectionCommand.class);
@@ -115,7 +118,15 @@ class McpSetupErrorsTest {
     var headers = MultiMap.caseInsensitiveMultiMap().add(ApiFeature.MCP.httpHeaderName(), "true");
     var httpRequest = mock(HttpServerRequest.class);
     when(httpRequest.headers()).thenReturn(headers);
-    var routingContext = mock(RoutingContext.class);
+    var routingData = new HashMap<String, Object>();
+    when(routingContext.get(anyString()))
+        .thenAnswer(invocation -> routingData.get(invocation.getArgument(0)));
+    when(routingContext.put(anyString(), any()))
+        .thenAnswer(
+            invocation -> {
+              routingData.put(invocation.getArgument(0), invocation.getArgument(1));
+              return routingContext;
+            });
     when(routingContext.request()).thenReturn(httpRequest);
     var principal = mock(Principal.class);
     when(principal.getName()).thenReturn("test-token");
@@ -263,7 +274,7 @@ class McpSetupErrorsTest {
   void unexpectedSetupFailureRecordsASafeDiagnostic() throws Exception {
     when(schemaObjectCache.getTableBased(any(), any(), any(), anyBoolean()))
         .thenReturn(Uni.createFrom().failure(new IllegalStateException(SECRET)));
-    MDC.put(McpRequestLogging.REQUEST_ID, "server-generated-test-request");
+    var requestId = RequestContext.getOrCreateRequestId(routingContext);
 
     try (var logs = new LoggerTestWrapper(McpRequestLogging.class)) {
       assertSetupError(
@@ -276,7 +287,7 @@ class McpSetupErrorsTest {
                 assertThat(record.getMessage())
                     .contains("category=unexpected")
                     .doesNotContain(SECRET);
-                assertThat(record.getParameters()).containsExactly("server-generated-test-request");
+                assertThat(record.getParameters()).containsExactly(requestId);
                 assertThat(record.getThrown()).isNull();
               });
     }
