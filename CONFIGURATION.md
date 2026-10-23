@@ -83,6 +83,9 @@ request/response bodies, client-supplied RPC IDs, credential headers, exception 
 user-controlled logging context. MCP access URLs are excluded from the standard access log and
 replaced with request summaries. Structured billing events keep their existing logging path.
 
+The server generates one request ID before authentication and uses it in completion logs and
+the command's diagnostic trace. Client headers and metadata cannot choose that ID.
+
 Raw framework traffic logging is disabled. The `mcp-safe-logging` filter also discards that category
 if `quarkus.mcp.server.traffic-logging.enabled` is overridden. It is attached to the standard console,
 file, syslog and socket handlers. Any added handler or log exporter must apply the same filter

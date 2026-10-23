@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.completeResult;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.readableResult;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -12,10 +14,13 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.http.ContentType;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
+import io.vertx.core.json.JsonObject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -115,6 +120,52 @@ class McpLoggingTest {
             "isError=false",
             "requestId=")
         .doesNotContain("synthetic-");
+  }
+
+  @Test
+  void diagnosticTraceAndCompletionLogsShareAGeneratedRequestId() throws IOException {
+    when(commandProcessor.processCommand(any(), any()))
+        .thenAnswer(
+            invocation -> {
+              CommandContext<?> context = invocation.getArgument(0);
+              return Uni.createFrom()
+                  .item(CommandResult.statusOnlyBuilder(context.requestTracing()).build());
+            });
+    var clientRequestId = "11111111-1111-4111-8111-111111111111";
+    var payload =
+        new JsonObject(McpHttpTestSupport.toolPayload(1, "findEmbeddingProviders", Map.of()))
+            .copy();
+    payload
+        .getJsonObject("params")
+        .getJsonObject("_meta")
+        .put("requestId", clientRequestId)
+        .put("mcpRequestId", clientRequestId);
+    long start = Files.size(LOG_FILE);
+
+    var response =
+        McpHttpTestSupport.request("tools/call")
+            .header("Token", "synthetic-header-secret")
+            .header("Mcp-Name", "findEmbeddingProviders")
+            .header(ApiFeature.REQUEST_TRACING.httpHeaderName(), "true")
+            .header("X-Request-ID", clientRequestId)
+            .header("mcpRequestId", clientRequestId)
+            .body(payload.encode())
+            .post(mcpPath());
+
+    var requestId =
+        readableResult(completeResult(response, 1))
+            .getJsonObject("status")
+            .getJsonObject("trace")
+            .getJsonObject("TraceSession")
+            .getString("requestId");
+    assertThat(requestId).matches("[a-f0-9-]{36}").isNotEqualTo(clientRequestId);
+    assertThat(logsSince(start))
+        .contains(
+            "MCP request completed requestId=" + requestId,
+            "MCP command completed requestId="
+                + requestId
+                + " command=findEmbeddingProviders isError=false")
+        .doesNotContain(clientRequestId);
   }
 
   @Test
