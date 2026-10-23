@@ -3,11 +3,11 @@ package io.stargate.sgv2.jsonapi.api.v1.mcp;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkus.vertx.http.runtime.filters.Filters;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import java.util.Set;
-import java.util.UUID;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +36,9 @@ public class McpRequestLogging {
       context.next();
       return;
     }
-    String requestId = UUID.randomUUID().toString();
+    String requestId = RequestContext.getOrCreateRequestId(context);
     String header = context.request().getHeader("Mcp-Method");
     String method = header != null && METHODS.contains(header) ? header : "other";
-    context.put(REQUEST_ID, requestId);
     MDC.put(REQUEST_ID, requestId);
     context.addEndHandler(
         ignored -> {
@@ -56,10 +55,7 @@ public class McpRequestLogging {
   static void activate(RoutingContext context) {
     // The framework runs tools in a new duplicated Vert.x context, without the HTTP MDC.
     // RoutingContext data survives that boundary and the ID never comes from client input.
-    String requestId = context.get(REQUEST_ID);
-    if (requestId != null) {
-      MDC.put(REQUEST_ID, requestId);
-    }
+    MDC.put(REQUEST_ID, RequestContext.getOrCreateRequestId(context));
   }
 
   static void commandCompleted(Command command, ToolResponse result) {

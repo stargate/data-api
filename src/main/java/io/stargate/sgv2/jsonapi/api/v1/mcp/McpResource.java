@@ -260,6 +260,7 @@ public class McpResource {
   }
 
   private Uni<CommandResult> executeCommand(CommandContext<?> context, Command command) {
+    // Defer the feature check and processor call so synchronous failures still close the context.
     return Uni.createFrom()
         .deferred(
             () -> {
