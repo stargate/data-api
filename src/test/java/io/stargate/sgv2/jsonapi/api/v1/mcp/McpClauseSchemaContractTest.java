@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -331,26 +332,78 @@ class McpClauseSchemaContractTest {
         schemaMetadata(document, propertySchema(document, "sort"), "description").asText());
   }
 
+  /** Clause arguments take their descriptions from their classes, which Swagger also uses. */
   @Test
-  void rerankToolUsesFilterClassDescription() throws Exception {
-    var description = FilterDefinition.class.getAnnotation(Schema.class).description();
-    assertFalse(description.isBlank());
-    var document = inputSchema("findAndRerank");
-    assertEquals(
-        description,
-        schemaMetadata(document, propertySchema(document, "filter"), "description").asText());
+  void clauseArgumentsUseClassDescriptions() throws Exception {
+    var filter = FilterDefinition.class.getAnnotation(Schema.class).description();
+    var sort = SortDefinition.class.getAnnotation(Schema.class).description();
+    var checked = 0;
+    for (var tool : toolManager) {
+      var document = inputSchema(tool.name());
+      var properties = document.path("properties");
+      if (properties.has("filter")) {
+        assertEquals(
+            filter,
+            schemaMetadata(document, properties.path("filter"), "description").asText(),
+            tool.name());
+        checked++;
+      }
+      // findAndRerank uses FindAndRerankSort, checked in rerankToolUsesSortClassDescription.
+      if (properties.has("sort") && !tool.name().equals("findAndRerank")) {
+        assertEquals(
+            sort,
+            schemaMetadata(document, properties.path("sort"), "description").asText(),
+            tool.name());
+        checked++;
+      }
+    }
+    assertTrue(checked > 0, "No tool has a filter or sort argument");
   }
 
-  /** A description that only repeats the argument name tells a client nothing. */
+  /**
+   * A description that only repeats the argument name tells a client nothing. The schema already
+   * lists required arguments, so descriptions do not start with "Optional" or "Required".
+   */
   @Test
-  void rerankToolDescribesEveryArgument() throws Exception {
-    var document = inputSchema("findAndRerank");
-    for (var argument : document.path("properties").properties()) {
-      var name = argument.getKey();
-      var description = schemaMetadata(document, argument.getValue(), "description").asText();
-      assertFalse(description.isBlank(), name);
-      assertNotEquals(name, description.toLowerCase(), name);
+  void everyToolDescribesEveryArgument() throws Exception {
+    for (var tool : toolManager) {
+      var document = inputSchema(tool.name());
+      for (var argument : document.path("properties").properties()) {
+        var label = tool.name() + "." + argument.getKey();
+        var description = schemaMetadata(document, argument.getValue(), "description").asText();
+        assertFalse(description.isBlank(), label);
+        assertNotEquals(argument.getKey(), description.toLowerCase(), label);
+        assertFalse(description.matches("(?i)(optional|required)\\b.*"), label);
+      }
     }
+  }
+
+  /**
+   * Clients copy the example at the end of an argument description, so the server must parse it as
+   * that argument. Several argument schemas still show Java fields rather than the JSON, which
+   * makes the example the only reliable guide.
+   */
+  @Test
+  void argumentDescriptionExamplesDeserialize() throws Exception {
+    var marker = "for example ";
+    // Trailing text after the example would mean the example is not the whole JSON value.
+    var reader = objectMapper.reader().with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+    var checked = 0;
+    for (var tool : toolManager) {
+      for (var argument : tool.arguments()) {
+        var start = argument.description().indexOf(marker);
+        if (start < 0) {
+          continue;
+        }
+        var label = tool.name() + "." + argument.name();
+        var example = reader.readTree(argument.description().substring(start + marker.length()));
+        var type = objectMapper.constructType(argument.type());
+        assertNotNull(
+            assertDoesNotThrow(() -> objectMapper.treeToValue(example, type), label), label);
+        checked++;
+      }
+    }
+    assertTrue(checked > 0, "No argument description has an example");
   }
 
   @Test

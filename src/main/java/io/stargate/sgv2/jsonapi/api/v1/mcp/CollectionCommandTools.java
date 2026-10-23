@@ -22,6 +22,9 @@ import java.util.List;
  * MCP tool provider for collection-level (and table-level) commands {@link
  * io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand}. These correspond to the {@link
  * io.stargate.sgv2.jsonapi.api.v1.CollectionResource} REST endpoint.
+ *
+ * <p>The filter and sort arguments have no description here. A {@code @ToolArg} description would
+ * replace the one on their classes, which Swagger also uses.
  */
 public class CollectionCommandTools {
 
@@ -31,7 +34,10 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> alterTable(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
-      @ToolArg(description = "The alter table operation") AlterTableOperation operation) {
+      @ToolArg(
+              description =
+                  "One change to the table, keyed by add, drop, addVectorize, or dropVectorize, for example {\"add\": {\"columns\": {\"rating\": \"int\"}}}")
+          AlterTableOperation operation) {
 
     var command = new AlterTableCommand(operation);
     return mcpResource.processCollectionCommand(keyspace, table, command);
@@ -41,7 +47,7 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> countDocuments(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter) {
+      @ToolArg(required = false) FilterDefinition filter) {
 
     var command = new CountDocumentsCommand(filter);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -51,17 +57,22 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> createIndex(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
-      @ToolArg(description = "Name of the new Index") String indexName,
-      @ToolArg(description = "Definition of the index to create")
+      @ToolArg(description = "Name of the new index") String indexName,
+      @ToolArg(
+              description =
+                  "Column to index and its index options, for example {\"column\": \"status\"}")
           RegularIndexDefinitionDesc definition,
       @ToolArg(
               description =
-                  "Optional type of the index to create. The only supported value is '"
+                  "Type of the index to create. The only supported value is '"
                       + ApiIndexType.Constants.REGULAR
                       + "'.",
               required = false)
           String indexType,
-      @ToolArg(description = "Options for the command.", required = false)
+      @ToolArg(
+              description =
+                  "Set ifNotExists to true to succeed when an index with this name already exists",
+              required = false)
           CreateIndexCommand.CreateIndexCommandOptions options) {
 
     var command = new CreateIndexCommand(indexName, definition, indexType, options);
@@ -74,17 +85,22 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> createTextIndex(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
-      @ToolArg(description = "Name of the new Index") String indexName,
-      @ToolArg(description = "Definition of the index to create")
+      @ToolArg(description = "Name of the new index") String indexName,
+      @ToolArg(
+              description =
+                  "Column to index and its index options, for example {\"column\": \"title\"}")
           TextIndexDefinitionDesc definition,
       @ToolArg(
               description =
-                  "Optional type of the index to create. The only supported value is '"
+                  "Type of the index to create. The only supported value is '"
                       + ApiIndexType.Constants.TEXT
                       + "'.",
               required = false)
           String indexType,
-      @ToolArg(description = "Options for the command.", required = false)
+      @ToolArg(
+              description =
+                  "Set ifNotExists to true to succeed when an index with this name already exists",
+              required = false)
           CreateTextIndexCommand.CommandOptions options) {
 
     var command = new CreateTextIndexCommand(indexName, definition, indexType, options);
@@ -95,17 +111,22 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> createVectorIndex(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
-      @ToolArg(description = "Name of the new Index") String indexName,
-      @ToolArg(description = "Definition of the index to create")
+      @ToolArg(description = "Name of the new index") String indexName,
+      @ToolArg(
+              description =
+                  "Column to index and its index options, for example {\"column\": \"embedding\", \"options\": {\"metric\": \"cosine\"}}")
           VectorIndexDefinitionDesc definition,
       @ToolArg(
               description =
-                  "Optional type of the index to create. The only supported value is '"
+                  "Type of the index to create. The only supported value is '"
                       + ApiIndexType.Constants.VECTOR
                       + "'.",
               required = false)
           String indexType,
-      @ToolArg(description = "Options for the command.", required = false)
+      @ToolArg(
+              description =
+                  "Set ifNotExists to true to succeed when an index with this name already exists",
+              required = false)
           CreateVectorIndexCommand.CreateVectorIndexCommandOptions options) {
 
     var command = new CreateVectorIndexCommand(indexName, definition, indexType, options);
@@ -117,11 +138,8 @@ public class CollectionCommandTools {
           "Command that finds documents based on the filter and deletes them from a collection")
   public Uni<ToolResponse> deleteMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(
-              description = "Filter clause based on which documents are identified",
-              required = false)
-          FilterDefinition filter) {
+      @ToolArg(description = "Name of the collection or table") String collection,
+      @ToolArg(required = false) FilterDefinition filter) {
 
     var command = new DeleteManyCommand(filter);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -130,10 +148,9 @@ public class CollectionCommandTools {
   @Tool(description = "Command that finds a single document and deletes it from a collection")
   public Uni<ToolResponse> deleteOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "Filter clause based on which documents are identified")
-          FilterDefinition filter,
-      @ToolArg(description = "Sort clause", required = false) SortDefinition sort) {
+      @ToolArg(description = "Name of the collection or table") String collection,
+      @ToolArg FilterDefinition filter,
+      @ToolArg(required = false) SortDefinition sort) {
 
     var command = new DeleteOneCommand(filter, sort);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -152,8 +169,6 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> findAndRerank(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection") String collection,
-      // filter and sort have no description here because it would replace the one on their
-      // classes, which Swagger also uses.
       @ToolArg(required = false) FilterDefinition filter,
       @ToolArg(
               description =
@@ -173,11 +188,18 @@ public class CollectionCommandTools {
   @Tool(description = "Command that finds JSON documents from a collection.")
   public Uni<ToolResponse> find(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "projection", required = false) JsonNode projection,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
-      @ToolArg(description = "options", required = false) FindCommand.Options options) {
+      @ToolArg(description = "Name of the collection or table") String collection,
+      @ToolArg(required = false) FilterDefinition filter,
+      @ToolArg(
+              description =
+                  "Fields to include or exclude in the returned documents, for example {\"title\": 1}",
+              required = false)
+          JsonNode projection,
+      @ToolArg(required = false) SortDefinition sort,
+      @ToolArg(
+              description = "Options for result limits, paging, and what the response includes",
+              required = false)
+          FindCommand.Options options) {
 
     var command = new FindCommand(filter, projection, sort, options);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -188,10 +210,14 @@ public class CollectionCommandTools {
           "Command that finds a single JSON document from a collection and deletes it. The deleted document is returned")
   public Uni<ToolResponse> findOneAndDelete(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
-      @ToolArg(description = "projection", required = false) JsonNode projection) {
+      @ToolArg(description = "Name of the collection") String collection,
+      @ToolArg(required = false) FilterDefinition filter,
+      @ToolArg(required = false) SortDefinition sort,
+      @ToolArg(
+              description =
+                  "Fields to include or exclude in the returned document, for example {\"title\": 1}",
+              required = false)
+          JsonNode projection) {
 
     var command = new FindOneAndDeleteCommand(filter, sort, projection);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -202,12 +228,22 @@ public class CollectionCommandTools {
           "Command that finds a single JSON document from a collection and replaces it with the replacement document.")
   public Uni<ToolResponse> findOneAndReplace(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
-      @ToolArg(description = "projection", required = false) JsonNode projection,
-      @ToolArg(description = "replacement") ObjectNode replacement,
-      @ToolArg(description = "options", required = false)
+      @ToolArg(description = "Name of the collection") String collection,
+      @ToolArg(required = false) FilterDefinition filter,
+      @ToolArg(required = false) SortDefinition sort,
+      @ToolArg(
+              description =
+                  "Fields to include or exclude in the returned document, for example {\"title\": 1}",
+              required = false)
+          JsonNode projection,
+      @ToolArg(
+              description =
+                  "Document that replaces the matching document, for example {\"title\": \"Dune\", \"status\": \"active\"}")
+          ObjectNode replacement,
+      @ToolArg(
+              description =
+                  "Options for upsert and whether to return the document before or after the replacement",
+              required = false)
           FindOneAndReplaceCommand.Options options) {
 
     var command = new FindOneAndReplaceCommand(filter, sort, projection, replacement, options);
@@ -219,12 +255,23 @@ public class CollectionCommandTools {
           "Command that finds a single JSON document from a collection and updates the values provided in the update clause.")
   public Uni<ToolResponse> findOneAndUpdate(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "projection", required = false) JsonNode projection,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
-      @ToolArg(description = "update") UpdateClause update,
-      @ToolArg(description = "options", required = false) FindOneAndUpdateCommand.Options options) {
+      @ToolArg(description = "Name of the collection") String collection,
+      @ToolArg(required = false) FilterDefinition filter,
+      @ToolArg(
+              description =
+                  "Fields to include or exclude in the returned document, for example {\"title\": 1}",
+              required = false)
+          JsonNode projection,
+      @ToolArg(required = false) SortDefinition sort,
+      @ToolArg(
+              description =
+                  "Update operators to apply, for example {\"$set\": {\"status\": \"active\"}}")
+          UpdateClause update,
+      @ToolArg(
+              description =
+                  "Options for upsert and whether to return the document before or after the update",
+              required = false)
+          FindOneAndUpdateCommand.Options options) {
 
     var command = new FindOneAndUpdateCommand(filter, projection, sort, update, options);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -233,11 +280,16 @@ public class CollectionCommandTools {
   @Tool(description = "Command that finds a single JSON document from a collection.")
   public Uni<ToolResponse> findOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "projection", required = false) JsonNode projection,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
-      @ToolArg(description = "options", required = false) FindOneCommand.Options options) {
+      @ToolArg(description = "Name of the collection or table") String collection,
+      @ToolArg(required = false) FilterDefinition filter,
+      @ToolArg(
+              description =
+                  "Fields to include or exclude in the returned document, for example {\"title\": 1}",
+              required = false)
+          JsonNode projection,
+      @ToolArg(required = false) SortDefinition sort,
+      @ToolArg(description = "Options for what the response includes", required = false)
+          FindOneCommand.Options options) {
 
     var command = new FindOneCommand(filter, projection, sort, options);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -247,7 +299,9 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> listIndexes(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
-      @ToolArg(description = "Options for the `listIndexes` command.", required = false)
+      @ToolArg(
+              description = "Set explain to true to include the properties of each index",
+              required = false)
           ListIndexesCommand.Options options) {
 
     var command = new ListIndexesCommand(options);
@@ -257,9 +311,12 @@ public class CollectionCommandTools {
   @Tool(description = "Command that inserts multiple JSON documents to a collection.")
   public Uni<ToolResponse> insertMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "JSON documents to insert") List<JsonNode> documents,
-      @ToolArg(description = "Options for inserting many documents", required = false)
+      @ToolArg(description = "Name of the collection or table") String collection,
+      @ToolArg(
+              description =
+                  "Documents or rows to insert, for example [{\"title\": \"Dune\"}, {\"title\": \"Emma\"}]")
+          List<JsonNode> documents,
+      @ToolArg(description = "Options for insert order and per-document results", required = false)
           InsertManyCommand.Options options) {
 
     var command = new InsertManyCommand(documents, options);
@@ -269,8 +326,11 @@ public class CollectionCommandTools {
   @Tool(description = "Command that inserts a single JSON document to a collection.")
   public Uni<ToolResponse> insertOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "JSON document to insert") JsonNode document) {
+      @ToolArg(description = "Name of the collection or table") String collection,
+      @ToolArg(
+              description =
+                  "Document or row to insert, for example {\"title\": \"Dune\", \"status\": \"active\"}")
+          JsonNode document) {
 
     var command = new InsertOneCommand(document);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -281,10 +341,14 @@ public class CollectionCommandTools {
           "Command that finds documents from a collection and updates it with the values provided in the update clause.")
   public Uni<ToolResponse> updateMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "update") UpdateClause update,
-      @ToolArg(description = "options", required = false) UpdateManyCommand.Options options) {
+      @ToolArg(description = "Name of the collection") String collection,
+      @ToolArg(required = false) FilterDefinition filter,
+      @ToolArg(
+              description =
+                  "Update operators to apply, for example {\"$set\": {\"status\": \"active\"}}")
+          UpdateClause update,
+      @ToolArg(description = "Options for upsert and paging", required = false)
+          UpdateManyCommand.Options options) {
 
     var command = new UpdateManyCommand(filter, update, options);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -295,11 +359,17 @@ public class CollectionCommandTools {
           "Command that finds a single JSON document from a table or collection and updates the values provided in the update clause.")
   public Uni<ToolResponse> updateOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "update") UpdateClause update,
-      @ToolArg(description = "sort", required = false) SortDefinition sort,
-      @ToolArg(description = "options", required = false) UpdateOneCommand.Options options) {
+      @ToolArg(description = "Name of the collection or table") String collection,
+      @ToolArg(required = false) FilterDefinition filter,
+      @ToolArg(
+              description =
+                  "Update operators to apply, for example {\"$set\": {\"status\": \"active\"}}")
+          UpdateClause update,
+      @ToolArg(required = false) SortDefinition sort,
+      @ToolArg(
+              description = "Set upsert to true to insert a document when none matches the filter",
+              required = false)
+          UpdateOneCommand.Options options) {
 
     var command = new UpdateOneCommand(filter, update, sort, options);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
