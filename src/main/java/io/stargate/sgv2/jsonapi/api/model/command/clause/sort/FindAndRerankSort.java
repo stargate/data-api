@@ -25,7 +25,7 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 @Schema(
     name = "FindAndRerankSort",
     type = SchemaType.OBJECT,
-    implementation = Object.class,
+    implementation = Map.class,
     nullable = true,
     additionalProperties = Schema.False.class,
     properties =
@@ -34,8 +34,7 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
             anyOf = {String.class, FindAndRerankSort.HybridSortSchema.class}),
     description =
         "Use $hybrid with a query string or an object containing $vectorize or $vector, and optionally $lexical."
-            + " $vector and $vectorize cannot be used together."
-            + " Query text and required collection capabilities are checked when resolving the command.",
+            + " $vector and $vectorize cannot be used together.",
     examples = {
       """
       {"$hybrid": "Same query for vectorize and BM25 sorting"}
@@ -51,13 +50,16 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
       """
     })
 public record FindAndRerankSort(
-    @Schema(hidden = true) String vectorizeSort,
-    @Schema(hidden = true) String lexicalSort,
-    @Schema(hidden = true) float[] vectorSort,
+    @JsonIgnore String vectorizeSort,
+    @JsonIgnore String lexicalSort,
+    @JsonIgnore float[] vectorSort,
     @JsonIgnore CommandFeatures commandFeatures)
     implements Recordable {
 
-  // These classes carry nested schema annotations and are never instantiated by the parser.
+  // Schema-only classes. @SchemaProperty can point at a nested schema only through a class, so
+  // these empty classes carry the @Schema for each nested part of the sort. Nothing creates them.
+
+  /** The object form of $hybrid, with $vector or $vectorize and an optional $lexical. */
   @Schema(
       name = "HybridSort",
       type = SchemaType.OBJECT,
@@ -77,6 +79,7 @@ public record FindAndRerankSort(
       not = ConflictingVectorSortSchema.class)
   public static class HybridSortSchema {}
 
+  /** A binary encoded vector such as {"$binary": "P4AAAEAAAABAQAAA"}. */
   @Schema(
       name = "BinaryVector",
       type = SchemaType.OBJECT,
@@ -87,6 +90,10 @@ public record FindAndRerankSort(
       properties = @SchemaProperty(name = BINARY_VECTOR_TEXT_FIELD, type = SchemaType.STRING))
   public static class BinaryVectorSchema {}
 
+  /**
+   * Matches an object that has both $vector and $vectorize. HybridSort uses it as its {@code not}
+   * schema, so a sort that sets both fails validation.
+   */
   @Schema(
       name = "ConflictingVectorSort",
       type = SchemaType.OBJECT,
