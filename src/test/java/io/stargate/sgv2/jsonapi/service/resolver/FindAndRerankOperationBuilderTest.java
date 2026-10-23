@@ -1,5 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.TestConstants.rerankingModelConfig;
+import static io.stargate.sgv2.jsonapi.TestConstants.rerankingProvidersConfig;
+import static io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.innerTaskGroups;
+import static io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.privateField;
+import static io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.readTaskSnapshots;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -19,19 +24,25 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTask;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.DeferredVectorize;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.IntermediateCollectionReadTask;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.Rank;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
-import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
+import io.stargate.sgv2.jsonapi.service.resolver.FindAndRerankOperationAssertions.ReadTaskSnapshot;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -47,34 +58,6 @@ class FindAndRerankOperationBuilderTest {
   @Inject FindCommandResolver findCommandResolver;
 
   private final TestConstants TEST_CONSTANTS = new TestConstants();
-
-  // Reusable request properties for model configs
-  private static final RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-          .RequestPropertiesImpl
-      REQUEST_PROPERTIES =
-          new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10);
-
-  private static RerankingProvidersConfig.RerankingProviderConfig.ModelConfig modelConfig(
-      String name, ApiModelSupport.SupportStatus status) {
-    return new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
-        name,
-        new ApiModelSupport.ApiModelSupportImpl(status, Optional.empty()),
-        false,
-        "https://example.com/rerank",
-        REQUEST_PROPERTIES);
-  }
-
-  private static RerankingProvidersConfig configWithProvider(
-      String providerName,
-      boolean enabled,
-      List<RerankingProvidersConfig.RerankingProviderConfig.ModelConfig> models) {
-    return new RerankingProvidersConfigImpl(
-        Map.of(
-            providerName,
-            new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(
-                false, providerName, enabled, Map.of(), models)));
-  }
 
   /** Helper that calls the centralized validation with the override error code. */
   private static void validateOverride(
@@ -316,7 +299,12 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    assertMissingRerankOn("failsWhenMissingRerankOnAndNotVectorizeSort()", commandContext, command);
+    assertBuildFails(
+        "failsWhenMissingRerankOnAndNotVectorizeSort()",
+        commandContext,
+        command,
+        RequestException.class,
+        RequestException.Code.MISSING_RERANK_ON);
   }
 
   @Test
@@ -336,17 +324,200 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    assertMissingRerankOn("failsWhenBlankRerankOnAndNotVectorizeSort()", commandContext, command);
+    assertBuildFails(
+        "failsWhenBlankRerankOnAndNotVectorizeSort()",
+        commandContext,
+        command,
+        RequestException.class,
+        RequestException.Code.MISSING_RERANK_ON);
   }
 
-  private void assertMissingRerankOn(
+  @Test
+  void failsWhenHybridSortHasOnlyLexical() throws Exception {
+    // COLLECTION_SCHEMA_OBJECT has a lexical index and reranking, but no vector
+    var schemaObject = TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT;
+    assertThat(schemaObject.vectorConfig().vectorEnabled()).isFalse();
+    assertThat(schemaObject.lexicalDef().enabled()).isTrue();
+
+    var commandContext = commandContext(schemaObject);
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$lexical": "text" } },
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text",
+                  "hybridLimits": { "$vector": 30, "$lexical": 20 }
+                }
+              }
+            }
+            """);
+
+    assertBuildFails(
+        "failsWhenHybridSortHasOnlyLexical()",
+        commandContext,
+        command,
+        SortException.class,
+        SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT);
+  }
+
+  @Test
+  void buildsOneReadPerLegInPlanOrder() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } },
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text",
+                  "includeScores": true,
+                  "includeSortVector": true,
+                  "hybridLimits": { "$vector": 40, "$lexical": 15 }
+                }
+              }
+            }
+            """);
+
+    var operation =
+        new FindAndRerankOperationBuilder(commandContext)
+            .withCommand(command)
+            .withFindCommandResolver(findCommandResolver)
+            .build();
+
+    // read task position = leg index: the lexical read is 0, the vector read is 1. Both reads get
+    // includeScores as includeSimilarity, as before the planner, and each read has the limit of its
+    // leg.
+    assertThat(readTaskSnapshots(operation))
+        .containsExactly(
+            new ReadTaskSnapshot(
+                0, List.of("$lexical"), 15, true, true, false, Rank.RankSource.BM25),
+            new ReadTaskSnapshot(
+                1, List.of("$vector"), 40, true, true, false, Rank.RankSource.VECTOR));
+  }
+
+  @Test
+  void buildsEmbeddingGroupAndPairsDeferredsForVectorizeAndLexical() throws Exception {
+    var commandContext =
+        commandContext(TEST_CONSTANTS.VECTORIZE_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT);
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$vectorize": "cheese", "$lexical": "cows" } }
+              }
+            }
+            """);
+
+    var operation =
+        new FindAndRerankOperationBuilder(commandContext)
+            .withCommand(command)
+            .withFindCommandResolver(findCommandResolver)
+            .build();
+
+    var groups = innerTaskGroups(operation);
+    assertThat(groups).as("embedding group, read group and rerank group").hasSize(3);
+    // one vectorize leg, so one group key and one embedding task
+    assertThat(groups.getFirst())
+        .as("the first group only embeds")
+        .hasSize(1)
+        .allSatisfy(task -> assertThat(task).isInstanceOf(EmbeddingTask.class));
+
+    // the embedding task must complete the deferred vectorize of the read that waits for it
+    var vectorizeRead = (IntermediateCollectionReadTask) groups.get(1).get(1);
+    var deferredVectorize = (DeferredVectorize) privateField(vectorizeRead, "deferredVectorize");
+    assertThat((List<?>) privateField(groups.getFirst().getFirst(), "embeddingActions"))
+        .as("embedding task embeds for the vectorize read")
+        .singleElement()
+        .isSameAs(deferredVectorize.deferredAction());
+
+    // the vectorize read has no sort until the embedding is ready
+    var defaultLimits = FindAndRerankCommand.HybridLimits.DEFAULT;
+    assertThat(readTaskSnapshots(operation))
+        .containsExactly(
+            new ReadTaskSnapshot(
+                0,
+                List.of("$lexical"),
+                defaultLimits.lexicalLimit(),
+                false,
+                false,
+                false,
+                Rank.RankSource.BM25),
+            new ReadTaskSnapshot(
+                1,
+                List.of(),
+                defaultLimits.vectorLimit(),
+                false,
+                false,
+                true,
+                Rank.RankSource.VECTOR));
+  }
+
+  @Test
+  void failsWhenHybridSortHasNoValue() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": { "$hybrid": { "$lexical": null } },
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """);
+
+    assertBuildFails(
+        "failsWhenHybridSortHasNoValue()",
+        commandContext,
+        command,
+        SortException.class,
+        SortException.Code.MISSING_HYBRID_SORT_VALUE);
+  }
+
+  @Test
+  void failsWhenSortIsNotHybrid() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {
+              "findAndRerank": {
+                "sort": {},
+                "options": {
+                  "rerankOn": "body",
+                  "rerankQuery": "text"
+                }
+              }
+            }
+            """);
+
+    assertBuildFails(
+        "failsWhenSortIsNotHybrid()",
+        commandContext,
+        command,
+        SortException.class,
+        SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT);
+  }
+
+  private <T extends APIException> void assertBuildFails(
       String context,
       CommandContext<CollectionSchemaObject> commandContext,
-      FindAndRerankCommand command) {
+      FindAndRerankCommand command,
+      Class<T> exceptionClass,
+      ErrorCode<T> code) {
 
     var ex =
         assertThrowsExactly(
-            RequestException.class,
+            exceptionClass,
             () ->
                 new FindAndRerankOperationBuilder(commandContext)
                     .withCommand(command)
@@ -354,7 +525,7 @@ class FindAndRerankOperationBuilderTest {
                     .build(),
             context);
 
-    assertThat(ex.code).as(context).isEqualTo(RequestException.Code.MISSING_RERANK_ON.name());
+    assertThat(ex.code).as(context).isEqualTo(code.name());
   }
 
   private FindAndRerankCommand command(String json) throws Exception {
@@ -366,11 +537,15 @@ class FindAndRerankOperationBuilderTest {
   }
 
   private CommandContext<CollectionSchemaObject> commandContext(boolean withLexical) {
-
-    var schemaObject =
+    return commandContext(
         withLexical
             ? TEST_CONSTANTS.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT
-            : TEST_CONSTANTS.VECTORIZE_RERANK_COLLECTION_SCHEMA_OBJECT;
+            : TEST_CONSTANTS.VECTORIZE_RERANK_COLLECTION_SCHEMA_OBJECT);
+  }
+
+  private CommandContext<CollectionSchemaObject> commandContext(
+      CollectionSchemaObject schemaObject) {
+
     var commandContext =
         TEST_CONSTANTS.collectionContext(CommandName.FIND_AND_RERANK, schemaObject);
 
@@ -403,10 +578,10 @@ class FindAndRerankOperationBuilderTest {
 
     // Shared config: nvidia provider enabled with a single supported model
     private final RerankingProvidersConfig NVIDIA_SUPPORTED =
-        configWithProvider(
+        rerankingProvidersConfig(
             "nvidia",
             true,
-            List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
+            rerankingModelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED));
 
     @Test
     void shouldAcceptSupportedProviderAndModel() {
@@ -425,10 +600,10 @@ class FindAndRerankOperationBuilderTest {
     @Test
     void shouldRejectDisabledProvider() {
       var disabledConfig =
-          configWithProvider(
+          rerankingProvidersConfig(
               "nvidia",
               false,
-              List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
+              rerankingModelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED));
 
       assertThatThrownBy(() -> validateOverride(disabledConfig, "nvidia", "nvidia/rerank-v1"))
           .isInstanceOf(RequestException.class)
@@ -456,10 +631,10 @@ class FindAndRerankOperationBuilderTest {
     @Test
     void shouldRejectDeprecatedModel() {
       var config =
-          configWithProvider(
+          rerankingProvidersConfig(
               "nvidia",
               true,
-              List.of(modelConfig("nvidia/old-model", ApiModelSupport.SupportStatus.DEPRECATED)));
+              rerankingModelConfig("nvidia/old-model", ApiModelSupport.SupportStatus.DEPRECATED));
 
       assertThatThrownBy(() -> validateOverride(config, "nvidia", "nvidia/old-model"))
           .isInstanceOf(SchemaException.class)
@@ -469,10 +644,10 @@ class FindAndRerankOperationBuilderTest {
     @Test
     void shouldRejectEndOfLifeModel() {
       var config =
-          configWithProvider(
+          rerankingProvidersConfig(
               "nvidia",
               true,
-              List.of(modelConfig("nvidia/eol-model", ApiModelSupport.SupportStatus.END_OF_LIFE)));
+              rerankingModelConfig("nvidia/eol-model", ApiModelSupport.SupportStatus.END_OF_LIFE));
 
       assertThatThrownBy(() -> validateOverride(config, "nvidia", "nvidia/eol-model"))
           .isInstanceOf(SchemaException.class)
@@ -495,10 +670,10 @@ class FindAndRerankOperationBuilderTest {
       // When provider is disabled AND modelName is null, the disabled check should
       // come first — user gets "provider disabled" instead of "modelName required"
       var disabledConfig =
-          configWithProvider(
+          rerankingProvidersConfig(
               "nvidia",
               false,
-              List.of(modelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED)));
+              rerankingModelConfig("nvidia/rerank-v1", ApiModelSupport.SupportStatus.SUPPORTED));
 
       assertThatThrownBy(() -> validateOverride(disabledConfig, "nvidia", null))
           .isInstanceOf(RequestException.class)

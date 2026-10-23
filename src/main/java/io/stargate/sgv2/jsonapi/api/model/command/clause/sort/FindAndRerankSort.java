@@ -8,14 +8,31 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /**
- * @param vectorizeSort If <code>null</code> then the $vectorize field was not present in the sort
- *     clause, OR was present but set to JSON null OR it was blank string, otherwise it is the value
+ * The sort clause of a findAndRerank command, parsed by {@link
+ * FindAndRerankSortClauseDeserializer}. It records the sort as the user wrote it, the {@link
+ * io.stargate.sgv2.jsonapi.service.operation.reranking.FindAndRerankPlanner} decides which legs run
+ * from the <code>legMode</code>, the sort values and the collection, the <code>commandFeatures
+ * </code> are only for metrics.
+ *
+ * <p>A <code>$hybrid</code> sort is either text, <code>{"$hybrid": "cheese"}</code>, recorded in
+ * <code>hybridText</code>, or an object, <code>{"$hybrid": {"$vectorize": "cheese", "$lexical":
+ * "cows"}}</code>, recorded in <code>vectorizeSort</code>, <code>lexicalSort</code> and <code>
+ * vectorSort</code>. Use {@link #fromHybridText(String, CommandFeatures)} and {@link
+ * #fromHybridObject(String, String, float[], CommandFeatures)} to create them.
+ *
+ * @param legMode The kind of sort the user wrote, decided from the keys in the sort clause. The
+ *     planner uses this, to decide what to run.
+ * @param hybridText If <code>null</code> then the $hybrid field was not text, OR was blank text,
+ *     otherwise it is the trimmed text. The planner decides which legs use it.
+ * @param vectorizeSort If <code>null</code> then the $vectorize field was not present in the
+ *     $hybrid object, OR was present but set to JSON null OR it was blank string, otherwise it is
+ *     the value provided.
+ * @param lexicalSort If <code>null</code> then the $lexical field was not present in the $hybrid
+ *     object, OR was present but set to JSON null OR it was blank string, otherwise it is the value
  *     provided.
- * @param lexicalSort If <code>null</code> then the $lexical field was not present in the sort
- *     clause, OR was present but set to JSON null OR it was blank string, otherwise it is the value
- *     provided.
- * @param vectorSort If <code>null</code> then the vector field was not present in the sort clause,
- *     or present and JSON null, otherwise it is the value provided.
+ * @param vectorSort If <code>null</code> then the vector field was not present in the $hybrid
+ *     object, or present and JSON null, otherwise it is the value provided.
+ * @param commandFeatures The features used by the sort clause, only used for metrics.
  */
 @JsonDeserialize(using = FindAndRerankSortClauseDeserializer.class)
 @Schema(
@@ -28,15 +45,90 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
               {"$sort" : {"$hybrid" : {"$vector" : [1,2,3] , "$lexical": "lexical sort" }}}
       """)
 public record FindAndRerankSort(
-    String vectorizeSort, String lexicalSort, float[] vectorSort, CommandFeatures commandFeatures)
+    LegMode legMode,
+    String hybridText,
+    String vectorizeSort,
+    String lexicalSort,
+    float[] vectorSort,
+    CommandFeatures commandFeatures)
     implements Recordable {
 
+  public FindAndRerankSort {
+    Objects.requireNonNull(legMode, "legMode must not be null");
+    Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+
+    // a FILTER sort has no sort values, otherwise the planner would check them against the
+    // collection and could fail with a schema error rather than UNSUPPORTED_FIND_AND_RERANK_SORT
+    if (legMode == LegMode.FILTER) {
+      if (hybridText != null) {
+        throw new IllegalArgumentException(
+            "hybridText must be null when legMode is FILTER, hybridText=" + hybridText);
+      }
+      if (vectorizeSort != null) {
+        throw new IllegalArgumentException(
+            "vectorizeSort must be null when legMode is FILTER, vectorizeSort=" + vectorizeSort);
+      }
+      if (lexicalSort != null) {
+        throw new IllegalArgumentException(
+            "lexicalSort must be null when legMode is FILTER, lexicalSort=" + lexicalSort);
+      }
+      if (vectorSort != null) {
+        throw new IllegalArgumentException(
+            "vectorSort must be null when legMode is FILTER, vectorSort.length="
+                + vectorSort.length);
+      }
+    }
+
+    // the $hybrid field is either text or an object, never both
+    if (hybridText != null
+        && (vectorizeSort != null || lexicalSort != null || vectorSort != null)) {
+      throw new IllegalArgumentException(
+          "vectorizeSort, lexicalSort and vectorSort must be null when hybridText is set, hybridText="
+              + hybridText);
+    }
+  }
+
+  /**
+   * The sort for a request without a sort: the sort is <code>{}</code>, <code>null</code> or
+   * missing.
+   */
   public static final FindAndRerankSort NO_ARG_SORT =
-      new FindAndRerankSort(null, null, null, CommandFeatures.EMPTY);
+      new FindAndRerankSort(LegMode.FILTER, null, null, null, null, CommandFeatures.EMPTY);
+
+  /**
+   * Creates the sort for <code>{"$hybrid": "text"}</code>.
+   *
+   * @param hybridText The trimmed text, <code>null</code> when the text was blank.
+   * @param commandFeatures The features used by the sort clause, only used for metrics.
+   */
+  public static FindAndRerankSort fromHybridText(
+      String hybridText, CommandFeatures commandFeatures) {
+    return new FindAndRerankSort(LegMode.HYBRID, hybridText, null, null, null, commandFeatures);
+  }
+
+  /**
+   * Creates the sort for <code>{"$hybrid": {"$vectorize": ..., "$lexical": ..., "$vector": ...}}
+   * </code>, each value is <code>null</code> when the user did not give it a value.
+   *
+   * @param vectorizeSort The trimmed <code>$vectorize</code> text, or <code>null</code>.
+   * @param lexicalSort The trimmed <code>$lexical</code> text, or <code>null</code>.
+   * @param vectorSort The <code>$vector</code> value, or <code>null</code>.
+   * @param commandFeatures The features used by the sort clause, only used for metrics.
+   */
+  public static FindAndRerankSort fromHybridObject(
+      String vectorizeSort,
+      String lexicalSort,
+      float[] vectorSort,
+      CommandFeatures commandFeatures) {
+    return new FindAndRerankSort(
+        LegMode.HYBRID, null, vectorizeSort, lexicalSort, vectorSort, commandFeatures);
+  }
 
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
     return dataRecorder
+        .append("legMode", legMode)
+        .append("hybridText", hybridText)
         .append("vectorizeSort", vectorizeSort)
         .append("lexicalSort", lexicalSort)
         .append("vectorSort", Arrays.toString(vectorSort))
@@ -52,6 +144,8 @@ public record FindAndRerankSort(
   @Override
   public boolean equals(Object obj) {
     return (obj instanceof FindAndRerankSort other)
+        && legMode == other.legMode
+        && Objects.equals(hybridText, other.hybridText)
         && Objects.equals(vectorizeSort, other.vectorizeSort)
         && Objects.equals(lexicalSort, other.lexicalSort)
         && Arrays.equals(vectorSort, other.vectorSort)
@@ -61,6 +155,12 @@ public record FindAndRerankSort(
   /** Override to do a value equality hash on the vector */
   @Override
   public int hashCode() {
-    return Objects.hash(vectorizeSort, lexicalSort, Arrays.hashCode(vectorSort), commandFeatures);
+    return Objects.hash(
+        legMode,
+        hybridText,
+        vectorizeSort,
+        lexicalSort,
+        Arrays.hashCode(vectorSort),
+        commandFeatures);
   }
 }
