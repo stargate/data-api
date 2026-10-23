@@ -297,6 +297,29 @@ class McpOpenApiSchemaAdapterTest {
     assertEquals("#/components/schemas/A~1B~0C", McpOpenApiSchemaAdapter.componentRef("A/B~C"));
   }
 
+  @Test
+  void shouldPreserveFractionalSchemaBoundsAndDefault() throws Exception {
+    var document = fixtureDocument();
+    ((ObjectNode) document.path("components").path("schemas"))
+        .putObject("Fractional")
+        .put("type", "number")
+        .put("minimum", 0.25)
+        .put("maximum", 1.75)
+        .put("default", 0.5);
+    var schema =
+        bundle(MAPPER.readTree("{\"$ref\":\"#/components/schemas/Fractional\"}"), document);
+    var component = schema.at(schema.path("$ref").asText().substring(1));
+
+    assertEquals(0.25, component.path("minimum").doubleValue());
+    assertEquals(1.75, component.path("maximum").doubleValue());
+    assertEquals(0.5, component.path("default").doubleValue());
+    assertAccepts(schema, "0.25");
+    assertAccepts(schema, "1.75");
+    assertAccepts(schema, component.path("default").toString());
+    assertRejects(schema, "0.125");
+    assertRejects(schema, "1.875");
+  }
+
   /** Bundles a copy of {@code input}, so tests can compare the result with the input. */
   private static ObjectNode bundle(JsonNode input, JsonNode document) {
     ObjectNode schema = input.deepCopy();
