@@ -59,9 +59,22 @@ public class McpFeatureDisabledIntegrationTest extends McpIntegrationTestBase {
   }
 
   @Test
+  public void toolErrorIsTaggedCompleteOverRawHttp() {
+    var response = rawToolCall(1, CommandName.Names.FIND_KEYSPACES, Map.of());
+
+    // One JSON body rather than an SSE stream, so there are no event IDs to resume.
+    assertThat(response.contentType()).startsWith("application/json");
+    assertNull(response.header("Mcp-Session-Id"));
+    var result = McpHttpTestSupport.assertResponseComplete(response, 1);
+    assertTrue(result.getBoolean("isError"));
+    assertNotNull(result.getJsonObject("_meta").getJsonObject(McpHttpTestSupport.SERVER_INFO));
+  }
+
+  @Test
   public void okToolCallWithHeaderEnableMCP() {
     var mcpClientWithHeaderEnable =
         McpAssured.newStreamableClient()
+            .setStateless()
             .setBaseUri(URI.create(MCP_HOSTNAME + getTestPort()))
             .setMcpPath(MCP_PATH)
             .setAdditionalHeaders(msg -> authHeaders().add(ApiFeature.MCP.httpHeaderName(), "true"))
