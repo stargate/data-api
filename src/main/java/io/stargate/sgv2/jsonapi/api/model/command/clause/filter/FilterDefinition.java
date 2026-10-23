@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.JsonDefinition;
@@ -19,23 +20,21 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     // FilterClause describes parsed state and would incorrectly reserve fields such as empty.
     implementation = Object.class,
     nullable = true,
-    description =
-        "A Data API filter object mapping document paths to values or operator expressions, such as $eq, $gt, $in, $and, and $or.",
+    description = "A filter to select documents, see examples.",
     examples = {
       """
       {"age": {"$gt": 40}}
       """,
       """
-       {"name": "Aaron", "country": {"$eq": "NZ"}, "age": {"$gt": 40}}
-        """
+      {"name": "Aaron", "country": {"$eq": "NZ"}, "age": {"$gt": 40}}
+      """
     })
 public class FilterDefinition extends JsonDefinition<FilterClause> {
   /**
    * Lazily deserialized {@link FilterClause} from the JSON value. We need this due to existing
    * reliance on specific stateful instances of {@link FilterClause}.
    */
-  @Schema(hidden = true)
-  private FilterClause filterClause;
+  @JsonIgnore private FilterClause filterClause;
 
   /**
    * To deserialize the whole JSON value, need to ensure DELEGATING mode (instead of PROPERTIES).
