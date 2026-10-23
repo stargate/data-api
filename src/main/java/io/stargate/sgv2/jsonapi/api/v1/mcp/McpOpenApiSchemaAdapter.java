@@ -26,9 +26,10 @@ import java.util.function.Consumer;
 /**
  * Makes each MCP tool input schema standalone by copying in the OpenAPI schemas it points to.
  *
- * <p>{@link McpSchemaCustomizer} points clause fields at the schemas Quarkus generates for Swagger,
- * so both APIs share one definition. An MCP tool's input schema is a standalone JSON Schema
- * document, though, so a pointer into the OpenAPI document leads nowhere for an MCP client.
+ * <p>{@link McpSchemaCustomizer} replaces the schema of each clause argument, such as filter or
+ * sort, with a pointer to the schema Quarkus generates for Swagger, so both APIs share one
+ * definition. An MCP tool's input schema is a standalone JSON Schema document, though, so a pointer
+ * into the OpenAPI document leads nowhere for an MCP client.
  *
  * <p>After the MCP library generates a tool schema, this class copies each OpenAPI schema the tool
  * needs into the tool schema's {@code $defs}, and rewrites the pointers to match:
