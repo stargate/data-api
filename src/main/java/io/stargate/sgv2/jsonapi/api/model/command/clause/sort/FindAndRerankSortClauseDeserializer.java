@@ -202,8 +202,23 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   ArrayNode.class,
                   ObjectNode.class);
             }
+            String binaryPath = "sort.$hybrid.$vector.$binary";
+            if (!ejson.value().isTextual() && !ejson.value().isBinary()) {
+              throw new JsonMappingException(
+                  jsonParser, binaryPath + " must be a Base64-encoded string");
+            }
+            float[] binaryVector;
+            try {
+              binaryVector = ejson.getVectorValueForBinary();
+            } catch (IllegalArgumentException e) {
+              throw new JsonMappingException(jsonParser, binaryPath + ": " + e.getMessage());
+            }
+            if (binaryVector.length == 0) {
+              throw new JsonMappingException(
+                  jsonParser, binaryPath + " must encode a non-empty vector");
+            }
             commandFeatures.addFeature(CommandFeature.VECTOR);
-            yield ejson.getVectorValueForBinary();
+            yield binaryVector;
           }
           case JsonNode node ->
               throw JsonFieldMatcher.errorForWrongType(
