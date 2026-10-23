@@ -333,6 +333,52 @@ class McpClauseSchemaContractTest {
         schemaMetadata(document, propertySchema(document, "sort"), "description").asText());
   }
 
+  /** Clause arguments take their descriptions from their classes, which Swagger also uses. */
+  @Test
+  void clauseArgumentsUseClassDescriptions() throws Exception {
+    var filter = FilterDefinition.class.getAnnotation(Schema.class).description();
+    var sort = SortDefinition.class.getAnnotation(Schema.class).description();
+    var checked = 0;
+    for (var tool : toolManager) {
+      var document = inputSchema(tool.name());
+      var properties = document.path("properties");
+      if (properties.has("filter")) {
+        assertEquals(
+            filter,
+            schemaMetadata(document, properties.path("filter"), "description").asText(),
+            tool.name());
+        checked++;
+      }
+      // findAndRerank uses FindAndRerankSort, checked in rerankToolUsesSortClassDescription.
+      if (properties.has("sort") && !tool.name().equals("findAndRerank")) {
+        assertEquals(
+            sort,
+            schemaMetadata(document, properties.path("sort"), "description").asText(),
+            tool.name());
+        checked++;
+      }
+    }
+    assertTrue(checked > 0, "No tool has a filter or sort argument");
+  }
+
+  /**
+   * A description that only repeats the argument name tells a client nothing. The schema already
+   * lists required arguments, so descriptions do not start with "Optional" or "Required".
+   */
+  @Test
+  void everyToolDescribesEveryArgument() throws Exception {
+    for (var tool : toolManager) {
+      var document = inputSchema(tool.name());
+      for (var argument : document.path("properties").properties()) {
+        var label = tool.name() + "." + argument.getKey();
+        var description = schemaMetadata(document, argument.getValue(), "description").asText();
+        assertFalse(description.isBlank(), label);
+        assertNotEquals(argument.getKey(), description.toLowerCase(), label);
+        assertFalse(description.matches("(?i)(optional|required)\\b.*"), label);
+      }
+    }
+  }
+
   @Test
   void rerankToolUsesOverrideFieldDescription() throws Exception {
     var description =
