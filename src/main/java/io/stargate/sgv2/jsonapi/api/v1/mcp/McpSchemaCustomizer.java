@@ -100,7 +100,7 @@ public class McpSchemaCustomizer implements SchemaGeneratorConfigCustomizer {
       if (name.isBlank()) {
         return null;
       }
-      reference = "#/components/schemas/" + name.replace("~", "~0").replace("/", "~1");
+      reference = McpOpenApiSchemaAdapter.componentRef(name);
     }
     return JsonNodeFactory.instance.objectNode().put("$ref", reference);
   }

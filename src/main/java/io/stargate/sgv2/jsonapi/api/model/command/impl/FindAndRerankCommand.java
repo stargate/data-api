@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
+import static io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants.Components.SCHEMA_REF_PREFIX;
 import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.AUTHENTICATION;
 import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.MODEL_NAME;
 import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.PARAMETERS;
@@ -146,7 +147,7 @@ public record FindAndRerankCommand(
           """)
   public static class RerankOverrideSchema {
     public static final String NAME = "RerankServiceOverride";
-    public static final String REF = "#/components/schemas/" + NAME;
+    public static final String REF = SCHEMA_REF_PREFIX + NAME;
   }
 
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
@@ -172,7 +173,7 @@ public record FindAndRerankCommand(
       implements Recordable {
 
     public static final String NAME = "HybridLimits";
-    public static final String REF = "#/components/schemas/" + NAME;
+    public static final String REF = SCHEMA_REF_PREFIX + NAME;
 
     public static final HybridLimits DEFAULT =
         new HybridLimits(

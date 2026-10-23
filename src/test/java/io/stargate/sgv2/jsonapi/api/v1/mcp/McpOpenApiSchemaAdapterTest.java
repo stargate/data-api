@@ -15,7 +15,7 @@ class McpOpenApiSchemaAdapterTest {
 
   @Test
   void shouldCopyOnlyReachableComponentsAndRebaseTheirReferences() throws Exception {
-    var schema = adapt("{\"$ref\":\"#/components/schemas/ObjectValue\"}");
+    var schema = bundle("{\"$ref\":\"#/components/schemas/ObjectValue\"}");
 
     assertEquals("#/$defs/_openapi_ObjectValue", schema.path("$ref").asText());
     var definitions = schema.path("$defs");
@@ -47,7 +47,7 @@ class McpOpenApiSchemaAdapterTest {
             }
             """);
 
-    var adapted = new McpOpenApiSchemaAdapter(fixtureDocument()).adapt(input);
+    var adapted = bundle(input);
 
     assertEquals(input, adapted);
     assertAccepts(adapted, "{\"value\":\"text\"}");
@@ -85,15 +85,13 @@ class McpOpenApiSchemaAdapterTest {
               }
             }
             """);
-    var original = input.deepCopy();
-    var schema = new McpOpenApiSchemaAdapter(fixtureDocument()).adapt(input);
+    var schema = bundle(input);
 
-    assertEquals(original, input);
     assertEquals(
         "#/properties/options~1~0/$defs/Local",
         schema.at("/properties/options~1~0/properties/value/$ref").asText());
     assertEquals(
-        original.at("/properties/options~1~0/examples"),
+        input.at("/properties/options~1~0/examples"),
         schema.at("/properties/options~1~0/examples"));
     assertAccepts(
         schema,
@@ -121,7 +119,7 @@ class McpOpenApiSchemaAdapterTest {
           "$defs":{"Local":{"type":"string"}}
         }
         """);
-    var schema = new McpOpenApiSchemaAdapter(fixtureDocument()).adapt(input);
+    var schema = bundle(input);
 
     assertEquals(input, schema);
     assertAccepts(schema, "{\"options\":{\"value\":\"text\"}}");
@@ -131,7 +129,7 @@ class McpOpenApiSchemaAdapterTest {
   @Test
   void shouldRetainExistingDefinitionsWhenAddingOpenApiComponents() throws Exception {
     var schema =
-        adapt(
+        bundle(
             """
             {
               "type":"object",
@@ -152,7 +150,7 @@ class McpOpenApiSchemaAdapterTest {
 
   @Test
   void shouldSupportRecursiveComponentsWithoutExpandingThem() throws Exception {
-    var schema = adapt("{\"$ref\":\"#/components/schemas/Recursive\"}");
+    var schema = bundle("{\"$ref\":\"#/components/schemas/Recursive\"}");
 
     assertEquals(1, schema.path("$defs").size());
     assertEquals(
@@ -191,7 +189,7 @@ class McpOpenApiSchemaAdapterTest {
             }
             """);
 
-    var schema = new McpOpenApiSchemaAdapter(document).adapt(input);
+    var schema = bundle(input, document);
 
     assertTrue(schema.path("$defs").has("_openapi_A/B~C"));
     assertEquals(
@@ -205,7 +203,7 @@ class McpOpenApiSchemaAdapterTest {
 
   @Test
   void shouldRetainOverlappingConstraintsOnReferenceSiblings() throws Exception {
-    var schema = adapt("{\"$ref\":\"#/components/schemas/Value\",\"maximum\":20}");
+    var schema = bundle("{\"$ref\":\"#/components/schemas/Value\",\"maximum\":20}");
 
     assertEquals(20, schema.path("maximum").asInt());
     assertAccepts(schema, "10");
@@ -215,7 +213,7 @@ class McpOpenApiSchemaAdapterTest {
   @Test
   void shouldRetainDisjointConstraintsOnReferenceSiblings() throws Exception {
     var schema =
-        adapt("{\"$ref\":\"#/components/schemas/ObjectValue\",\"additionalProperties\":false}");
+        bundle("{\"$ref\":\"#/components/schemas/ObjectValue\",\"additionalProperties\":false}");
 
     assertTrue(schema.has("$ref"));
     assertFalse(schema.path("additionalProperties").asBoolean());
@@ -235,8 +233,7 @@ class McpOpenApiSchemaAdapterTest {
                 .path("a"))
         .put("maximum", 20);
     var schema =
-        new McpOpenApiSchemaAdapter(document)
-            .adapt(MAPPER.readTree("{\"$ref\":\"#/components/schemas/ObjectValue\"}"));
+        bundle(MAPPER.readTree("{\"$ref\":\"#/components/schemas/ObjectValue\"}"), document);
 
     assertAccepts(schema, "{\"a\":10}");
     assertRejects(schema, "{\"a\":15}");
@@ -256,7 +253,7 @@ class McpOpenApiSchemaAdapterTest {
               "enum":[{"$ref":"#/components/schemas/Unknown"}]
             }
             """);
-    var schema = new McpOpenApiSchemaAdapter(fixtureDocument()).adapt(input);
+    var schema = bundle(input);
 
     assertEquals(
         "#/$defs/_openapi_Value", schema.path("properties").path("$ref").path("$ref").asText());
@@ -266,31 +263,53 @@ class McpOpenApiSchemaAdapterTest {
   }
 
   @Test
-  void shouldNotMutateInputsOrShareMutableComponentCopies() throws Exception {
+  void shouldChangeTheGivenSchemaInPlace() throws Exception {
+    var schema = (ObjectNode) MAPPER.readTree("{\"$ref\":\"#/components/schemas/Value\"}");
+
+    McpOpenApiSchemaAdapter.bundleOpenApiSchemas(schema, fixtureDocument());
+
+    assertEquals("#/$defs/_openapi_Value", schema.path("$ref").asText());
+    assertTrue(schema.path("$defs").has("_openapi_Value"));
+  }
+
+  @Test
+  void shouldNotChangeTheOpenApiDocumentOrShareComponentCopies() throws Exception {
     var document = fixtureDocument();
     var originalDocument = document.deepCopy();
     var input = MAPPER.readTree("{\"$ref\":\"#/components/schemas/Value\"}");
-    var originalInput = input.deepCopy();
-    var adapter = new McpOpenApiSchemaAdapter(document);
-    var schema = adapter.adapt(input);
+    var schema = bundle(input, document);
 
     ((ObjectNode) schema.path("$defs").path("_openapi_Value")).put("maximum", 100);
 
     assertEquals(originalDocument, document);
-    assertEquals(originalInput, input);
-    assertRejects(adapter.adapt(input), "15");
+    assertRejects(bundle(input, document), "15");
   }
 
   @Test
   void shouldRejectMissingComponentReferences() throws Exception {
-    var adapter = new McpOpenApiSchemaAdapter(fixtureDocument());
     var input = MAPPER.readTree("{\"$ref\":\"#/components/schemas/Missing\"}");
 
-    assertThrows(IllegalStateException.class, () -> adapter.adapt(input));
+    assertThrows(IllegalStateException.class, () -> bundle(input));
   }
 
-  private static ObjectNode adapt(String input) throws Exception {
-    return new McpOpenApiSchemaAdapter(fixtureDocument()).adapt(MAPPER.readTree(input));
+  @Test
+  void shouldEscapeComponentNamesInReferences() {
+    assertEquals("#/components/schemas/A~1B~0C", McpOpenApiSchemaAdapter.componentRef("A/B~C"));
+  }
+
+  /** Bundles a copy of {@code input}, so tests can compare the result with the input. */
+  private static ObjectNode bundle(JsonNode input, JsonNode document) {
+    ObjectNode schema = input.deepCopy();
+    McpOpenApiSchemaAdapter.bundleOpenApiSchemas(schema, document);
+    return schema;
+  }
+
+  private static ObjectNode bundle(JsonNode input) throws Exception {
+    return bundle(input, fixtureDocument());
+  }
+
+  private static ObjectNode bundle(String input) throws Exception {
+    return bundle(MAPPER.readTree(input));
   }
 
   private static void assertAccepts(JsonNode schema, String input) throws Exception {
