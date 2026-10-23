@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
+import static io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants.Components.SCHEMA_REF_PREFIX;
 import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.AUTHENTICATION;
 import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.MODEL_NAME;
 import static io.stargate.sgv2.jsonapi.config.constants.ServiceDescConstants.PARAMETERS;
@@ -118,7 +119,7 @@ public record FindAndRerankCommand(
           @JsonProperty("rerank")
           CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
 
-  // Authentication support depends on the provider. Parameters allow only empty maps or null.
+  // Matches the override validation in CollectionRerankDef. Update both together.
   @Schema(
       name = RerankOverrideSchema.NAME,
       type = SchemaType.OBJECT,
@@ -146,17 +147,18 @@ public record FindAndRerankCommand(
           """)
   public static class RerankOverrideSchema {
     public static final String NAME = "RerankServiceOverride";
-    public static final String REF = "#/components/schemas/" + NAME;
+    public static final String REF = SCHEMA_REF_PREFIX + NAME;
   }
 
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
-  // Keep the scanner from inferring an object type for this union.
   @Schema(
       name = HybridLimits.NAME,
       description =
-          "Candidate read limits as one integer for both legs, or an object containing both $vector and $lexical integer limits. Accepted bounds are determined by server configuration.",
+          "Candidate read limits as one integer for both legs, or an object containing both $vector and $lexical integer limits.",
+      // Void is the annotation default, but the OpenAPI scanner only sees values set in source.
+      // Setting it stops the scanner adding the record fields as an object type next to anyOf.
       implementation = Void.class,
-      anyOf = {Integer.class, HybridLimitValuesSchema.class},
+      anyOf = {Integer.class, HybridLimits.ValuesSchema.class},
       examples = {
         "50",
         """
@@ -171,7 +173,7 @@ public record FindAndRerankCommand(
       implements Recordable {
 
     public static final String NAME = "HybridLimits";
-    public static final String REF = "#/components/schemas/" + NAME;
+    public static final String REF = SCHEMA_REF_PREFIX + NAME;
 
     public static final HybridLimits DEFAULT =
         new HybridLimits(
@@ -186,19 +188,20 @@ public record FindAndRerankCommand(
           .append("lexicalLimit", lexicalLimit)
           .append("commandFeatures", commandFeatures);
     }
-  }
 
-  @Schema(
-      name = "HybridLimitValues",
-      type = SchemaType.OBJECT,
-      nullable = true,
-      additionalProperties = Schema.False.class,
-      requiredProperties = {VECTOR_EMBEDDING_FIELD, LEXICAL_CONTENT_FIELD},
-      properties = {
-        @SchemaProperty(name = VECTOR_EMBEDDING_FIELD, type = SchemaType.INTEGER),
-        @SchemaProperty(name = LEXICAL_CONTENT_FIELD, type = SchemaType.INTEGER)
-      })
-  public static class HybridLimitValuesSchema {}
+    /** Schema for the object form of the limits, the second branch of the anyOf above. */
+    @Schema(
+        name = "HybridLimitValues",
+        type = SchemaType.OBJECT,
+        nullable = true,
+        additionalProperties = Schema.False.class,
+        requiredProperties = {VECTOR_EMBEDDING_FIELD, LEXICAL_CONTENT_FIELD},
+        properties = {
+          @SchemaProperty(name = VECTOR_EMBEDDING_FIELD, type = SchemaType.INTEGER),
+          @SchemaProperty(name = LEXICAL_CONTENT_FIELD, type = SchemaType.INTEGER)
+        })
+    public static class ValuesSchema {}
+  }
 
   /** Deserializer for the `hybridLimits` option, the limits for the inner reads. */
   public static class HybridLimitsDeserializer extends StdDeserializer<HybridLimits> {
