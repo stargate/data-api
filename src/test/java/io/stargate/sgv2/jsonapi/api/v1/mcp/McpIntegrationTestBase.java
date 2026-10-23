@@ -9,6 +9,7 @@ import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkiverse.mcp.server.test.McpAssured.McpStreamableTestClient;
 import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.core.MultiMap;
@@ -103,13 +104,20 @@ public abstract class McpIntegrationTestBase {
   }
 
   /**
-   * Calls a tool over raw HTTP with the same credentials, so a mistake shared by the test client
-   * and the server cannot hide a wire problem.
+   * Starts a raw HTTP request with the same credentials, so a mistake shared by the test client and
+   * the server cannot hide a wire problem.
    */
-  protected Response rawToolCall(int id, String tool, Map<String, Object> arguments) {
-    var request = McpHttpTestSupport.request("tools/call").header("Mcp-Name", tool);
+  protected RequestSpecification rawRequest(String method) {
+    var request = McpHttpTestSupport.request(method);
     authHeaders().forEach(header -> request.header(header.getKey(), header.getValue()));
-    return request.body(McpHttpTestSupport.toolPayload(id, tool, arguments)).post(MCP_PATH);
+    return request;
+  }
+
+  protected Response rawToolCall(int id, String tool, Map<String, Object> arguments) {
+    return rawRequest("tools/call")
+        .header("Mcp-Name", tool)
+        .body(McpHttpTestSupport.toolPayload(id, tool, arguments))
+        .post(MCP_PATH);
   }
 
   /** Create a keyspace via the MCP createKeyspace tool. */

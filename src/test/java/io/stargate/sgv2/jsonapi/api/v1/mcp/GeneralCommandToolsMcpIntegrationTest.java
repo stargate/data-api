@@ -95,6 +95,20 @@ class GeneralCommandToolsMcpIntegrationTest extends McpIntegrationTestBase {
   }
 
   @Test
+  void packagedServerDoesNotAdvertiseToolListChanges() {
+    // The tool list never changes at runtime, and subscriptions are not part of this launch.
+    var response =
+        rawRequest("server/discover")
+            .body(McpHttpTestSupport.rpcPayload(1, "server/discover", Map.of()))
+            .post(MCP_PATH);
+
+    var result = McpHttpTestSupport.assertResponseComplete(response, 1);
+    var tools = result.getJsonObject("capabilities").getJsonObject("tools");
+    assertNotNull(tools);
+    assertFalse(tools.containsKey("listChanged"));
+  }
+
+  @Test
   void findRerankingProvidersToolCall() {
     callToolAndAssert(
         CommandName.Names.FIND_RERANKING_PROVIDERS,

@@ -81,9 +81,10 @@ class McpProtocolTest {
     assertThat(result.getJsonObject("_meta").getJsonObject(SERVER_INFO).getString("name"))
         .isEqualTo("Stargate DATA API");
 
-    // quarkus-mcp-server 2.1.0.Beta1 always adds "logging", so it is not asserted here.
+    // quarkus-mcp-server 2.1.0.Beta1 always adds "logging", so it is not asserted here. Tool
+    // listChanged is checked against the packaged server in GeneralCommandToolsMcpIntegrationTest,
+    // because a test class here that injects ToolManager makes the framework advertise it.
     var capabilities = result.getJsonObject("capabilities");
-    assertThat(capabilities.getJsonObject("tools").containsKey("listChanged")).isFalse();
     assertThat(capabilities.fieldNames())
         .contains("tools")
         .doesNotContain("prompts", "resources", "completions", "extensions", "tasks");
