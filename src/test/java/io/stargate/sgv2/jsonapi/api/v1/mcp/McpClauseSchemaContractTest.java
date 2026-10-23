@@ -186,8 +186,8 @@ class McpClauseSchemaContractTest {
     var openApiSchema = document.path("components").path("schemas").path(name);
     assertFalse(openApiSchema.isMissingNode(), "Missing OpenAPI component " + name);
     var expected =
-        new McpOpenApiSchemaAdapter(document)
-            .adapt(objectMapper.createObjectNode().put("$ref", "#/components/schemas/" + name));
+        objectMapper.createObjectNode().put("$ref", McpOpenApiSchemaAdapter.componentRef(name));
+    McpOpenApiSchemaAdapter.bundleOpenApiSchemas(expected, document);
     var actual = objectMapper.readTree(schemaFor(clauseType).toString());
     assertEquals(referencedSchema(expected, expected), referencedSchema(actual, actual));
     assertEquals(expected.path("$defs"), actual.path("$defs"));
@@ -242,11 +242,8 @@ class McpClauseSchemaContractTest {
                 .deepCopy();
     ((ObjectNode) mcpOverride).remove("description");
     var expected =
-        new McpOpenApiSchemaAdapter(document)
-            .adapt(
-                objectMapper
-                    .createObjectNode()
-                    .put("$ref", "#/components/schemas/RerankServiceOverride"));
+        objectMapper.createObjectNode().put("$ref", FindAndRerankCommand.RerankOverrideSchema.REF);
+    McpOpenApiSchemaAdapter.bundleOpenApiSchemas(expected, document);
     assertEquals(referencedSchema(expected, expected), mcpOverride);
   }
 
@@ -661,7 +658,9 @@ class McpClauseSchemaContractTest {
                 objectMapper, SchemaVersion.DRAFT_2020_12, OptionPreset.PLAIN_JSON)
             .without(Option.SCHEMA_VERSION_INDICATOR);
     new McpSchemaCustomizer().customize(builder);
-    return new McpOpenApiSchemaAdapter()
-        .adapt(new SchemaGenerator(builder.build()).generateSchema(type));
+    var schema = new SchemaGenerator(builder.build()).generateSchema(type);
+    McpOpenApiSchemaAdapter.bundleOpenApiSchemas(
+        schema, McpOpenApiSchemaAdapter.readGeneratedOpenApiDocument());
+    return schema;
   }
 }
