@@ -97,6 +97,7 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
         """,
       "{}"
     })
+// Hide parsed operations from schemas without changing Jackson serialization.
 public record UpdateClause(
     @Schema(hidden = true) EnumMap<UpdateOperator, ObjectNode> updateOperationDefs) {
   /**
