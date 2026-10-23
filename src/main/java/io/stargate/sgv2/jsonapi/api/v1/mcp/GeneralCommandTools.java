@@ -22,8 +22,8 @@ public class GeneralCommandTools {
 
   @Tool(description = "Command that creates a keyspace.")
   public Uni<ToolResponse> createKeyspace(
-      @ToolArg(description = "Name of the new keyspace") String name,
-      @ToolArg(description = "Replication settings for the new keyspace", required = false)
+      @ToolArg(description = "Required name of the new Keyspace") String name,
+      @ToolArg(description = "Options for creating a new keyspace.", required = false)
           CreateKeyspaceCommand.Options options) {
 
     var command = new CreateKeyspaceCommand(name, options);
@@ -32,7 +32,7 @@ public class GeneralCommandTools {
 
   @Tool(description = "Command that deletes a Keyspace.")
   public Uni<ToolResponse> dropKeyspace(
-      @ToolArg(description = "Name of the keyspace to drop") @NotEmpty String name) {
+      @ToolArg(description = "Required name of the Keyspace to remove") @NotEmpty String name) {
 
     var command = new DropKeyspaceCommand(name);
     return mcpResource.processCommand(mcpResource.buildDatabaseContext(command), command);
@@ -49,7 +49,7 @@ public class GeneralCommandTools {
   public Uni<ToolResponse> findEmbeddingProviders(
       @ToolArg(
               description =
-                  "Model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.",
+                  "Optional model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.",
               required = false)
           FindEmbeddingProvidersCommand.Options options) {
 
@@ -61,7 +61,7 @@ public class GeneralCommandTools {
   public Uni<ToolResponse> findRerankingProviders(
       @ToolArg(
               description =
-                  "Model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.",
+                  "Optional model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.",
               required = false)
           FindRerankingProvidersCommand.Options options) {
 
