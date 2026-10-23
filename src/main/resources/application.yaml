@@ -214,13 +214,20 @@ quarkus:
   # MCP (Model Context Protocol) server configuration
   mcp:
     server:
+      # Admit and advertise only this revision. A stateless-only list also disables initialize,
+      # sessions and the legacy HTTP+SSE endpoints.
+      # https://docs.quarkiverse.io/quarkus-mcp-server/dev/concepts-transports.html
+      supported-protocol-versions: "2026-07-28"
+      # Results may depend on the caller's authorization, so keep them private and immediately
+      # stale until a cache policy is reviewed.
+      discover:
+        ttl-ms: 0
+        cache-scope: private
+      tools:
+        ttl-ms: 0
+        cache-scope: private
       http:
         root-path: /v1/mcp
-        streamable:
-          # It performs an automatic initialization when the first message from the client is not initialize.
-          # A new MCP session is created for each request.
-          # https://docs.quarkiverse.io/quarkus-mcp-server/1.13.x/reference-configuration.html#quarkus-mcp-server-http_quarkus-mcp-server-http-streamable-auto-init
-          auto-init: true
       traffic-logging:
         enabled: true
         text-limit: 1000
