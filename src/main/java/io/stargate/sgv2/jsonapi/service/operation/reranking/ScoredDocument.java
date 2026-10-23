@@ -123,26 +123,9 @@ public class ScoredDocument implements Comparable<ScoredDocument> {
             ? DocumentScores.fromBm25Read(rank)
             : DocumentScores.EMPTY;
 
+    // only text can be a passage, missing, null and other types are dropped
     var passageNode = passageLocator.findValueIn(document);
-    var passage =
-        switch (passageNode) {
-          case MissingNode ignored -> {
-            // undefined in the document, default to null so it is dropped
-            yield null;
-          }
-          case NullNode ignored -> {
-            // explicit {$vectorize : null} treat same as undefined, empty passage to rerank on
-            yield null;
-          }
-          case ValueNode valueNode -> {
-            // could be text, number, boolean, but not array or object
-            yield valueNode.asText();
-          }
-          default ->
-              throw new IllegalArgumentException(
-                  "Passage field %s is present but not null or a valueNode _id=%s , passageField=%s"
-                      .formatted(passageLocator.path(), documentId, passageNode));
-        };
+    var passage = passageNode.isTextual() ? passageNode.textValue() : null;
 
     // we will have one or the other of the vector or bm25 scores, merging handles this.
     // normalise passage to null, to make it easier to use optional.
