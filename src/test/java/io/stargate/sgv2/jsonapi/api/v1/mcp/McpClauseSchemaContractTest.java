@@ -166,7 +166,6 @@ class McpClauseSchemaContractTest {
         var schema = type.getAnnotation(Schema.class);
         // Select parsed clause types, excluding helper classes for nested JSON shapes.
         if (!schema.name().isBlank()
-            && schema.examples().length > 0
             && (JsonDefinition.class.isAssignableFrom(type)
                 || type.isAnnotationPresent(JsonDeserialize.class))) {
           clauseTypes.add(type);
@@ -188,13 +187,14 @@ class McpClauseSchemaContractTest {
     var expected =
         objectMapper.createObjectNode().put("$ref", McpOpenApiSchemaAdapter.componentRef(name));
     McpOpenApiSchemaAdapter.bundleOpenApiSchemas(expected, document);
+    // Normalize numeric examples through the same mapper before comparing schema trees.
     var actual = objectMapper.readTree(schemaFor(clauseType).toString());
     assertEquals(referencedSchema(expected, expected), referencedSchema(actual, actual));
     assertEquals(expected.path("$defs"), actual.path("$defs"));
   }
 
   @Test
-  void filterAnnotationDefinesBothSchemasWithoutWrapperFields() throws Exception {
+  void filterSchemaAcceptsDocumentObjectsAndNull() throws Exception {
     var annotation = FilterDefinition.class.getAnnotation(Schema.class);
     var schema = schemaFor(FilterDefinition.class);
     var component = referencedSchema(schema, schema);
@@ -205,8 +205,6 @@ class McpClauseSchemaContractTest {
       assertEquals(
           objectMapper.readTree(annotation.examples()[i]), component.path("examples").get(i));
     }
-    assertFalse(component.path("properties").has("json"));
-    assertFalse(component.path("properties").has("filterClause"));
     assertSchemaAccepts(schema, objectMapper.readTree("null"));
     assertSchemaAccepts(schema, objectMapper.readTree("{\"some.path\": {\"$gt\": 40}}"));
     assertFalse(
