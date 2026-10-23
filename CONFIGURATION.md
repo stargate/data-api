@@ -81,3 +81,18 @@ Other Quarkus properties that are specifically relevant for the service:
 | Property                        | Type      | Default | Description                                                                                                         |
 |---------------------------------|-----------|---------|---------------------------------------------------------------------------------------------------------------------|
 | `stargate.feature.flags.tables` | `boolean` | `true` (enabled by default)   | Setting it to `true` enables Tables functionality; `false` disables; leaving as `null` uses the default (enabled).|
+
+## MCP browser Origin configuration
+*Configuration for browser access to the MCP endpoint, enforced by [McpOriginFilter.java](src/main/java/io/stargate/sgv2/jsonapi/api/v1/mcp/McpOriginFilter.java).*
+
+| Property                               | Type     | Default | Description                                                                                                                                                                         |
+|----------------------------------------|----------|---------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `stargate.jsonapi.mcp.allowed-origins` | `list`   | empty   | Comma separated browser Origins that may call the MCP endpoint, written exactly as browsers send them, such as `https://app.example.com`. Empty rejects every request that has an Origin header. |
+
+Requests without an `Origin` header come from native clients and are not affected. A request with
+any other `Origin`, including a malformed value or more than one `Origin` header, receives HTTP 403
+with a fixed JSON-RPC error body before authentication runs. Approved Origins can send a CORS
+preflight without credentials and can read the `WWW-Authenticate` challenge. Browser access allows
+POST only, with the `Authorization`, `Content-Type`, `MCP-Protocol-Version`, `Mcp-Method` and
+`Mcp-Name` request headers. Origin approval never replaces authentication. Entries must use a lowercase `http` or `https` scheme and host, no path
+and no default port. Any other entry stops startup. Wildcards are not supported.
