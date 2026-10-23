@@ -73,6 +73,11 @@ public interface RerankingProvidersConfig {
       RequestProperties properties();
 
       interface RequestProperties {
+        enum TruncateOption {
+          NONE,
+          END
+        }
+
         /**
          * Specifies the maximum number of attempts before failing. Default is 3 (1 request + 2
          * retries).
@@ -120,6 +125,10 @@ public interface RerankingProvidersConfig {
 
         /** Maximum batch size supported by the provider. */
         int maxBatchSize();
+
+        /** How the provider handles query and passage pairs that exceed the model token limit. */
+        @WithDefault("NONE")
+        TruncateOption truncate();
       }
     }
   }

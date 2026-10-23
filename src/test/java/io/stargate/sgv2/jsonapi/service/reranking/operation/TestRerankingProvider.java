@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.reranking.operation;
 
+import static io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig.RerankingProviderConfig.ModelConfig.RequestProperties.TruncateOption.NONE;
+
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
@@ -24,7 +26,7 @@ public class TestRerankingProvider extends RerankingProvider {
           .RequestPropertiesImpl
       REQUEST_PROPERTIES =
           new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10);
+              .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10, NONE);
 
   private static final RerankingProvidersConfig.RerankingProviderConfig.ModelConfig MODEL_CONFIG =
       new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
@@ -49,7 +51,7 @@ public class TestRerankingProvider extends RerankingProvider {
             false,
             "http://testing.com",
             new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
-                .RequestPropertiesImpl(3, 100, 5000, 500, 0.5, maxBatchSize)));
+                .RequestPropertiesImpl(3, 100, 5000, 500, 0.5, maxBatchSize, NONE)));
   }
 
   @Override
