@@ -49,7 +49,7 @@ public class GeneralCommandTools {
   public Uni<ToolResponse> findEmbeddingProviders(
       @ToolArg(
               description =
-                  "Model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.",
+                  "Set filterModelStatus to SUPPORTED, DEPRECATED, or END_OF_LIFE to list models with that status, or to an empty string to list all models. Without options, only SUPPORTED models are listed.",
               required = false)
           FindEmbeddingProvidersCommand.Options options) {
 
@@ -61,7 +61,7 @@ public class GeneralCommandTools {
   public Uni<ToolResponse> findRerankingProviders(
       @ToolArg(
               description =
-                  "Model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.",
+                  "Set filterModelStatus to SUPPORTED, DEPRECATED, or END_OF_LIFE to list models with that status, or to an empty string to list all models. Without options, only SUPPORTED models are listed.",
               required = false)
           FindRerankingProvidersCommand.Options options) {
 

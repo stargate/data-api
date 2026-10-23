@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -375,6 +376,34 @@ class McpClauseSchemaContractTest {
         assertFalse(description.matches("(?i)(optional|required)\\b.*"), label);
       }
     }
+  }
+
+  /**
+   * Clients copy the example at the end of an argument description, so the server must parse it as
+   * that argument. Several argument schemas still show Java fields rather than the JSON, which
+   * makes the example the only reliable guide.
+   */
+  @Test
+  void argumentDescriptionExamplesDeserialize() throws Exception {
+    var marker = "for example ";
+    // Trailing text after the example would mean the example is not the whole JSON value.
+    var reader = objectMapper.reader().with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+    var checked = 0;
+    for (var tool : toolManager) {
+      for (var argument : tool.arguments()) {
+        var start = argument.description().indexOf(marker);
+        if (start < 0) {
+          continue;
+        }
+        var label = tool.name() + "." + argument.name();
+        var example = reader.readTree(argument.description().substring(start + marker.length()));
+        var type = objectMapper.constructType(argument.type());
+        assertNotNull(
+            assertDoesNotThrow(() -> objectMapper.treeToValue(example, type), label), label);
+        checked++;
+      }
+    }
+    assertTrue(checked > 0, "No argument description has an example");
   }
 
   @Test

@@ -64,9 +64,15 @@ public class KeyspaceCommandTools {
   public Uni<ToolResponse> alterType(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the type to alter") String name,
-      @ToolArg(description = "Fields to rename, mapping old names to new names", required = false)
+      @ToolArg(
+              description =
+                  "Fields to rename, mapping old names to new names, for example {\"fields\": {\"zip\": \"postcode\"}}",
+              required = false)
           RenameTypeFieldsDesc rename,
-      @ToolArg(description = "Fields to add to the type", required = false)
+      @ToolArg(
+              description =
+                  "Fields to add to the type, for example {\"fields\": {\"country\": \"text\"}}",
+              required = false)
           TypeDefinitionDesc add) {
 
     var command = new AlterTypeCommand(name, rename, add);
@@ -77,7 +83,9 @@ public class KeyspaceCommandTools {
   public Uni<ToolResponse> createTable(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the new table") String table,
-      @ToolArg(description = "Columns and primary key of the new table")
+      @ToolArg(
+              description =
+                  "Columns and primary key of the new table, for example {\"columns\": {\"id\": \"text\", \"title\": \"text\"}, \"primaryKey\": \"id\"}")
           TableDefinitionDesc definition,
       @ToolArg(
               description = "Set ifNotExists to true to succeed when the table already exists",
@@ -92,7 +100,10 @@ public class KeyspaceCommandTools {
   public Uni<ToolResponse> createType(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the new type") String name,
-      @ToolArg(description = "Fields of the new type") TypeDefinitionDesc definition,
+      @ToolArg(
+              description =
+                  "Fields of the new type, for example {\"fields\": {\"city\": \"text\", \"postcode\": \"int\"}}")
+          TypeDefinitionDesc definition,
       @ToolArg(
               description = "Set ifNotExists to true to succeed when the type already exists",
               required = false)

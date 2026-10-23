@@ -36,7 +36,7 @@ public class CollectionCommandTools {
       @ToolArg(description = "Name of the table") String table,
       @ToolArg(
               description =
-                  "Change to make: add or drop columns, or add or drop vectorize for columns")
+                  "One change to the table, keyed by add, drop, addVectorize, or dropVectorize, for example {\"add\": {\"columns\": {\"rating\": \"int\"}}}")
           AlterTableOperation operation) {
 
     var command = new AlterTableCommand(operation);
@@ -58,7 +58,9 @@ public class CollectionCommandTools {
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
       @ToolArg(description = "Name of the new index") String indexName,
-      @ToolArg(description = "Column to index and its index options")
+      @ToolArg(
+              description =
+                  "Column to index and its index options, for example {\"column\": \"status\"}")
           RegularIndexDefinitionDesc definition,
       @ToolArg(
               description =
@@ -69,7 +71,7 @@ public class CollectionCommandTools {
           String indexType,
       @ToolArg(
               description =
-                  "Set ifNotExists to true to succeed when an index with this name exists",
+                  "Set ifNotExists to true to succeed when an index with this name already exists",
               required = false)
           CreateIndexCommand.CreateIndexCommandOptions options) {
 
@@ -84,7 +86,9 @@ public class CollectionCommandTools {
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
       @ToolArg(description = "Name of the new index") String indexName,
-      @ToolArg(description = "Column to index and its index options")
+      @ToolArg(
+              description =
+                  "Column to index and its index options, for example {\"column\": \"title\"}")
           TextIndexDefinitionDesc definition,
       @ToolArg(
               description =
@@ -95,7 +99,7 @@ public class CollectionCommandTools {
           String indexType,
       @ToolArg(
               description =
-                  "Set ifNotExists to true to succeed when an index with this name exists",
+                  "Set ifNotExists to true to succeed when an index with this name already exists",
               required = false)
           CreateTextIndexCommand.CommandOptions options) {
 
@@ -108,7 +112,9 @@ public class CollectionCommandTools {
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
       @ToolArg(description = "Name of the new index") String indexName,
-      @ToolArg(description = "Column to index and its index options")
+      @ToolArg(
+              description =
+                  "Column to index and its index options, for example {\"column\": \"embedding\", \"options\": {\"metric\": \"cosine\"}}")
           VectorIndexDefinitionDesc definition,
       @ToolArg(
               description =
@@ -119,7 +125,7 @@ public class CollectionCommandTools {
           String indexType,
       @ToolArg(
               description =
-                  "Set ifNotExists to true to succeed when an index with this name exists",
+                  "Set ifNotExists to true to succeed when an index with this name already exists",
               required = false)
           CreateVectorIndexCommand.CreateVectorIndexCommandOptions options) {
 
@@ -230,7 +236,10 @@ public class CollectionCommandTools {
                   "Fields to include or exclude in the returned document, for example {\"title\": 1}",
               required = false)
           JsonNode projection,
-      @ToolArg(description = "Document that replaces the matching document") ObjectNode replacement,
+      @ToolArg(
+              description =
+                  "Document that replaces the matching document, for example {\"title\": \"Dune\", \"status\": \"active\"}")
+          ObjectNode replacement,
       @ToolArg(
               description =
                   "Options for upsert and whether to return the document before or after the replacement",
@@ -303,7 +312,10 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> insertMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection or table") String collection,
-      @ToolArg(description = "Documents or rows to insert") List<JsonNode> documents,
+      @ToolArg(
+              description =
+                  "Documents or rows to insert, for example [{\"title\": \"Dune\"}, {\"title\": \"Emma\"}]")
+          List<JsonNode> documents,
       @ToolArg(description = "Options for insert order and per-document results", required = false)
           InsertManyCommand.Options options) {
 
@@ -315,7 +327,10 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> insertOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection or table") String collection,
-      @ToolArg(description = "Document or row to insert") JsonNode document) {
+      @ToolArg(
+              description =
+                  "Document or row to insert, for example {\"title\": \"Dune\", \"status\": \"active\"}")
+          JsonNode document) {
 
     var command = new InsertOneCommand(document);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
