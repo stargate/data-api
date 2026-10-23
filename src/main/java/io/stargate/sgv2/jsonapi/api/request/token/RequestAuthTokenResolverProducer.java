@@ -45,4 +45,11 @@ public class RequestAuthTokenResolverProducer {
   RequestAuthTokenResolver fixedTokenResolver(AuthConfig config) {
     return new FixedTokenResolver(config.tokenResolver().fixed().token().orElse(null));
   }
+
+  @Produces
+  @ApplicationScoped
+  @LookupIfProperty(name = "stargate.auth.token-resolver.type", stringValue = "bearer")
+  RequestAuthTokenResolver bearerJwtTokenResolver() {
+    return new BearerJwtTokenResolver();
+  }
 }
