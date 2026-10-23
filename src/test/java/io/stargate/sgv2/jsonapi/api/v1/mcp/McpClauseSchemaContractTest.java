@@ -334,6 +334,28 @@ class McpClauseSchemaContractTest {
   }
 
   @Test
+  void rerankToolUsesFilterClassDescription() throws Exception {
+    var description = FilterDefinition.class.getAnnotation(Schema.class).description();
+    assertFalse(description.isBlank());
+    var document = inputSchema("findAndRerank");
+    assertEquals(
+        description,
+        schemaMetadata(document, propertySchema(document, "filter"), "description").asText());
+  }
+
+  /** A description that only repeats the argument name tells a client nothing. */
+  @Test
+  void rerankToolDescribesEveryArgument() throws Exception {
+    var document = inputSchema("findAndRerank");
+    for (var argument : document.path("properties").properties()) {
+      var name = argument.getKey();
+      var description = schemaMetadata(document, argument.getValue(), "description").asText();
+      assertFalse(description.isBlank(), name);
+      assertNotEquals(name, description.toLowerCase(), name);
+    }
+  }
+
+  @Test
   void rerankToolUsesOverrideFieldDescription() throws Exception {
     var description =
         FindAndRerankCommand.Options.class

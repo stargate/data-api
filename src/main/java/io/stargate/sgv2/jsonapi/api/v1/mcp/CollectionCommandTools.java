@@ -151,11 +151,19 @@ public class CollectionCommandTools {
   @Tool(description = "Finds documents using vector and lexical sorting, then reranks the results.")
   public Uni<ToolResponse> findAndRerank(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(description = "Name of the collection/table") String collection,
-      @ToolArg(description = "filter", required = false) FilterDefinition filter,
-      @ToolArg(description = "projection", required = false) JsonNode projection,
+      @ToolArg(description = "Name of the collection") String collection,
+      // filter and sort have no description here because it would replace the one on their
+      // classes, which Swagger also uses.
+      @ToolArg(required = false) FilterDefinition filter,
+      @ToolArg(
+              description =
+                  "Fields to include or exclude in the returned documents, for example {\"title\": 1}",
+              required = false)
+          JsonNode projection,
       @ToolArg(required = false) FindAndRerankSort sort,
-      @ToolArg(description = "Reranking options", required = false)
+      @ToolArg(
+              description = "Options for result limits, reranking, and what the response includes",
+              required = false)
           FindAndRerankCommand.Options options) {
 
     var command = new FindAndRerankCommand(filter, projection, sort, options);
