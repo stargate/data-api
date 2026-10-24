@@ -173,6 +173,8 @@ class FindAndRerankPlanner {
 
     // the vector leg reads with the vector from the vectorize step when there is text to vectorize,
     // otherwise with the vector from the command
+    // NOTE: when the sort has both, $vectorize wins and $vector is ignored
+    // TODO: GH #2616 - reject a sort that has both $vectorize and $vector
     legs.add(
         new FindAndRerankPlan.RerankLeg(
             RerankLegType.VECTOR_LEG,
