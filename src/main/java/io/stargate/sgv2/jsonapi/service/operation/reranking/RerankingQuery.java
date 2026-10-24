@@ -55,7 +55,7 @@ public class RerankingQuery implements Recordable {
       return new RerankingQuery(rerankQuery, Source.OPTIONS);
     }
 
-    var vectorizeQuery = command.sortClause().vectorizeSort();
+    var vectorizeQuery = command.sortClause().vectorizeText();
     // will never be blank, but double-checking for safety
     if (vectorizeQuery != null && !vectorizeQuery.isBlank()) {
       return new RerankingQuery(vectorizeQuery, Source.VECTORIZE);

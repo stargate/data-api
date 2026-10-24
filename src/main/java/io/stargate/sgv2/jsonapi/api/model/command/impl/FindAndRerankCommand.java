@@ -208,6 +208,12 @@ public record FindAndRerankCommand(
 
     private static final String ERROR_CONTEXT = "hybridLimits";
 
+    /** hybridLimits.$vector */
+    public static final String VECTOR_LIMIT_FIELD = ERROR_CONTEXT + "." + VECTOR_EMBEDDING_FIELD;
+
+    /** hybridLimits.$lexical */
+    public static final String LEXICAL_LIMIT_FIELD = ERROR_CONTEXT + "." + LEXICAL_CONTENT_FIELD;
+
     // user can specify the limit as a single number node, or as an object with $vector and $lexical
     // this is macher for the later
     //
@@ -238,7 +244,7 @@ public record FindAndRerankCommand(
     }
 
     // Range validation against dynamic OperationsConfig bounds happens later in
-    // FindAndRerankOperationBuilder.build(); the deserializer only handles JSON shape.
+    // FindAndRerankPlanner.plan(); the deserializer only handles JSON shape.
     private HybridLimits deserialize(JsonParser jsonParser, NumericNode limitsNumber) {
       var limit = limitsNumber.asInt();
       return new HybridLimits(

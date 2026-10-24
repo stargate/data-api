@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
@@ -101,10 +102,7 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    new FindAndRerankOperationBuilder(commandContext)
-        .withCommand(command)
-        .withFindCommandResolver(findCommandResolver)
-        .build();
+    build(commandContext, command);
 
     assertThat(commandContext.getHybridLimits().vectorLimit())
         .isEqualTo(RerankingConstants.HybridSearchLimits.MAX);
@@ -129,12 +127,7 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    assertThatThrownBy(
-            () ->
-                new FindAndRerankOperationBuilder(commandContext)
-                    .withCommand(command)
-                    .withFindCommandResolver(findCommandResolver)
-                    .build())
+    assertThatThrownBy(() -> build(commandContext, command))
         .isInstanceOf(RequestException.class)
         .hasMessageContaining("hybridLimits.$vector")
         .hasMessageContaining("101")
@@ -159,12 +152,7 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    assertThatThrownBy(
-            () ->
-                new FindAndRerankOperationBuilder(commandContext)
-                    .withCommand(command)
-                    .withFindCommandResolver(findCommandResolver)
-                    .build())
+    assertThatThrownBy(() -> build(commandContext, command))
         .isInstanceOf(RequestException.class)
         .hasMessageContaining("hybridLimits.$lexical")
         .hasMessageContaining("101")
@@ -189,12 +177,7 @@ class FindAndRerankOperationBuilderTest {
                     }
                     """);
 
-    assertThatThrownBy(
-            () ->
-                new FindAndRerankOperationBuilder(commandContext)
-                    .withCommand(command)
-                    .withFindCommandResolver(findCommandResolver)
-                    .build())
+    assertThatThrownBy(() -> build(commandContext, command))
         .isInstanceOf(RequestException.class)
         .hasMessageContaining(
             "The collection without a lexical index: %s.%s."
@@ -219,11 +202,7 @@ class FindAndRerankOperationBuilderTest {
                     }
                     """);
 
-    var operation =
-        new FindAndRerankOperationBuilder(commandContext)
-            .withCommand(command)
-            .withFindCommandResolver(findCommandResolver)
-            .build();
+    var operation = build(commandContext, command);
   }
 
   @Test
@@ -244,12 +223,7 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    assertThatThrownBy(
-            () ->
-                new FindAndRerankOperationBuilder(commandContext)
-                    .withCommand(command)
-                    .withFindCommandResolver(findCommandResolver)
-                    .build())
+    assertThatThrownBy(() -> build(commandContext, command))
         .isInstanceOf(RequestException.class)
         .hasMessageContaining("hybridLimits.$vector")
         .hasMessageContaining("must be between 1 and 100");
@@ -273,10 +247,7 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    new FindAndRerankOperationBuilder(commandContextLow)
-        .withCommand(commandLow)
-        .withFindCommandResolver(findCommandResolver)
-        .build();
+    build(commandContextLow, commandLow);
 
     var commandContextHigh = commandContext();
     var commandHigh =
@@ -294,10 +265,7 @@ class FindAndRerankOperationBuilderTest {
             }
             """);
 
-    new FindAndRerankOperationBuilder(commandContextHigh)
-        .withCommand(commandHigh)
-        .withFindCommandResolver(findCommandResolver)
-        .build();
+    build(commandContextHigh, commandHigh);
   }
 
   @Test
@@ -345,16 +313,22 @@ class FindAndRerankOperationBuilderTest {
       FindAndRerankCommand command) {
 
     var ex =
-        assertThrowsExactly(
-            RequestException.class,
-            () ->
-                new FindAndRerankOperationBuilder(commandContext)
-                    .withCommand(command)
-                    .withFindCommandResolver(findCommandResolver)
-                    .build(),
-            context);
+        assertThrowsExactly(RequestException.class, () -> build(commandContext, command), context);
 
     assertThat(ex.code).as(context).isEqualTo(RequestException.Code.MISSING_RERANK_ON.name());
+  }
+
+  /**
+   * Makes the plan and builds the operation, the same way {@link FindAndRerankCommandResolver}
+   * does.
+   */
+  private Operation<CollectionSchemaObject> build(
+      CommandContext<CollectionSchemaObject> commandContext, FindAndRerankCommand command) {
+    return new FindAndRerankOperationBuilder(commandContext)
+        .withCommand(command)
+        .withPlan(FindAndRerankPlanner.plan(command, commandContext))
+        .withFindCommandResolver(findCommandResolver)
+        .build();
   }
 
   private FindAndRerankCommand command(String json) throws Exception {
