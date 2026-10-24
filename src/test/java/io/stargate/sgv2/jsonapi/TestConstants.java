@@ -55,6 +55,8 @@ public class TestConstants {
 
   public final String APP_NAME;
   public final DatabaseType DATABASE_TYPE;
+
+  /** The app's factory in a QuarkusTest, ASTRA otherwise */
   public final TenantFactory SINGLETON_TENANT_FACTORY;
 
   // ============================================================
@@ -152,9 +154,14 @@ public class TestConstants {
 
     DATABASE_TYPE = DatabaseType.ASTRA;
     var tenantId = "tenant-" + CORRELATION_ID;
-    TenantFactory.reset();
-    TenantFactory.initialize(DATABASE_TYPE);
-    TENANT = TenantFactory.instance().create(tenantId);
+    // NOTE: a QuarkusTest shares this singleton with the app, so only init it when unset
+    try {
+      TenantFactory.instance();
+    } catch (IllegalStateException notInitialized) {
+      TenantFactory.initialize(DATABASE_TYPE);
+    }
+    // not from the factory, which may not be ASTRA
+    TENANT = Tenant.create(DATABASE_TYPE, tenantId);
 
     SINGLETON_TENANT_FACTORY = TenantFactory.instance();
 

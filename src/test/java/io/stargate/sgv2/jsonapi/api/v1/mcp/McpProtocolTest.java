@@ -3,10 +3,14 @@ package io.stargate.sgv2.jsonapi.api.v1.mcp;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertResponseComplete;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.request;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.rpcPayload;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.toolPayload;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -30,5 +34,27 @@ class McpProtocolTest {
       assertThat(response.header("Mcp-Session-Id")).isNull();
       assertThat(response.jsonPath().getList("result.tools.name")).isNotEmpty();
     }
+  }
+
+  @Test
+  void callsToolAfterTestConstantsWithoutChangingAppTenant() {
+    // build one here so the check does not depend on test order
+    new TestConstants();
+
+    var tool = CommandName.Names.FIND_EMBEDDING_PROVIDERS;
+    var response =
+        request("tools/call")
+            .header("Token", "protocol-test-credential")
+            .header("Mcp-Name", tool)
+            .body(toolPayload(1, tool, Map.of()))
+            .post("/v1/mcp");
+
+    // reaching the feature check means the tenant resolved
+    var result = assertResponseComplete(response, 1);
+    assertThat(result.getBoolean("isError")).as(result.encode()).isTrue();
+    var error = result.getJsonObject("structuredContent").getJsonArray("errors").getJsonObject(0);
+    assertThat(error.getString("errorCode"))
+        .as(result.encode())
+        .isEqualTo(SchemaException.Code.MCP_FEATURE_NOT_ENABLED.name());
   }
 }
