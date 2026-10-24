@@ -12,7 +12,7 @@ import java.util.Map;
 
 /** Shared wire format for raw HTTP tests that do not initialize an MCP client session. */
 final class McpHttpTestSupport {
-  private static final String PROTOCOL_VERSION = "2026-07-28";
+  private static final String CURRENT_PROTOCOL_VERSION = "2026-07-28";
 
   private McpHttpTestSupport() {}
 
@@ -20,7 +20,7 @@ final class McpHttpTestSupport {
     return given()
         .contentType(ContentType.JSON)
         .accept("application/json, text/event-stream")
-        .header("MCP-Protocol-Version", PROTOCOL_VERSION)
+        .header("MCP-Protocol-Version", CURRENT_PROTOCOL_VERSION)
         .header("Mcp-Method", method);
   }
 
@@ -34,13 +34,13 @@ final class McpHttpTestSupport {
         "_meta",
         Map.of(
             "io.modelcontextprotocol/protocolVersion",
-            PROTOCOL_VERSION,
+            CURRENT_PROTOCOL_VERSION,
             "io.modelcontextprotocol/clientCapabilities",
             Map.of()));
     return Map.of("jsonrpc", "2.0", "id", id, "method", method, "params", requestParams);
   }
 
-  static JsonObject completeResult(Response response, int id) {
+  static JsonObject assertResponseComplete(Response response, int id) {
     assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
     var body = new JsonObject(response.asString());
     assertThat(body.getInteger("id")).isEqualTo(id);
@@ -50,7 +50,7 @@ final class McpHttpTestSupport {
     return result;
   }
 
-  static JsonObject readableResult(JsonObject result) {
+  static JsonObject assertResultReadable(JsonObject result) {
     var content = result.getJsonArray("content");
     assertThat(content).hasSize(1);
     assertThat(content.getJsonObject(0).getString("type")).isEqualTo("text");

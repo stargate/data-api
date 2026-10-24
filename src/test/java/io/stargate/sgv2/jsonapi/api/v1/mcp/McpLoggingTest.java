@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.completeResult;
-import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.readableResult;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertResponseComplete;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertResultReadable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -153,7 +153,7 @@ class McpLoggingTest {
             .post(mcpPath());
 
     var requestId =
-        readableResult(completeResult(response, 1))
+        assertResultReadable(assertResponseComplete(response, 1))
             .getJsonObject("status")
             .getJsonObject("trace")
             .getJsonObject("TraceSession")

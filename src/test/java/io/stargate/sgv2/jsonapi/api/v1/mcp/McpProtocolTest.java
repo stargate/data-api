@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
-import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.completeResult;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertResponseComplete;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.request;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.rpcPayload;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,11 +21,12 @@ class McpProtocolTest {
     for (int id = 1; id <= 2; id++) {
       var response =
           request("tools/list")
-              // Existing header identity fixture only. OAuth admission is tracked in #2642.
+              // Header auth checks only that a token is present. Database requests validate it,
+              // but tools/list returns metadata without accessing the database.
               .header("Token", "protocol-test-credential")
               .body(rpcPayload(id, "tools/list", Map.of()))
               .post("/v1/mcp");
-      completeResult(response, id);
+      assertResponseComplete(response, id);
       assertThat(response.header("Mcp-Session-Id")).isNull();
       assertThat(response.jsonPath().getList("result.tools.name")).isNotEmpty();
     }

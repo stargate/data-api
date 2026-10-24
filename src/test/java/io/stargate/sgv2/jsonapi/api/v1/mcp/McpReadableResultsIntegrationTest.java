@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.completeResult;
-import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.readableResult;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertResponseComplete;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertResultReadable;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.request;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.toolPayload;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,7 +43,7 @@ class McpReadableResultsIntegrationTest {
             .asString();
     var expected = new JsonObject(httpResponse);
 
-    assertThat(readableResult(result)).isEqualTo(expected);
+    assertThat(assertResultReadable(result)).isEqualTo(expected);
     assertThat(result.getJsonObject("_meta").getJsonObject("status"))
         .isEqualTo(expected.getJsonObject("status"));
   }
@@ -55,7 +55,7 @@ class McpReadableResultsIntegrationTest {
     var errors = result.getJsonObject("structuredContent").getJsonArray("errors");
     assertThat(errors.getJsonObject(0).getString("errorCode"))
         .isEqualTo(SchemaException.Code.MCP_FEATURE_NOT_ENABLED.name());
-    assertThat(readableResult(result)).isEqualTo(result.getJsonObject("structuredContent"));
+    assertThat(assertResultReadable(result)).isEqualTo(result.getJsonObject("structuredContent"));
   }
 
   private JsonObject callTool(boolean mcpEnabled) {
@@ -67,6 +67,6 @@ class McpReadableResultsIntegrationTest {
             .header("Mcp-Name", TOOL_NAME)
             .body(toolPayload(1, TOOL_NAME, Map.of()))
             .post("/v1/mcp");
-    return completeResult(response, 1);
+    return assertResponseComplete(response, 1);
   }
 }
