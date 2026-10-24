@@ -6,17 +6,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
@@ -35,6 +38,7 @@ import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFac
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCache;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.util.LoggerTestWrapper;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
@@ -54,20 +58,21 @@ class McpResourceTest {
 
   private static final TestConstants TEST_CONSTANTS = new TestConstants();
 
+  private final ObjectMapper objectMapper = spy(new ObjectMapper());
   private final MeteredCommandProcessor commandProcessor = mock(MeteredCommandProcessor.class);
   private final SchemaObjectCache schemaObjectCache = mock(SchemaObjectCache.class);
 
   @Test
   void closesContextOnSuccess() throws Exception {
     var context = commandContext(true);
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
     var result = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).build();
     when(commandProcessor.processCommand(context, command))
         .thenReturn(Uni.createFrom().item(result));
 
     var response =
         mcpResource()
-            .processCommand(Uni.createFrom().item(context), command)
+            .processCommand(() -> Uni.createFrom().item(context), command)
             .await()
             .atMost(Duration.ofSeconds(5));
 
@@ -78,14 +83,14 @@ class McpResourceTest {
   @Test
   void closesContextOnFailure() throws Exception {
     var context = commandContext(true);
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
     when(commandProcessor.processCommand(context, command))
         .thenReturn(Uni.createFrom().failure(new RuntimeException("processor failed")));
 
     assertThatThrownBy(
             () ->
                 mcpResource()
-                    .processCommand(Uni.createFrom().item(context), command)
+                    .processCommand(() -> Uni.createFrom().item(context), command)
                     .await()
                     .atMost(Duration.ofSeconds(5)))
         .hasMessage("processor failed");
@@ -95,14 +100,14 @@ class McpResourceTest {
   @Test
   void closesContextWhenProcessorThrowsSynchronously() throws Exception {
     var context = commandContext(true);
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
     var failure = new IllegalStateException("processor failed before returning a Uni");
     when(commandProcessor.processCommand(context, command)).thenThrow(failure);
 
     assertThatThrownBy(
             () ->
                 mcpResource()
-                    .processCommand(Uni.createFrom().item(context), command)
+                    .processCommand(() -> Uni.createFrom().item(context), command)
                     .await()
                     .atMost(Duration.ofSeconds(5)))
         .isSameAs(failure);
@@ -118,7 +123,7 @@ class McpResourceTest {
     assertThatThrownBy(
             () ->
                 mcpResource()
-                    .processCommand(Uni.createFrom().item(context), mock(KeyspaceCommand.class))
+                    .processCommand(() -> Uni.createFrom().item(context), keyspaceCommand())
                     .await()
                     .atMost(Duration.ofSeconds(5)))
         .isInstanceOf(IllegalArgumentException.class);
@@ -129,11 +134,11 @@ class McpResourceTest {
   @Test
   void closesContextWhenFeatureDisabled() throws Exception {
     var context = commandContext(false);
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
 
     var response =
         mcpResource()
-            .processCommand(Uni.createFrom().item(context), command)
+            .processCommand(() -> Uni.createFrom().item(context), command)
             .await()
             .atMost(Duration.ofSeconds(5));
 
@@ -145,13 +150,13 @@ class McpResourceTest {
   @Test
   void closesContextOnCancellation() throws Exception {
     var context = commandContext(true);
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
     when(commandProcessor.processCommand(context, command))
         .thenReturn(Uni.createFrom().emitter(emitter -> {}));
 
     var cancellable =
         mcpResource()
-            .processCommand(Uni.createFrom().item(context), command)
+            .processCommand(() -> Uni.createFrom().item(context), command)
             .subscribe()
             .with(response -> {}, failure -> {});
     cancellable.cancel();
@@ -163,14 +168,14 @@ class McpResourceTest {
   void closeFailureDoesNotReplaceResult() throws Exception {
     var context = commandContext(true);
     doThrow(new Exception("close failed")).when(context).close();
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
     var result = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).build();
     when(commandProcessor.processCommand(context, command))
         .thenReturn(Uni.createFrom().item(result));
 
     var response =
         mcpResource()
-            .processCommand(Uni.createFrom().item(context), command)
+            .processCommand(() -> Uni.createFrom().item(context), command)
             .await()
             .atMost(Duration.ofSeconds(5));
 
@@ -182,14 +187,14 @@ class McpResourceTest {
   void closeFailureDoesNotReplaceError() throws Exception {
     var context = commandContext(true);
     doThrow(new Exception("close failed")).when(context).close();
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
     when(commandProcessor.processCommand(context, command))
         .thenReturn(Uni.createFrom().failure(new RuntimeException("processor failed")));
 
     assertThatThrownBy(
             () ->
                 mcpResource()
-                    .processCommand(Uni.createFrom().item(context), command)
+                    .processCommand(() -> Uni.createFrom().item(context), command)
                     .await()
                     .atMost(Duration.ofSeconds(5)))
         .hasMessage("processor failed");
@@ -204,13 +209,51 @@ class McpResourceTest {
 
     var context =
         mcpResourceWithRequest()
-            .buildKeyspaceContext(TEST_CONSTANTS.KEYSPACE_NAME, mock(KeyspaceCommand.class))
+            .buildKeyspaceContext(TEST_CONSTANTS.KEYSPACE_NAME, keyspaceCommand())
             .await()
             .atMost(Duration.ofSeconds(5));
 
     // The schema lookup and the built command context must see the same request, so the
     // call has one request ID from start to finish.
     assertThat(context.requestContext()).isSameAs(requestContextCaptor.getValue());
+  }
+
+  @Test
+  void serializationFailureIsLoggedAsTheFinalToolOutcome() throws Exception {
+    var context = commandContext(true);
+    var command = keyspaceCommand();
+    when(commandProcessor.processCommand(context, command))
+        .thenReturn(
+            Uni.createFrom().item(CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).build()));
+    doThrow(new JsonProcessingException("synthetic-serialization-secret") {})
+        .when(objectMapper)
+        .writeValueAsString(any());
+
+    try (var logs = new LoggerTestWrapper(McpRequestLogging.class)) {
+      var response =
+          mcpResource()
+              .processCommand(() -> Uni.createFrom().item(context), command)
+              .await()
+              .atMost(Duration.ofSeconds(5));
+      assertThat(response.isError()).isTrue();
+      assertThat(logs.logRecords())
+          .singleElement()
+          .satisfies(
+              record -> {
+                assertThat(record.getMessage()).contains("MCP command completed");
+                assertThat(record.getParameters())
+                    .contains(true)
+                    .doesNotContain("synthetic-serialization-secret");
+                assertThat(record.getThrown()).isNull();
+              });
+    }
+    verify(context).close();
+  }
+
+  private KeyspaceCommand keyspaceCommand() {
+    var command = mock(KeyspaceCommand.class);
+    when(command.commandName()).thenReturn(CommandName.FIND_COLLECTIONS);
+    return command;
   }
 
   @SuppressWarnings("unchecked")
@@ -239,7 +282,7 @@ class McpResourceTest {
       Instance<RequestTenantResolver> tenantResolver,
       Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
     return new McpResource(
-        new ObjectMapper(),
+        objectMapper,
         commandProcessor,
         mock(MeterRegistry.class),
         mock(JsonProcessingMetricsReporter.class),

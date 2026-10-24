@@ -37,12 +37,14 @@ import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsResolver;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
@@ -59,6 +61,7 @@ import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCache;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
+import io.stargate.sgv2.jsonapi.util.LoggerTestWrapper;
 import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
@@ -66,6 +69,7 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.WebApplicationException;
 import java.security.Principal;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
@@ -92,6 +96,7 @@ class McpSetupErrorsTest {
   private final EmbeddingProviderFactory embeddingProviderFactory =
       mock(EmbeddingProviderFactory.class);
   private final RequestTenantResolver tenantResolver = mock(RequestTenantResolver.class);
+  private final RoutingContext routingContext = mock(RoutingContext.class);
   private final GeneralCommand generalCommand = mock(GeneralCommand.class);
   private final KeyspaceCommand keyspaceCommand = mock(KeyspaceCommand.class);
   private final CollectionCommand collectionCommand = mock(CollectionCommand.class);
@@ -100,6 +105,9 @@ class McpSetupErrorsTest {
 
   @BeforeEach
   void setUp() {
+    when(generalCommand.commandName()).thenReturn(CommandName.FIND_EMBEDDING_PROVIDERS);
+    when(keyspaceCommand.commandName()).thenReturn(CommandName.FIND_COLLECTIONS);
+    when(collectionCommand.commandName()).thenReturn(CommandName.COUNT_DOCUMENTS);
     // Supply only application configuration. MCP enablement still comes from real request headers.
     var commandConfig = mock(CommandConfig.class);
     when(commandConfig.get(FeaturesConfig.class)).thenReturn(() -> Map.of());
@@ -109,7 +117,15 @@ class McpSetupErrorsTest {
     var headers = MultiMap.caseInsensitiveMultiMap().add(ApiFeature.MCP.httpHeaderName(), "true");
     var httpRequest = mock(HttpServerRequest.class);
     when(httpRequest.headers()).thenReturn(headers);
-    var routingContext = mock(RoutingContext.class);
+    var routingData = new HashMap<String, Object>();
+    when(routingContext.get(anyString()))
+        .thenAnswer(invocation -> routingData.get(invocation.getArgument(0)));
+    when(routingContext.put(anyString(), any()))
+        .thenAnswer(
+            invocation -> {
+              routingData.put(invocation.getArgument(0), invocation.getArgument(1));
+              return routingContext;
+            });
     when(routingContext.request()).thenReturn(httpRequest);
     var principal = mock(Principal.class);
     when(principal.getName()).thenReturn("test-token");
@@ -165,7 +181,7 @@ class McpSetupErrorsTest {
         assertDoesNotThrow(
             () ->
                 resource.processCommand(
-                    resource.buildKeyspaceContext(null, keyspaceCommand), keyspaceCommand));
+                    () -> resource.buildKeyspaceContext(null, keyspaceCommand), keyspaceCommand));
 
     verifyNoInteractions(tenantResolver, schemaObjectCache, commandProcessor);
     assertSetupError(response, ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
@@ -250,6 +266,29 @@ class McpSetupErrorsTest {
             call(CommandScope.COLLECTION), ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
 
     assertThat(error.toString()).doesNotContain(SECRET, IllegalStateException.class.getName());
+  }
+
+  @Test
+  void unexpectedSetupFailureRecordsASafeDiagnostic() throws Exception {
+    when(schemaObjectCache.getTableBased(any(), any(), any(), anyBoolean()))
+        .thenReturn(Uni.createFrom().failure(new IllegalStateException(SECRET)));
+    var requestId = RequestContext.getOrCreateRequestId(routingContext);
+
+    try (var logs = new LoggerTestWrapper(McpRequestLogging.class)) {
+      assertSetupError(
+          call(CommandScope.COLLECTION), ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+      assertThat(logs.logRecords())
+          .filteredOn(record -> record.getMessage().contains("MCP setup failed"))
+          .singleElement()
+          .satisfies(
+              record -> {
+                assertThat(record.getMessage())
+                    .contains("category=unexpected")
+                    .doesNotContain(SECRET);
+                assertThat(record.getParameters()).containsExactly(requestId);
+                assertThat(record.getThrown()).isNull();
+              });
+    }
   }
 
   @Test
@@ -363,10 +402,11 @@ class McpSetupErrorsTest {
   private Uni<ToolResponse> call(CommandScope scope) {
     return switch (scope) {
       case DATABASE ->
-          resource.processCommand(resource.buildDatabaseContext(generalCommand), generalCommand);
+          resource.processCommand(
+              () -> resource.buildDatabaseContext(generalCommand), generalCommand);
       case KEYSPACE ->
           resource.processCommand(
-              resource.buildKeyspaceContext(TEST_CONSTANTS.KEYSPACE_NAME, keyspaceCommand),
+              () -> resource.buildKeyspaceContext(TEST_CONSTANTS.KEYSPACE_NAME, keyspaceCommand),
               keyspaceCommand);
       case COLLECTION ->
           resource.processCollectionCommand(
