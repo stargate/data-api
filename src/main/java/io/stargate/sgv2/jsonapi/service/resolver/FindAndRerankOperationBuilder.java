@@ -248,7 +248,10 @@ class FindAndRerankOperationBuilder {
     var vectorLeg =
         leg(RerankLegType.VECTOR_LEG)
             .orElseThrow(
-                () -> new IllegalArgumentException("buildVectorRead() - no vector or vectorize"));
+                () ->
+                    new IllegalStateException(
+                        "buildVectorRead() - plan has no VECTOR_LEG, legs=%s"
+                            .formatted(plan.legs())));
 
     // we can sort with either vectorize OR a BYO vector
     var sortClause = new SortClause(new ArrayList<>());

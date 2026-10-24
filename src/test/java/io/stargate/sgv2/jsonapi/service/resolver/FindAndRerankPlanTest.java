@@ -253,6 +253,20 @@ class FindAndRerankPlanTest {
             new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, VECTOR, null, 20)));
   }
 
+  @Test
+  void rejectsReadLimitBelowOne() {
+    assertThatThrownBy(
+            () -> new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, VECTOR, null, 0))
+        .isExactlyInstanceOf(IllegalArgumentException.class)
+        .hasMessage("readLimit must be at least 1, readLimit=0");
+  }
+
+  @Test
+  void acceptsReadLimitOfOne() {
+    assertThatCode(() -> new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, VECTOR, null, 1))
+        .doesNotThrowAnyException();
+  }
+
   // ===========================================================================================
   // RerankStep
   // ===========================================================================================

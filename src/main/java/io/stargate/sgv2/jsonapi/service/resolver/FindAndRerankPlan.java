@@ -15,7 +15,8 @@ import java.util.Set;
  * VectorizeStep}, read with each {@link RerankLeg}, then rerank what the legs read with the {@link
  * RerankStep}.
  *
- * <p>Made by {@link FindAndRerankPlanner}.
+ * <p>Made by {@link FindAndRerankPlanner}, {@link FindAndRerankOperationBuilder} builds the tasks
+ * from it.
  *
  * @param vectorize The vectorize step for the vector leg, <code>null</code> when the command does
  *     not vectorize.
@@ -47,14 +48,14 @@ record FindAndRerankPlan(
     }
 
     // the vectorize step is for a vector leg without a vector, and only for that
-    var vectorizedLeg =
+    var needsVectorizeStep =
         legs.stream()
-            .anyMatch(leg -> leg.legType() == RerankLegType.VECTOR_LEG && leg.vector == null);
-    if (vectorizedLeg && vectorize == null) {
+            .anyMatch(leg -> leg.legType() == RerankLegType.VECTOR_LEG && leg.vector() == null);
+    if (needsVectorizeStep && vectorize == null) {
       throw new IllegalArgumentException(
           "vectorize must not be null when the VECTOR_LEG has no vector");
     }
-    if (!vectorizedLeg && vectorize != null) {
+    if (!needsVectorizeStep && vectorize != null) {
       throw new IllegalArgumentException(
           "vectorize must be null when there is no VECTOR_LEG without a vector");
     }
@@ -110,6 +111,9 @@ record FindAndRerankPlan(
             throw new IllegalArgumentException("lexicalText must be null for a FILTER_LEG");
           }
         }
+      }
+      if (readLimit < 1) {
+        throw new IllegalArgumentException("readLimit must be at least 1, readLimit=" + readLimit);
       }
     }
 

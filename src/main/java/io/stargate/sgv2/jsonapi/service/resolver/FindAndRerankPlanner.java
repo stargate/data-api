@@ -22,7 +22,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** Validates a findAndRerank command and makes the {@link FindAndRerankPlan} for it. */
+/**
+ * Validates a findAndRerank command and makes the {@link FindAndRerankPlan} for it.
+ *
+ * <p>{@link FindAndRerankCommandResolver} calls {@link #plan} and gives the plan to {@link
+ * FindAndRerankOperationBuilder}, which builds the tasks from it. Deciding what to run is kept
+ * apart from building the tasks, so each can be tested on its own.
+ */
 class FindAndRerankPlanner {
 
   private FindAndRerankPlanner() {
@@ -152,7 +158,9 @@ class FindAndRerankPlanner {
 
   /**
    * The legs of a $hybrid sort: always a vector leg, and a lexical leg when the sort has lexical
-   * text. Throws when the sort has no vectorize text and no vector for the vector leg.
+   * text and the collection has a lexical index. Without a lexical index the $hybrid text skips the
+   * lexical leg, and an explicit $lexical throws. Throws when the sort has no vectorize text and no
+   * vector for the vector leg.
    */
   private static List<FindAndRerankPlan.RerankLeg> multiLegs(
       FindAndRerankCommand command, CollectionSchemaObject schemaObject) {
@@ -197,7 +205,10 @@ class FindAndRerankPlanner {
     return legs;
   }
 
-  /** Vectorize the sort text with the vectorize service of the collection. */
+  /**
+   * The {@link FindAndRerankPlan.VectorizeStep} for the vectorize text of the sort, using the
+   * vectorize column of the collection.
+   */
   private static FindAndRerankPlan.VectorizeStep vectorizeStep(
       FindAndRerankSort sort, CollectionSchemaObject schemaObject) {
 
