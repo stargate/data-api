@@ -20,7 +20,14 @@ public class GeneralCommandTools {
 
   @Inject McpResource mcpResource;
 
-  @Tool(description = "Command that creates a keyspace.")
+  @Tool(
+      description = "Command that creates a keyspace.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> createKeyspace(
       @ToolArg(description = "Required name of the new Keyspace") String name,
       @ToolArg(description = "Options for creating a new keyspace.", required = false)
@@ -30,7 +37,14 @@ public class GeneralCommandTools {
     return mcpResource.processCommand(() -> mcpResource.buildDatabaseContext(command), command);
   }
 
-  @Tool(description = "Command that deletes a Keyspace.")
+  @Tool(
+      description = "Command that deletes a Keyspace.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> dropKeyspace(
       @ToolArg(description = "Required name of the Keyspace to remove") @NotEmpty String name) {
 
@@ -38,14 +52,28 @@ public class GeneralCommandTools {
     return mcpResource.processCommand(() -> mcpResource.buildDatabaseContext(command), command);
   }
 
-  @Tool(description = "Command that lists all available keyspaces")
+  @Tool(
+      description = "Command that lists all available keyspaces",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = true,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> findKeyspaces() {
 
     var command = new FindKeyspacesCommand();
     return mcpResource.processCommand(() -> mcpResource.buildDatabaseContext(command), command);
   }
 
-  @Tool(description = "Lists the available Embedding Providers for this database.")
+  @Tool(
+      description = "Lists the available Embedding Providers for this database.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = true,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> findEmbeddingProviders(
       @ToolArg(
               description =
@@ -57,7 +85,14 @@ public class GeneralCommandTools {
     return mcpResource.processCommand(() -> mcpResource.buildDatabaseContext(command), command);
   }
 
-  @Tool(description = "Lists the available Reranking Providers for this database.")
+  @Tool(
+      description = "Lists the available Reranking Providers for this database.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = true,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> findRerankingProviders(
       @ToolArg(
               description =

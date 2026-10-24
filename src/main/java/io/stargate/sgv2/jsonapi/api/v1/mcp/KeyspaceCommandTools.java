@@ -22,7 +22,14 @@ public class KeyspaceCommandTools {
    * Below are converted from {@link
    * io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand}
    */
-  @Tool(description = "Command that creates a collection.")
+  @Tool(
+      description = "Command that creates a collection.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> createCollection(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
       @ToolArg(description = "Name of the new collection") String collection,
@@ -34,7 +41,14 @@ public class KeyspaceCommandTools {
         () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
-  @Tool(description = "Command that deletes a collection if one exists.")
+  @Tool(
+      description = "Command that deletes a collection if one exists.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> deleteCollection(
       @ToolArg(description = "Name of the existing Keyspace") String keyspace,
       @ToolArg(description = "Name of the existing Collection") String collection) {
@@ -44,7 +58,14 @@ public class KeyspaceCommandTools {
         () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
-  @Tool(description = "Command that lists all available collections in a keyspace.")
+  @Tool(
+      description = "Command that lists all available collections in a keyspace.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = true,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> findCollections(
       @ToolArg(description = "Name of the existing Keyspace") String keyspace,
       @ToolArg(description = "include collection properties.", required = false)
@@ -58,7 +79,14 @@ public class KeyspaceCommandTools {
   /**
    * Below are converted from {@link io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand}
    */
-  @Tool(description = "Command that alters a user defined type.")
+  @Tool(
+      description = "Command that alters a user defined type.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = false,
+              openWorldHint = false))
   public Uni<ToolResponse> alterType(
       @ToolArg(description = "Keyspace of the type to alter") String keyspace,
       @ToolArg(description = "Name of the type to alter") String name,
@@ -71,7 +99,14 @@ public class KeyspaceCommandTools {
         () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
-  @Tool(description = "Command that creates an API Table.")
+  @Tool(
+      description = "Command that creates an API Table.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> createTable(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
       @ToolArg(description = "Name of the new Table") String table,
@@ -84,7 +119,14 @@ public class KeyspaceCommandTools {
         () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
-  @Tool(description = "Command that creates a user defined type.")
+  @Tool(
+      description = "Command that creates a user defined type.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> createType(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
       @ToolArg(description = "Name of the type to create") String name,
@@ -97,7 +139,14 @@ public class KeyspaceCommandTools {
         () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
-  @Tool(description = "Command that drops an index for a column.")
+  @Tool(
+      description = "Command that drops an index for a column.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> dropIndex(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
       @ToolArg(description = "Name of the Index to remove") String name,
@@ -109,7 +158,14 @@ public class KeyspaceCommandTools {
         () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
-  @Tool(description = "Command that drops a table if one exists.")
+  @Tool(
+      description = "Command that drops a table if one exists.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> dropTable(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
       @ToolArg(description = "Name of the Table to remove") String table,
@@ -121,7 +177,14 @@ public class KeyspaceCommandTools {
         () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
-  @Tool(description = "Command that drops a user defined type if one exists.")
+  @Tool(
+      description = "Command that drops a user defined type if one exists.",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = false,
+              destructiveHint = true,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> dropType(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
       @ToolArg(description = "Name of the Type to remove") String name,
@@ -133,7 +196,14 @@ public class KeyspaceCommandTools {
         () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
-  @Tool(description = "Command that lists all available tables in a keyspace")
+  @Tool(
+      description = "Command that lists all available tables in a keyspace",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = true,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> listTables(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
       @ToolArg(description = "Options for the `listTables` command.", required = false)
@@ -144,7 +214,14 @@ public class KeyspaceCommandTools {
         () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
-  @Tool(description = "Command that lists all available types in a keyspace")
+  @Tool(
+      description = "Command that lists all available types in a keyspace",
+      annotations =
+          @Tool.Annotations(
+              readOnlyHint = true,
+              destructiveHint = false,
+              idempotentHint = true,
+              openWorldHint = false))
   public Uni<ToolResponse> listTypes(
       @ToolArg(description = "Name of the existing keyspace") String keyspace,
       @ToolArg(description = "Options for the `listTypes` command.", required = false)
