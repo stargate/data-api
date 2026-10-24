@@ -252,8 +252,8 @@ class FindAndRerankOperationBuilder {
     var sortClause = new SortClause(new ArrayList<>());
     DeferredVectorize deferredVectorize = null;
 
-    if (vectorLeg.vector() == null) {
-      var vectorize = plan.vectorize();
+    var vectorize = plan.vectorize();
+    if (vectorize != null) {
       // pass the vector sort clause through so it will be updated when we get the vector
       deferredVectorize =
           new DeferredVectorize(
