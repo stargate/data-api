@@ -165,7 +165,7 @@ public class McpResource {
                     CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
                         .addThrowable(throwable)
                         .build();
-                return Uni.createFrom().item(errorResult.toToolResponse());
+                return Uni.createFrom().item(errorResult.toToolResponse(objectMapper));
               } else {
                 VectorColumnDefinition vectorColDef = null;
                 if (schemaObject.type() == SchemaObjectType.COLLECTION) {
@@ -211,7 +211,8 @@ public class McpResource {
   }
 
   /**
-   * Process a command and map its result to an MCP tool response.
+   * Process a command and map its result to an MCP tool response with readable text and structured
+   * content.
    *
    * @param contextUni The command context
    * @param command The command to execute
@@ -221,7 +222,7 @@ public class McpResource {
 
     return contextUni
         .flatMap(context -> executeCommand(context, command))
-        .map(CommandResult::toToolResponse);
+        .map(result -> result.toToolResponse(objectMapper));
   }
 
   private Uni<CommandResult> executeCommand(CommandContext<?> context, Command command) {

@@ -239,7 +239,7 @@ class McpResourceTest {
       Instance<RequestTenantResolver> tenantResolver,
       Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
     return new McpResource(
-        mock(ObjectMapper.class),
+        new ObjectMapper(),
         commandProcessor,
         mock(MeterRegistry.class),
         mock(JsonProcessingMetricsReporter.class),
