@@ -243,6 +243,8 @@ class FindAndRerankOperationBuilder {
   private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject>
       buildVectorRead(DeferredCommandResultAction deferredAction) {
 
+    // sanity check, the planner always makes a VECTOR_LEG
+    // TODO: GH #2597 - the builder should not need a VECTOR_LEG
     var vectorLeg =
         leg(RerankLegType.VECTOR_LEG)
             .orElseThrow(
