@@ -58,21 +58,13 @@ class FindAndRerankPlannerTest {
 
   private static final int DEFAULT_READ_LIMIT = RerankingConstants.HybridSearchLimits.DEFAULT;
 
-  /** The collection configs the cases run against. */
-  private enum Collection {
-    /** vector, vectorize, lexical and rerank */
-    VECTORIZE_LEXICAL,
-    /** vector, vectorize and rerank, no lexical index */
-    VECTORIZE_NO_LEXICAL,
-    /** vector without vectorize, lexical and rerank */
-    VECTOR_LEXICAL,
-    /** Same schema as VECTOR_LEXICAL, the providers config says the collection model is EOL. */
-    VECTOR_LEXICAL_EOL_MODEL,
-    /** lexical and rerank, no vector */
-    LEXICAL_NO_VECTOR,
-    /** vector without vectorize, no lexical index, rerank disabled */
-    VECTOR_NO_RERANK
-  }
+  // The lines of the errors that name the collection, formatted with the keyspace and collection
+  private static final String NO_VECTOR_LINE =
+      "The collection %s.%s does not have vectors enabled.";
+  private static final String NO_VECTORIZE_LINE =
+      "The collection %s.%s does not have vectorize enabled.";
+  private static final String NO_LEXICAL_INDEX_LINE =
+      "The collection without a lexical index: %s.%s.";
 
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -203,7 +195,29 @@ class FindAndRerankPlannerTest {
             """,
             Collection.VECTOR_LEXICAL,
             null,
-            List.of(vectorLeg(30), lexicalLeg("cows", 30))));
+            List.of(vectorLeg(30), lexicalLeg("cows", 30))),
+        Arguments.of(
+            "hybridLimits at the min of the bounds",
+            """
+            {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
+            """,
+            """
+            {"rerankQuery": "q", "rerankOn": "body", "hybridLimits": 1}
+            """,
+            Collection.VECTOR_LEXICAL,
+            null,
+            List.of(vectorLeg(1), lexicalLeg("cows", 1))),
+        Arguments.of(
+            "hybridLimits at the max of the bounds",
+            """
+            {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
+            """,
+            """
+            {"rerankQuery": "q", "rerankOn": "body", "hybridLimits": 100}
+            """,
+            Collection.VECTOR_LEXICAL,
+            null,
+            List.of(vectorLeg(100), lexicalLeg("cows", 100))));
   }
 
   // ===========================================================================================
@@ -309,6 +323,7 @@ class FindAndRerankPlannerTest {
   // Sorts the collection cannot run
   // ===========================================================================================
 
+  /** The error names the collection, the line is one of the *_LINE formats. */
   @ParameterizedTest(name = "{0}")
   @MethodSource("collectionSupportErrorCases")
   void rejectsSortTheCollectionCannotRun(
@@ -316,9 +331,17 @@ class FindAndRerankPlannerTest {
       String sort,
       Collection collection,
       Class<? extends APIException> exceptionClass,
-      ErrorCode<?> code)
+      ErrorCode<?> code,
+      String collectionLine)
       throws Exception {
-    assertPlanFails(description, command(sort, RERANK_OPTIONS), collection, exceptionClass, code);
+    var ex =
+        assertPlanFails(
+            description, command(sort, RERANK_OPTIONS), collection, exceptionClass, code);
+
+    assertThat(ex)
+        .as(description)
+        .hasMessageContaining(
+            collectionLine.formatted(TEST_CONSTANTS.KEYSPACE_NAME, TEST_CONSTANTS.COLLECTION_NAME));
   }
 
   static Stream<Arguments> collectionSupportErrorCases() {
@@ -330,7 +353,8 @@ class FindAndRerankPlannerTest {
             """,
             Collection.VECTOR_LEXICAL,
             SortException.class,
-            SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION),
+            SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION,
+            NO_VECTORIZE_LINE),
         Arguments.of(
             "$vectorize, collection without vectorize",
             """
@@ -338,7 +362,8 @@ class FindAndRerankPlannerTest {
             """,
             Collection.VECTOR_LEXICAL,
             SortException.class,
-            SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION),
+            SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION,
+            NO_VECTORIZE_LINE),
         Arguments.of(
             "$hybrid text, collection without vector",
             """
@@ -346,7 +371,8 @@ class FindAndRerankPlannerTest {
             """,
             Collection.LEXICAL_NO_VECTOR,
             SortException.class,
-            SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION),
+            SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION,
+            NO_VECTOR_LINE),
         Arguments.of(
             "$vectorize, collection without vector",
             """
@@ -354,13 +380,15 @@ class FindAndRerankPlannerTest {
             """,
             Collection.LEXICAL_NO_VECTOR,
             SortException.class,
-            SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION),
+            SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION,
+            NO_VECTOR_LINE),
         Arguments.of(
             "$vector, collection without vector",
             VECTOR_SORT,
             Collection.LEXICAL_NO_VECTOR,
             SortException.class,
-            SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION),
+            SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION,
+            NO_VECTOR_LINE),
         Arguments.of(
             "$lexical, collection without a lexical index",
             """
@@ -368,7 +396,8 @@ class FindAndRerankPlannerTest {
             """,
             Collection.VECTORIZE_NO_LEXICAL,
             SchemaException.class,
-            SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION));
+            SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION,
+            NO_LEXICAL_INDEX_LINE));
   }
 
   // ===========================================================================================
@@ -460,6 +489,22 @@ class FindAndRerankPlannerTest {
             RequestException.class,
             RequestException.Code.MISSING_RERANK_QUERY_TEXT),
         Arguments.of(
+            "no rerankOn, and no $vectorize field to rerank on",
+            """
+            {"rerankQuery": "q"}
+            """,
+            null,
+            RequestException.class,
+            RequestException.Code.MISSING_RERANK_ON),
+        Arguments.of(
+            "rerankOn blank, and no $vectorize field to rerank on",
+            """
+            {"rerankQuery": "q", "rerankOn": "   "}
+            """,
+            null,
+            RequestException.class,
+            RequestException.Code.MISSING_RERANK_ON),
+        Arguments.of(
             "rerankOn is not a valid path",
             """
             {"rerankQuery": "q", "rerankOn": "a&b"}
@@ -475,6 +520,49 @@ class FindAndRerankPlannerTest {
             """,
             ProjectionException.class,
             ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM));
+  }
+
+  /** hybridLimits outside the bounds in the config, the error names the field and the value. */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("hybridLimitsErrorCases")
+  void rejectsHybridLimitsOutsideBounds(String description, String options, String fieldAndValue)
+      throws Exception {
+    var ex =
+        assertPlanFails(
+            description,
+            command(VECTOR_SORT, options),
+            Collection.VECTOR_LEXICAL,
+            RequestException.class,
+            RequestException.Code.COMMAND_FIELD_VALUE_INVALID);
+
+    assertThat(ex)
+        .as(description)
+        .hasMessageContaining(fieldAndValue)
+        .hasMessageContaining("must be between 1 and 100 (inclusive)");
+  }
+
+  static Stream<Arguments> hybridLimitsErrorCases() {
+    return Stream.of(
+        Arguments.of(
+            "$vector limit above the max",
+            """
+            {"rerankQuery": "q", "rerankOn": "body",
+             "hybridLimits": {"$vector": 101, "$lexical": 50}}
+            """,
+            "Command field 'hybridLimits.$vector' value 101 not valid"),
+        Arguments.of(
+            "$lexical limit above the max",
+            """
+            {"rerankQuery": "q", "rerankOn": "body",
+             "hybridLimits": {"$vector": 50, "$lexical": 101}}
+            """,
+            "Command field 'hybridLimits.$lexical' value 101 not valid"),
+        Arguments.of(
+            "one limit for both legs below the min",
+            """
+            {"rerankQuery": "q", "rerankOn": "body", "hybridLimits": 0}
+            """,
+            "Command field 'hybridLimits.$vector' value 0 not valid"));
   }
 
   @Test
@@ -593,7 +681,8 @@ class FindAndRerankPlannerTest {
   // Helpers / no more tests below
   // ===========================================================================================
 
-  private void assertPlanFails(
+  /** Asserts planning fails with the exception and code, returns the exception for more checks. */
+  private APIException assertPlanFails(
       String description,
       FindAndRerankCommand command,
       Collection collection,
@@ -605,6 +694,7 @@ class FindAndRerankPlannerTest {
         assertThrowsExactly(
             exceptionClass, () -> FindAndRerankPlanner.plan(command, commandContext), description);
     assertThat(ex.code).as(description).isEqualTo(code.name());
+    return ex;
   }
 
   private FindAndRerankCommand command(String sort, String options) throws Exception {
@@ -686,5 +776,21 @@ class FindAndRerankPlannerTest {
 
   private static FindAndRerankPlan.RerankLeg lexicalLeg(String lexicalText, int readLimit) {
     return new FindAndRerankPlan.RerankLeg(RerankLegType.LEXICAL_LEG, null, lexicalText, readLimit);
+  }
+
+  /** The collection configs the cases run against. */
+  private enum Collection {
+    /** vector, vectorize, lexical and rerank */
+    VECTORIZE_LEXICAL,
+    /** vector, vectorize and rerank, no lexical index */
+    VECTORIZE_NO_LEXICAL,
+    /** vector without vectorize, lexical and rerank */
+    VECTOR_LEXICAL,
+    /** Same schema as VECTOR_LEXICAL, the providers config says the collection model is EOL. */
+    VECTOR_LEXICAL_EOL_MODEL,
+    /** lexical and rerank, no vector */
+    LEXICAL_NO_VECTOR,
+    /** vector without vectorize, no lexical index, rerank disabled */
+    VECTOR_NO_RERANK
   }
 }
