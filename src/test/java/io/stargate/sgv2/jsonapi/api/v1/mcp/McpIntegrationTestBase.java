@@ -180,12 +180,14 @@ public abstract class McpIntegrationTestBase {
     assertThat(response._meta()).containsOnlyKeys(MetaKey.SERVER_INFO);
     var serverInfo = (JsonObject) response._meta().get(MetaKey.SERVER_INFO);
     assertThat(serverInfo.getString("name")).isEqualTo("Stargate DATA API");
-    assertThat(serverInfo.getString("version")).isNotBlank();
+    assertThat(serverInfo.getString("version"))
+        .isEqualTo(
+            ConfigProvider.getConfig().getValue("quarkus.application.version", String.class));
   }
 
   /**
-   * Assert error response structure is valid with server metadata and readable content, then apply
-   * additional assertions on the error JsonArray extracted from structuredContent.
+   * Assert that an error response has server metadata and readable content. Then apply additional
+   * assertions to the error JsonArray extracted from structuredContent.
    *
    * @param errorsAssertions additional assertions to run on the error JsonArray
    */
@@ -205,8 +207,8 @@ public abstract class McpIntegrationTestBase {
   }
 
   /**
-   * Assert data only response is valid with server metadata and readable content, then apply
-   * additional assertions on the structuredContent holds the data.
+   * Assert that a data response has server metadata, readable content, and no error. Then apply
+   * additional assertions to the data held in structuredContent.
    *
    * @param dataAssertions additional assertions to run on the data JsonObject
    */
