@@ -22,11 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Validates a findAndRerank command and makes the {@link FindAndRerankPlan} for it.
- *
- * <p>Called by {@link FindAndRerankCommandResolver}.
- */
+/** Validates a findAndRerank command and makes the {@link FindAndRerankPlan} for it. */
 class FindAndRerankPlanner {
 
   private FindAndRerankPlanner() {
