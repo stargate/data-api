@@ -5,17 +5,16 @@ import static io.stargate.sgv2.jsonapi.TestConstants.rerankingProvidersConfig;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.test.InjectMock;
-import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.config.IntConfigWithBounds;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.APIException;
@@ -29,8 +28,6 @@ import io.stargate.sgv2.jsonapi.service.operation.reranking.RerankingQuery;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
-import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -43,8 +40,6 @@ import org.junit.jupiter.params.provider.MethodSource;
  * Tests for {@link FindAndRerankPlanner}: the legs it plans for each kind of sort, and the error
  * for each check.
  */
-@QuarkusTest
-@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 class FindAndRerankPlannerTest {
 
   private static final String RERANK_OPTIONS =
@@ -79,10 +74,7 @@ class FindAndRerankPlannerTest {
     VECTOR_NO_RERANK
   }
 
-  // @QuarkusTest needed for error template initialization and the OperationsConfig bounds
-  @InjectMock protected RequestContext dataApiRequestInfo;
-
-  @Inject ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   private final TestConstants TEST_CONSTANTS = new TestConstants();
 
@@ -638,7 +630,8 @@ class FindAndRerankPlannerTest {
 
   private CommandContext<CollectionSchemaObject> commandContext(Collection collection) {
     var commandContext =
-        TEST_CONSTANTS.collectionContext(CommandName.FIND_AND_RERANK, schema(collection));
+        TEST_CONSTANTS.collectionContext(
+            CommandName.FIND_AND_RERANK, schema(collection), commandConfig());
 
     // a real providers config, so rerank overrides are validated the same way as in production
     var modelStatus =
@@ -650,6 +643,24 @@ class FindAndRerankPlannerTest {
             rerankingProvidersConfig(
                 "nvidia", true, rerankingModelConfig(TestConstants.RERANK_MODEL, modelStatus)));
     return commandContext;
+  }
+
+  /** The config the planner reads, with the default hybridLimits bounds and limit. */
+  private static CommandConfig commandConfig() {
+    var hybridLimitBounds =
+        new IntConfigWithBounds(
+            RerankingConstants.HybridSearchLimits.MIN,
+            RerankingConstants.HybridSearchLimits.DEFAULT,
+            RerankingConstants.HybridSearchLimits.MAX);
+    var operationsConfig = mock(OperationsConfig.class);
+    when(operationsConfig.hybridSearchVectorLimit()).thenReturn(hybridLimitBounds);
+    when(operationsConfig.hybridSearchLexicalLimit()).thenReturn(hybridLimitBounds);
+    when(operationsConfig.defaultFindAndRerankLimit())
+        .thenReturn(OperationsConfig.DEFAULT_FIND_AND_RERANK_LIMIT);
+
+    var commandConfig = mock(CommandConfig.class);
+    when(commandConfig.get(OperationsConfig.class)).thenReturn(operationsConfig);
+    return commandConfig;
   }
 
   private CollectionSchemaObject schema(Collection collection) {

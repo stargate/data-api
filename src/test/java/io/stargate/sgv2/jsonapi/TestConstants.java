@@ -322,11 +322,30 @@ public class TestConstants {
     return collectionContext(commandName.getApiName(), schema, null, null);
   }
 
+  /**
+   * A collection context that reads its config from <code>commandConfig</code>, so a test can give
+   * it config without starting Quarkus.
+   */
+  public CommandContext<CollectionSchemaObject> collectionContext(
+      CommandName commandName, CollectionSchemaObject schema, CommandConfig commandConfig) {
+    return collectionContext(commandName.getApiName(), schema, null, null, commandConfig);
+  }
+
   public CommandContext<CollectionSchemaObject> collectionContext(
       String commandName,
       CollectionSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
+    return collectionContext(
+        commandName, schema, metricsReporter, embeddingProvider, new CommandConfig());
+  }
+
+  private CommandContext<CollectionSchemaObject> collectionContext(
+      String commandName,
+      CollectionSchemaObject schema,
+      JsonProcessingMetricsReporter metricsReporter,
+      EmbeddingProvider embeddingProvider,
+      CommandConfig commandConfig) {
 
     // Build the no-op Billing before opening a new stubbing chain — Mockito treats nested
     // when()/thenReturn() calls as unfinished stubbing.
@@ -347,7 +366,7 @@ public class TestConstants {
         .withJsonProcessingMetricsReporter(
             metricsReporter == null ? mock(JsonProcessingMetricsReporter.class) : metricsReporter)
         .withCqlSessionCache(mock(CQLSessionCache.class))
-        .withCommandConfig(new CommandConfig())
+        .withCommandConfig(commandConfig)
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .withMeterRegistry(mock(MeterRegistry.class))
