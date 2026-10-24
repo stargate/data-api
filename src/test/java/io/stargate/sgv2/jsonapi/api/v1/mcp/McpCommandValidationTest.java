@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.completeResult;
-import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.readableResult;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertResponseComplete;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertResultReadable;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.request;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.toolPayload;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,8 +80,9 @@ class McpCommandValidationTest {
 
     var mcpResult = callMcp(command, arguments);
     assertThat(mcpResult.getBoolean("isError")).isTrue();
-    assertThat(readableResult(mcpResult)).isEqualTo(mcpResult.getJsonObject("structuredContent"));
-    assertValidationError(readableResult(mcpResult), reason);
+    assertThat(assertResultReadable(mcpResult))
+        .isEqualTo(mcpResult.getJsonObject("structuredContent"));
+    assertValidationError(assertResultReadable(mcpResult), reason);
     verifyNoInteractions(schemaObjectCacheSupplier, schemaObjectCache, commandProcessor);
   }
 
@@ -113,7 +114,7 @@ class McpCommandValidationTest {
     assertThat(httpResult.getJsonObject("status").getInteger("ok")).isEqualTo(1);
     assertThat(httpResult.containsKey("errors")).isFalse();
     assertThat(mcpResult.getBoolean("isError")).isFalse();
-    assertThat(readableResult(mcpResult)).isEqualTo(httpResult);
+    assertThat(assertResultReadable(mcpResult)).isEqualTo(httpResult);
     var commands = ArgumentCaptor.forClass(Command.class);
     verify(commandProcessor, times(2)).processCommand(any(), commands.capture());
     assertThat(commands.getAllValues().get(0)).isEqualTo(commands.getAllValues().get(1));
@@ -150,7 +151,7 @@ class McpCommandValidationTest {
     var toolArguments = new HashMap<>(arguments);
     toolArguments.put("keyspace", TEST_CONSTANTS.KEYSPACE_NAME);
     toolArguments.put("collection", TEST_CONSTANTS.COLLECTION_NAME);
-    return completeResult(
+    return assertResponseComplete(
         request("tools/call")
             .header("Token", TOKEN)
             .header(ApiFeature.MCP.httpHeaderName(), "true")
