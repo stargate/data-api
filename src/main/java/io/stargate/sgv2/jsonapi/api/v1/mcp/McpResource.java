@@ -5,7 +5,11 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromU
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.quarkiverse.mcp.server.Cancellation;
+import io.quarkiverse.mcp.server.InputRequiredException;
+import io.quarkiverse.mcp.server.McpException;
 import io.quarkiverse.mcp.server.ToolResponse;
+import io.quarkus.security.AuthenticationException;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.ConfigPreLoader;
@@ -15,7 +19,9 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsResolver;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
@@ -29,6 +35,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
+import jakarta.ws.rs.WebApplicationException;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,20 +104,23 @@ public class McpResource {
    * io.stargate.sgv2.jsonapi.api.v1.GeneralResource}
    */
   public Uni<CommandContext<?>> buildDatabaseContext(GeneralCommand command) {
+    return Uni.createFrom()
+        .deferred(
+            () -> {
+              var requestContext = createRequestContext();
+              var dbIdentifier = SchemaObjectIdentifier.forDatabase(requestContext.tenant());
 
-    var requestContext = createRequestContext();
-    var dbIdentifier = SchemaObjectIdentifier.forDatabase(requestContext.tenant());
-
-    return schemaObjectCacheSupplier
-        .get()
-        .getDatabase(requestContext, dbIdentifier, requestContext.userAgent())
-        .map(
-            databaseSchemaObject ->
-                contextBuilderSupplier
-                    .getBuilder(databaseSchemaObject)
-                    .withCommandName(command.getClass().getSimpleName())
-                    .withRequestContext(requestContext)
-                    .build());
+              return schemaObjectCacheSupplier
+                  .get()
+                  .getDatabase(requestContext, dbIdentifier, requestContext.userAgent())
+                  .map(
+                      databaseSchemaObject ->
+                          contextBuilderSupplier
+                              .getBuilder(databaseSchemaObject)
+                              .withCommandName(command.getClass().getSimpleName())
+                              .withRequestContext(requestContext)
+                              .build());
+            });
   }
 
   /**
@@ -116,23 +128,26 @@ public class McpResource {
    * io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource}
    */
   public Uni<CommandContext<?>> buildKeyspaceContext(String keyspace, KeyspaceCommand command) {
+    return Uni.createFrom()
+        .deferred(
+            () -> {
+              var requestContext = createRequestContext();
+              var keyspaceIdentifier =
+                  SchemaObjectIdentifier.forKeyspace(
+                      requestContext.tenant(), cqlIdentifierFromUserInput(keyspace));
 
-    var requestContext = createRequestContext();
-    var keyspaceIdentifier =
-        SchemaObjectIdentifier.forKeyspace(
-            requestContext.tenant(), cqlIdentifierFromUserInput(keyspace));
-
-    // Force refresh on all keyspace commands because they are all DDL commands
-    return schemaObjectCacheSupplier
-        .get()
-        .getKeyspace(requestContext, keyspaceIdentifier, requestContext.userAgent(), true)
-        .map(
-            keyspaceSchemaObject ->
-                contextBuilderSupplier
-                    .getBuilder(keyspaceSchemaObject)
-                    .withCommandName(command.getClass().getSimpleName())
-                    .withRequestContext(requestContext)
-                    .build());
+              // Force refresh on all keyspace commands because they are all DDL commands
+              return schemaObjectCacheSupplier
+                  .get()
+                  .getKeyspace(requestContext, keyspaceIdentifier, requestContext.userAgent(), true)
+                  .map(
+                      keyspaceSchemaObject ->
+                          contextBuilderSupplier
+                              .getBuilder(keyspaceSchemaObject)
+                              .withCommandName(command.getClass().getSimpleName())
+                              .withRequestContext(requestContext)
+                              .build());
+            });
   }
 
   /**
@@ -142,77 +157,69 @@ public class McpResource {
    */
   public Uni<ToolResponse> processCollectionCommand(
       String keyspace, String collection, CollectionCommand command) {
+    Uni<CommandContext<?>> contextUni =
+        Uni.createFrom()
+            .deferred(
+                () -> {
+                  var requestContext = createRequestContext();
+                  var unscopedSchemaIdentifier =
+                      new UnscopedSchemaObjectIdentifier.DefaultKeyspaceScopedName(
+                          cqlIdentifierFromUserInput(keyspace),
+                          cqlIdentifierFromUserInput(collection));
 
-    var requestContext = createRequestContext();
+                  return schemaObjectCacheSupplier
+                      .get()
+                      .getTableBased(
+                          requestContext,
+                          unscopedSchemaIdentifier,
+                          requestContext.userAgent(),
+                          command.isForceSchemaRefresh())
+                      .map(
+                          schemaObject -> {
+                            VectorColumnDefinition vectorColDef = null;
+                            if (schemaObject.type() == SchemaObjectType.COLLECTION) {
+                              vectorColDef =
+                                  schemaObject
+                                      .vectorConfig()
+                                      .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+                                      .orElse(null);
+                            } else if (schemaObject.type() == SchemaObjectType.TABLE) {
+                              vectorColDef =
+                                  schemaObject
+                                      .vectorConfig()
+                                      .getFirstVectorColumnWithVectorizeDefinition()
+                                      .orElse(null);
+                            }
 
-    var unscopedSchemaIdentifier =
-        new UnscopedSchemaObjectIdentifier.DefaultKeyspaceScopedName(
-            cqlIdentifierFromUserInput(keyspace), cqlIdentifierFromUserInput(collection));
+                            EmbeddingProvider embeddingProvider = null;
+                            if (vectorColDef != null
+                                && vectorColDef.vectorizeDefinition() != null) {
+                              embeddingProvider =
+                                  embeddingProviderFactory.create(
+                                      requestContext.tenant(),
+                                      requestContext.authToken(),
+                                      vectorColDef.vectorizeDefinition().provider(),
+                                      vectorColDef.vectorizeDefinition().modelName(),
+                                      vectorColDef.vectorSize(),
+                                      vectorColDef.vectorizeDefinition().parameters(),
+                                      vectorColDef.vectorizeDefinition().authentication(),
+                                      command.getClass().getSimpleName());
+                            }
 
-    return schemaObjectCacheSupplier
-        .get()
-        .getTableBased(
-            requestContext,
-            unscopedSchemaIdentifier,
-            requestContext.userAgent(),
-            command.isForceSchemaRefresh())
-        .onItemOrFailure()
-        .transformToUni(
-            (schemaObject, throwable) -> {
-              if (throwable != null) {
-                // If schema resolution or authorization fails, return an error ToolResponse
-                CommandResult errorResult =
-                    CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
-                        .addThrowable(throwable)
-                        .build();
-                return Uni.createFrom().item(errorResult.toToolResponse(objectMapper));
-              } else {
-                VectorColumnDefinition vectorColDef = null;
-                if (schemaObject.type() == SchemaObjectType.COLLECTION) {
-                  vectorColDef =
-                      schemaObject
-                          .vectorConfig()
-                          .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
-                          .orElse(null);
-                } else if (schemaObject.type() == SchemaObjectType.TABLE) {
-                  vectorColDef =
-                      schemaObject
-                          .vectorConfig()
-                          .getFirstVectorColumnWithVectorizeDefinition()
-                          .orElse(null);
-                }
-
-                EmbeddingProvider embeddingProvider = null;
-
-                if (vectorColDef != null && vectorColDef.vectorizeDefinition() != null) {
-                  embeddingProvider =
-                      embeddingProviderFactory.create(
-                          requestContext.tenant(),
-                          requestContext.authToken(),
-                          vectorColDef.vectorizeDefinition().provider(),
-                          vectorColDef.vectorizeDefinition().modelName(),
-                          vectorColDef.vectorSize(),
-                          vectorColDef.vectorizeDefinition().parameters(),
-                          vectorColDef.vectorizeDefinition().authentication(),
-                          command.getClass().getSimpleName());
-                }
-
-                var commandContext =
-                    contextBuilderSupplier
-                        .getBuilder(schemaObject)
-                        .withEmbeddingProvider(embeddingProvider)
-                        .withCommandName(command.getClass().getSimpleName())
-                        .withRequestContext(requestContext)
-                        .build();
-
-                return processCommand(Uni.createFrom().item(commandContext), command);
-              }
-            });
+                            return contextBuilderSupplier
+                                .getBuilder(schemaObject)
+                                .withEmbeddingProvider(embeddingProvider)
+                                .withCommandName(command.getClass().getSimpleName())
+                                .withRequestContext(requestContext)
+                                .build();
+                          });
+                });
+    return processCommand(contextUni, command);
   }
 
   /**
-   * Process a command and map its result to an MCP tool response with readable text and structured
-   * content.
+   * Normalize context setup failures, then process a command and map its result to an MCP tool
+   * response with readable text and structured content.
    *
    * @param contextUni The command context
    * @param command The command to execute
@@ -221,7 +228,10 @@ public class McpResource {
   public Uni<ToolResponse> processCommand(Uni<CommandContext<?>> contextUni, Command command) {
 
     return contextUni
-        .flatMap(context -> executeCommand(context, command))
+        .onItemOrFailure()
+        .transformToUni(
+            (context, failure) ->
+                failure == null ? executeCommand(context, command) : handleSetupFailure(failure))
         .map(result -> result.toToolResponse(objectMapper));
   }
 
@@ -251,6 +261,37 @@ public class McpResource {
                     e);
               }
             });
+  }
+
+  private Uni<CommandResult> handleSetupFailure(Throwable failure) {
+    // Synchronous cache reads use CompletableFuture.join(), unlike the asynchronous cache path.
+    while (failure instanceof CompletionException && failure.getCause() != null) {
+      failure = failure.getCause();
+    }
+
+    // Authentication, protocol errors, and framework control signals retain their own handling.
+    if (failure instanceof Error
+        || failure instanceof SecurityException
+        || failure instanceof AuthenticationException
+        || failure instanceof McpException
+        || failure instanceof InputRequiredException
+        || failure instanceof Cancellation.OperationCancellationException
+        || failure instanceof CancellationException
+        || (failure instanceof WebApplicationException webFailure
+            && (webFailure.getResponse().getStatus() == 401
+                || webFailure.getResponse().getStatus() == 403))) {
+      return Uni.createFrom().failure(failure);
+    }
+
+    // Only APIException messages are intended for clients. Arbitrary setup failures may include
+    // credentials or provider payloads, so do not pass them to the generic throwable mapper.
+    var error =
+        failure instanceof APIException apiException
+            ? apiException
+            : ServerException.Code.UNEXPECTED_SERVER_ERROR.withPreformattedMessage(
+                "Unable to prepare the tool request. Retry the request or contact support.");
+    return Uni.createFrom()
+        .item(CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).addThrowable(error).build());
   }
 
   /**
