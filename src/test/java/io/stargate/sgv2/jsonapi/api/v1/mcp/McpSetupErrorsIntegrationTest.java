@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
-import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.completeResult;
-import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.readableResult;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertResponseComplete;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertResultReadable;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.rpcPayload;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.toolPayload;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -99,7 +99,8 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
 
   @Test
   void missingArgumentRemainsAFrameworkToolError() {
-    var result = completeResult(callTool(11, CommandName.Names.FIND_COLLECTIONS, Map.of()), 11);
+    var result =
+        assertResponseComplete(callTool(11, CommandName.Names.FIND_COLLECTIONS, Map.of()), 11);
 
     // The framework's default input-validation strategy returns a plain tool error.
     assertThat(result.getBoolean("isError")).isTrue();
@@ -114,22 +115,23 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
 
   private void assertProviderDiscoverySucceeds(int id) {
     var result =
-        completeResult(callTool(id, CommandName.Names.FIND_EMBEDDING_PROVIDERS, Map.of()), id);
+        assertResponseComplete(
+            callTool(id, CommandName.Names.FIND_EMBEDDING_PROVIDERS, Map.of()), id);
     assertThat(result.getBoolean("isError")).isFalse();
     var status = result.getJsonObject("_meta").getJsonObject("status");
     assertThat(status.getJsonObject("embeddingProviders")).isNotNull();
-    assertThat(readableResult(result)).isEqualTo(new JsonObject().put("status", status));
+    assertThat(assertResultReadable(result)).isEqualTo(new JsonObject().put("status", status));
   }
 
   private static void assertApplicationError(Response response, int id, SchemaException.Code code) {
-    var result = completeResult(response, id);
+    var result = assertResponseComplete(response, id);
     assertThat(result.getBoolean("isError")).isTrue();
     var structured = result.getJsonObject("structuredContent");
     var errors = structured.getJsonArray("errors");
     assertThat(errors).hasSize(1);
     assertThat(errors.getJsonObject(0).getString("errorCode")).isEqualTo(code.name());
     assertThat(errors.getJsonObject(0).getString("message")).isNotBlank();
-    assertThat(readableResult(result)).isEqualTo(structured);
+    assertThat(assertResultReadable(result)).isEqualTo(structured);
   }
 
   private static void assertProtocolError(Response response, Integer id, int errorCode) {
