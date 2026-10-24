@@ -299,7 +299,7 @@ class McpLoggingTest {
                         })
                     .get(10, TimeUnit.SECONDS))
             .isEqualTo("worker-context");
-        var secondResult = completeResult(secondResponse.get(10, TimeUnit.SECONDS), 2);
+        var secondResult = assertResponseComplete(secondResponse.get(10, TimeUnit.SECONDS), 2);
         assertThat(firstResponse.isDone()).isFalse();
         assertThat(firstCompletion.isDone()).isFalse();
         assertThat(
@@ -311,7 +311,7 @@ class McpLoggingTest {
                         })
                     .get(10, TimeUnit.SECONDS))
             .isEqualTo("worker-context");
-        var firstResult = completeResult(firstResponse.get(10, TimeUnit.SECONDS), 1);
+        var firstResult = assertResponseComplete(firstResponse.get(10, TimeUnit.SECONDS), 1);
 
         assertIsolatedResult(first, firstResult, 1);
         assertIsolatedResult(second, secondResult, 2);
@@ -371,7 +371,7 @@ class McpLoggingTest {
 
   private void assertIsolatedResult(PendingCall call, JsonObject result, int id) throws Exception {
     assertThat(result.getBoolean("isError")).isEqualTo(id == 2);
-    var status = readableResult(result).getJsonObject("status");
+    var status = assertResultReadable(result).getJsonObject("status");
     assertThat(status.getInteger("ok")).isEqualTo(id);
     var trace = status.getJsonObject("trace").getJsonObject("TraceSession");
     assertThat(trace.getString("requestId"))
