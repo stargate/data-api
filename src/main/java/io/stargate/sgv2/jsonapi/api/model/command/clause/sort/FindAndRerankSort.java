@@ -57,8 +57,8 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
       """
     })
 public record FindAndRerankSort(
-        @JsonIgnore  RerankLegMode rerankLegMode,
-        @JsonIgnore  String hybridSort,
+    @JsonIgnore RerankLegMode rerankLegMode,
+    @JsonIgnore String hybridSort,
     @JsonIgnore String vectorizeSort,
     @JsonIgnore String lexicalSort,
     @JsonIgnore float[] vectorSort,
