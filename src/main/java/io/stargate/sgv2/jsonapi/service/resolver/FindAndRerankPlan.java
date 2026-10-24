@@ -32,6 +32,7 @@ record FindAndRerankPlan(
     boolean includeSortVector) {
 
   FindAndRerankPlan {
+    // sanity checks, the planner never makes a plan that fails these
     Objects.requireNonNull(legs, "legs must not be null");
     Objects.requireNonNull(rerank, "rerank must not be null");
     if (legs.isEmpty()) {
