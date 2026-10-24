@@ -56,10 +56,7 @@ public class TestConstants {
   public final String APP_NAME;
   public final DatabaseType DATABASE_TYPE;
 
-  /**
-   * The shared {@link TenantFactory}. ASTRA in plain unit tests, the app's configured type in a
-   * {@code @QuarkusTest}.
-   */
+  /** The app's factory in a QuarkusTest, ASTRA otherwise */
   public final TenantFactory SINGLETON_TENANT_FACTORY;
 
   // ============================================================
@@ -157,15 +154,13 @@ public class TestConstants {
 
     DATABASE_TYPE = DatabaseType.ASTRA;
     var tenantId = "tenant-" + CORRELATION_ID;
-    // A @QuarkusTest shares this singleton with the running app, which initializes it from config
-    // at startup. Replacing it would change how the app resolves tenants for every later test on
-    // the same profile, so only initialize it when nothing has, as in plain unit tests.
+    // NOTE: a QuarkusTest shares this singleton with the app, so only init it when unset
     try {
       TenantFactory.instance();
     } catch (IllegalStateException notInitialized) {
       TenantFactory.initialize(DATABASE_TYPE);
     }
-    // Build the tenant directly so it is ASTRA whatever type the singleton has.
+    // not from the factory, which may not be ASTRA
     TENANT = Tenant.create(DATABASE_TYPE, tenantId);
 
     SINGLETON_TENANT_FACTORY = TenantFactory.instance();

@@ -38,8 +38,7 @@ class McpProtocolTest {
 
   @Test
   void callsToolAfterTestConstantsWithoutChangingAppTenant() {
-    // Other test classes on this profile build TestConstants inside the same running app. Building
-    // one here makes the check independent of test order.
+    // build one here so the check does not depend on test order
     new TestConstants();
 
     var tool = CommandName.Names.FIND_EMBEDDING_PROVIDERS;
@@ -50,7 +49,7 @@ class McpProtocolTest {
             .body(toolPayload(1, tool, Map.of()))
             .post("/v1/mcp");
 
-    // The tenant resolves with the app's database type, so the call reaches the MCP feature check.
+    // reaching the feature check means the tenant resolved
     var result = assertResponseComplete(response, 1);
     assertThat(result.getBoolean("isError")).as(result.encode()).isTrue();
     var error = result.getJsonObject("structuredContent").getJsonArray("errors").getJsonObject(0);
