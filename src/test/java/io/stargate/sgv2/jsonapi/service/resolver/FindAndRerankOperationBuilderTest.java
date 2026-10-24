@@ -34,8 +34,12 @@ import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
@@ -205,6 +209,59 @@ class FindAndRerankOperationBuilderTest {
     var operation = build(commandContext, command);
   }
 
+  /**
+   * The builder can build every kind of plan the planner makes: with or without a lexical read, and
+   * with the vector from the command or from vectorizing.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("planShapes")
+  void buildsEveryKindOfPlan(String description, String sort, CollectionSchemaObject schemaObject)
+      throws Exception {
+    var commandContext = commandContext(schemaObject);
+    var command =
+        command(
+                """
+            {
+              "findAndRerank": {
+                "sort": %s,
+                "options": { "rerankOn": "body", "rerankQuery": "text" }
+              }
+            }
+            """
+                .formatted(sort));
+
+    assertThatCode(() -> build(commandContext, command)).as(description).doesNotThrowAnyException();
+  }
+
+  static Stream<Arguments> planShapes() {
+    var testConstants = new TestConstants();
+    return Stream.of(
+        Arguments.of(
+            "vector read",
+            """
+            { "$hybrid": { "$vector": [0.1, 0.2, 0.3] } }
+            """,
+            testConstants.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT),
+        Arguments.of(
+            "vector and lexical reads",
+            """
+            { "$hybrid": { "$vector": [0.1, 0.2, 0.3], "$lexical": "text" } }
+            """,
+            testConstants.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT),
+        Arguments.of(
+            "vectorize, then the vector read",
+            """
+            { "$hybrid": { "$vectorize": "text" } }
+            """,
+            testConstants.VECTORIZE_RERANK_COLLECTION_SCHEMA_OBJECT),
+        Arguments.of(
+            "vectorize, then the vector and lexical reads",
+            """
+            { "$hybrid": "text" }
+            """,
+            testConstants.VECTORIZE_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT));
+  }
+
   @Test
   void failsWhenLimitBelowConfiguredMin() throws Exception {
     var commandContext = commandContext();
@@ -340,11 +397,14 @@ class FindAndRerankOperationBuilderTest {
   }
 
   private CommandContext<CollectionSchemaObject> commandContext(boolean withLexical) {
-
-    var schemaObject =
+    return commandContext(
         withLexical
             ? TEST_CONSTANTS.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT
-            : TEST_CONSTANTS.VECTORIZE_RERANK_COLLECTION_SCHEMA_OBJECT;
+            : TEST_CONSTANTS.VECTORIZE_RERANK_COLLECTION_SCHEMA_OBJECT);
+  }
+
+  private CommandContext<CollectionSchemaObject> commandContext(
+      CollectionSchemaObject schemaObject) {
     var commandContext =
         TEST_CONSTANTS.collectionContext(CommandName.FIND_AND_RERANK, schemaObject);
 
