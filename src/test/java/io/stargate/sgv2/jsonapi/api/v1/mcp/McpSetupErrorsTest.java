@@ -66,6 +66,7 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.inject.Instance;
+import jakarta.validation.Validator;
 import jakarta.ws.rs.WebApplicationException;
 import java.security.Principal;
 import java.time.Duration;
@@ -143,6 +144,7 @@ class McpSetupErrorsTest {
     resource =
         new McpResource(
             objectMapper,
+            mock(Validator.class),
             commandProcessor,
             mock(MeterRegistry.class),
             mock(JsonProcessingMetricsReporter.class),
