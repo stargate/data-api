@@ -14,7 +14,7 @@ The current implementation uses the existing Data API `Token` header. A missing 
 
 ## Results and errors
 
-A Data API command result includes readable text containing the full JSON response. This includes any data, status, and errors. Successful structured content contains the data, while status remains in `_meta.status`. For application errors, structured content contains the errors and `isError` is true. Read the text when the complete response is needed, including partial results.
+A Data API command result keeps text content empty. Successful structured content contains the data, while status remains in `_meta.status`. For application errors, structured content contains the errors and `isError` is true. When a command partly fails, structured content holds only the errors, and status such as inserted IDs stays in `_meta.status`.
 
 Unknown keyspaces and collections return application errors in a completed tool result. Unexpected setup failures return a generic message. Malformed JSON, unknown methods, and unknown tools remain JSON-RPC errors. Missing required tool arguments remain framework tool errors and can contain plain text without structured content. Authentication failures retain their HTTP handling.
 
