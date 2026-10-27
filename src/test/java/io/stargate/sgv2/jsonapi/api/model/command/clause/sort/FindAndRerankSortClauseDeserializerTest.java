@@ -12,17 +12,17 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
-import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
-import org.junit.jupiter.params.provider.ValueSource;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
+import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
@@ -171,7 +171,24 @@ public class FindAndRerankSortClauseDeserializerTest {
                 CommandFeatures.of(HYBRID))),
         Arguments.of(
             """
+            { "$hybrid" : "  padded text  " }
+            """,
+            new FindAndRerankSort(
+                RerankLegMode.MULTI_LEG,
+                "padded text",
+                null,
+                null,
+                null,
+                CommandFeatures.of(HYBRID))),
+        Arguments.of(
+            """
             { "$hybrid" : "" }
+            """,
+            new FindAndRerankSort(
+                RerankLegMode.MULTI_LEG, null, null, null, null, CommandFeatures.of(HYBRID))),
+        Arguments.of(
+            """
+            { "$hybrid" : "   " }
             """,
             new FindAndRerankSort(
                 RerankLegMode.MULTI_LEG, null, null, null, null, CommandFeatures.of(HYBRID))),
@@ -380,10 +397,21 @@ public class FindAndRerankSortClauseDeserializerTest {
             { "$lexical" : "lexical sort" }
             """,
             new FindAndRerankSort(
-                RerankLegMode.SINGLE_LEG, null, null, "lexical sort", null, CommandFeatures.of(LEXICAL))),
+                RerankLegMode.SINGLE_LEG,
+                null,
+                null,
+                "lexical sort",
+                null,
+                CommandFeatures.of(LEXICAL))),
         Arguments.of(
             """
             { "$lexical" : "   " }
+            """,
+            new FindAndRerankSort(
+                RerankLegMode.SINGLE_LEG, null, null, null, null, CommandFeatures.of(LEXICAL))),
+        Arguments.of(
+            """
+            { "$lexical" : null }
             """,
             new FindAndRerankSort(
                 RerankLegMode.SINGLE_LEG, null, null, null, null, CommandFeatures.of(LEXICAL))),

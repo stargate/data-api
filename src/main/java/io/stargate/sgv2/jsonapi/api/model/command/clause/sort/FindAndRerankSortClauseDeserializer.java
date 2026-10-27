@@ -123,7 +123,13 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       case HYBRID ->
           switch (topLevelValue) {
             case TextNode textNode ->
-                new FindAndRerankSort(RerankLegMode.MULTI_LEG, normalizedText(textNode.asText()), null, null, null, CommandFeatures.of(SortField.HYBRID.commandFeature()));
+                new FindAndRerankSort(
+                    RerankLegMode.MULTI_LEG,
+                    normalizedText(textNode.asText()),
+                    null,
+                    null,
+                    null,
+                    CommandFeatures.of(SortField.HYBRID.commandFeature()));
             case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
             case JsonNode node ->
                 throw JsonFieldMatcher.errorForWrongType(
@@ -136,15 +142,33 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           };
       case VECTORIZE -> {
         var commandFeatures = CommandFeatures.create();
-        yield new FindAndRerankSort(RerankLegMode.SINGLE_LEG, null, textSortValue(jsonParser, sortField, topLevelValue, commandFeatures), null, null, commandFeatures);
+        yield new FindAndRerankSort(
+            RerankLegMode.SINGLE_LEG,
+            null,
+            textSortValue(jsonParser, sortField, topLevelValue, commandFeatures),
+            null,
+            null,
+            commandFeatures);
       }
       case LEXICAL -> {
         var commandFeatures = CommandFeatures.create();
-        yield new FindAndRerankSort(RerankLegMode.SINGLE_LEG, null, null, textSortValue(jsonParser, sortField, topLevelValue, commandFeatures), null, commandFeatures);
+        yield new FindAndRerankSort(
+            RerankLegMode.SINGLE_LEG,
+            null,
+            null,
+            textSortValue(jsonParser, sortField, topLevelValue, commandFeatures),
+            null,
+            commandFeatures);
       }
       case VECTOR -> {
         var commandFeatures = CommandFeatures.create();
-        yield new FindAndRerankSort(RerankLegMode.SINGLE_LEG, null, null, null, vectorSortValue(jsonParser, topLevelValue, commandFeatures), commandFeatures);
+        yield new FindAndRerankSort(
+            RerankLegMode.SINGLE_LEG,
+            null,
+            null,
+            null,
+            vectorSortValue(jsonParser, topLevelValue, commandFeatures),
+            commandFeatures);
       }
     };
   }
@@ -174,13 +198,14 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
         vectorSortValue(
             jsonParser, sortMatch.matched().get(SortField.VECTOR.sortField()), commandFeatures);
 
-    return new FindAndRerankSort(RerankLegMode.MULTI_LEG, null, vectorizeText, lexicalText, vector, commandFeatures);
+    return new FindAndRerankSort(
+        RerankLegMode.MULTI_LEG, null, vectorizeText, lexicalText, vector, commandFeatures);
   }
 
   /**
-   * A text sort value for {@code sortField}'s field, from inside the {@code $hybrid} object or from a
-   * top-level single-leg sort. The field and its metrics feature both come from {@code sortField}, so
-   * they cannot mismatch.
+   * A text sort value for {@code sortField}, from inside the {@code $hybrid} object or from a
+   * top-level single-leg sort. The field and its metrics feature both come from {@code sortField},
+   * so they cannot mismatch.
    *
    * @param sortField {@link SortField#VECTORIZE} or {@link SortField#LEXICAL}.
    * @param node The field value, or {@code null} when the field is missing.
