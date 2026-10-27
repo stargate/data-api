@@ -417,7 +417,7 @@ public class FindAndRerankPlannerTest {
         value = LegMode.class,
         names = {"VECTORIZE", "VECTOR", "LEXICAL"})
     void failSingleLegModes(LegMode legMode) {
-      // the parser does not produce these modes yet (GH #2602), the sort has the value for the mode
+      // the planner has no legs for these modes yet (GH #2602)
       var sort =
           switch (legMode) {
             case VECTORIZE -> singleLegSort(legMode, "cheese", null, null);
@@ -425,6 +425,21 @@ public class FindAndRerankPlannerTest {
             case LEXICAL -> singleLegSort(legMode, null, "cows", null);
             case HYBRID, FILTER -> throw new IllegalArgumentException("not a single leg mode");
           };
+
+      assertPlanFails(
+          SortException.class,
+          SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT,
+          () -> plan(sort, RERANK_OPTIONS, VECTORIZE_LEXICAL));
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = LegMode.class,
+        names = {"VECTORIZE", "VECTOR", "LEXICAL"})
+    void failSingleLegModeWithNoValue(LegMode legMode) {
+      // e.g. {"$lexical": null}: inside $hybrid null skips a leg, at the top level it is the
+      // only leg, rejected here with every single leg mode (GH #2602)
+      var sort = singleLegSort(legMode, null, null, null);
 
       assertPlanFails(
           SortException.class,

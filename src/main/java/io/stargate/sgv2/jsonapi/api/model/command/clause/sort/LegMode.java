@@ -12,8 +12,8 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
  * <p>Only {@link #HYBRID} can be run for now, the planner rejects every other mode with
  * UNSUPPORTED_FIND_AND_RERANK_SORT.
  *
- * <p>TODO: GH #2602 - the parser does not produce {@link #VECTORIZE}, {@link #VECTOR} or {@link
- * #LEXICAL} yet, they will be implemented when findAndRerank supports single leg sorts.
+ * <p>TODO: GH #2602 - the planner does not build legs for {@link #VECTORIZE}, {@link #VECTOR} or
+ * {@link #LEXICAL} yet, it rejects them until findAndRerank supports single leg sorts.
  */
 public enum LegMode {
   /**
