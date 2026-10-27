@@ -1,0 +1,145 @@
+# Open-source dependency (SCA) scan on IBM Mend, using the Mend CLI ("mend dep") path that the
+# DataStax Mend onboarding runbook requires for repos outside IBM's GitHub Enterprise space.
+# Results land under Products//<MEND_PRODUCTNAME>//Data API - data-api in the IBM Mend platform.
+name: IBM Mend SCA Scan
+
+# runs on
+# * pushes to "main" (report only)
+# * release tags (updates the project inventory on the Mend platform)
+# * pull requests against "main" (report only)
+# * manual trigger
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*" ]
+
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+# cancel same workflows in progress for pull request branches
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+# global env vars, available in all jobs and steps
+env:
+  MAVEN_OPTS: '-Xmx4g'
+  DS_ARTIFACTORY_USERNAME: ${{ secrets.DS_ARTIFACTORY_USERNAME }}
+  DS_ARTIFACTORY_PASSWORD: ${{ secrets.DS_ARTIFACTORY_PASSWORD }}
+  # the runbook asks for the DataStax product name here, so SecEng can map findings to a product and repo
+  MEND_PROJECTNAME: "Data API"
+  MEND_URL: "https://ibmets.whitesourcesoftware.com"
+  MEND_REPORT: "mend-results.json"
+  MEND_REPO: ${{ github.event.repository.name }}
+
+jobs:
+
+  mend:
+    name: IBM Mend SCA
+    # pull requests from forks get no org secrets, so the scan could not authenticate
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    # per the runbook, findings turn this job red but never block PRs or releases
+    continue-on-error: true
+
+    # max run time 20 minutes
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # the Mend CLI resolves dependencies through Maven, so it needs the JDK and the private repos
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: maven
+
+      - name: Setup Maven
+        run: |
+          mkdir -p ~/.m2
+          cat <<EOF > ~/.m2/settings.xml
+          <settings>
+            <servers>
+              <server>
+                <id>stargate-central</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>stargate-snapshots</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+             </server>
+              <server>
+                <id>artifactory</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-snapshots</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-releases</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+             </server>
+           </servers>
+          </settings>
+          EOF
+
+      # the CLI lives outside the workspace so it is never part of the scanned tree
+      - name: Download Mend CLI
+        run: |
+          curl --fail --silent --show-error --retry 3 --location \
+            https://downloads.mend.io/cli/linux_amd64/mend -o "$RUNNER_TEMP/mend"
+          chmod +x "$RUNNER_TEMP/mend"
+
+      # release tags update the Mend platform; every other run only reports.
+      # pipefail keeps a CLI failure (bad credentials, unresolvable build) from hiding behind tee.
+      - name: Mend dependency scan
+        env:
+          MEND_USER_KEY: ${{ secrets.MEND_USER_KEY }}
+          MEND_EMAIL: ${{ secrets.MEND_EMAIL }}
+          MEND_PRODUCTNAME: ${{ secrets.MEND_PRODUCTNAME }}
+          MEND_ORGNAME: Products
+        run: |
+          set -o pipefail
+          update_args=()
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            update_args=(--update)
+          fi
+          "$RUNNER_TEMP/mend" dep --dir . \
+            --scope "$MEND_ORGNAME//$MEND_PRODUCTNAME//$MEND_PROJECTNAME - $MEND_REPO" \
+            --export-results "$MEND_REPORT" \
+            --non-interactive \
+            "${update_args[@]}" 2>&1 | tee mend-output.txt
+
+      # the Mend CLI exits 0 on findings; parse its summary line and fail the job on Critical/High
+      - name: Fail on Critical/High findings
+        if: always()
+        run: |
+          [ -f mend-output.txt ] || { echo "::warning::Mend scan output not found."; exit 0; }
+          summary=$(grep 'Detected .* vulnerabilities' mend-output.txt || true)
+          critical=$(echo "$summary" | sed 's/.*(\([0-9]*\) Critical.*/\1/' | grep -E '^[0-9]+$' || echo 0)
+          high=$(echo "$summary" | sed 's/.*(\([0-9]* Critical, \)\([0-9]*\) High.*/\2/' | grep -E '^[0-9]+$' || echo 0)
+          if [ "$((${critical:-0} + ${high:-0}))" -gt 0 ]; then
+            echo "::error::Mend SCA: ${critical:-0} Critical, ${high:-0} High. See the mend-scan-report artifact."
+            exit 1
+          fi
+
+      - name: Upload Mend scan report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mend-scan-report
+          path: ${{ env.MEND_REPORT }}
