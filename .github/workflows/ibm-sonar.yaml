@@ -109,6 +109,9 @@ jobs:
           PR_BRANCH: ${{ github.head_ref }}
           PR_BASE: ${{ github.base_ref }}
         run: |
+          # the password secret carries trailing whitespace, which makes the truststore unreadable; strip it
+          truststore_password="${TRUSTSTORE_PASSWORD#"${TRUSTSTORE_PASSWORD%%[![:space:]]*}"}"
+          truststore_password="${truststore_password%"${truststore_password##*[![:space:]]}"}"
           if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
             scope_args=(-Dsonar.pullrequest.key="$PR_NUMBER" -Dsonar.pullrequest.branch="$PR_BRANCH" -Dsonar.pullrequest.base="$PR_BASE" -Dsonar.qualitygate.wait=true)
           else
@@ -117,5 +120,5 @@ jobs:
           ./mvnw -B -ntp -Dstyle.color=always clean test \
             org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211:sonar \
             -Dsonar.scanner.truststorePath="$RUNNER_TEMP/ibm-sonarqube-truststore" \
-            -Dsonar.scanner.truststorePassword="$TRUSTSTORE_PASSWORD" \
+            -Dsonar.scanner.truststorePassword="$truststore_password" \
             "${scope_args[@]}"
