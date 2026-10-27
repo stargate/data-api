@@ -22,8 +22,7 @@ import java.util.*;
 /**
  * {@link StdDeserializer} for the {@link FindAndRerankSort}.
  *
- * <p>Note: This only checks the shape of the sort clause, the other validation is handled when
- * resolving the command to an operation.
+ * <p>Note: Validation of field combinations is handled when resolving the command to an operation.
  */
 public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAndRerankSort> {
 
