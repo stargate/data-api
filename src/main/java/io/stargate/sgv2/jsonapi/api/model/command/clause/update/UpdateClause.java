@@ -22,7 +22,7 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
     implementation = Object.class,
     additionalProperties = Schema.False.class,
     description =
-        "A Data API update object mapping operators such as $set and $unset to objects of document paths and values. Operators may be combined on distinct paths. Supported operations depend on the target collection or table.",
+        "A Data API update object mapping operators such as $set and $unset to objects of document paths and values. Operators may be combined on distinct paths.",
     properties = {
       @SchemaProperty(
           name = UpdateOperator.Names.SET,
