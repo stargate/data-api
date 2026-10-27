@@ -41,9 +41,9 @@ public class McpOriginFilter {
   // Lets an approved browser read the OAuth challenge on a 401 or 403 response.
   static final String EXPOSED_HEADERS = "WWW-Authenticate";
 
-  // A JSON-RPC error with no id, as the transport allows. It never echoes the request.
-  static final String REJECTION_BODY =
-      "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32600,\"message\":\"Origin not allowed\"}}";
+  // The request is rejected before its id is read, so JSON-RPC requires a null id.
+  private static final String REJECTION_BODY =
+      "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"Origin not allowed\"}}";
 
   private final String endpointPath;
   private final Set<String> allowedOrigins;

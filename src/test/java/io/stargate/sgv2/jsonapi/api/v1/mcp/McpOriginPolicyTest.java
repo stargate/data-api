@@ -25,6 +25,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 @QuarkusTest
 @TestProfile(McpOriginPolicyTest.Profile.class)
 class McpOriginPolicyTest {
+  private static final String EXPECTED_REJECTION_BODY =
+      "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"Origin not allowed\"}}";
   static final String APPROVED = "https://client.example.com";
   static final String LOCAL_APPROVED = "http://localhost:6274";
   // Header auth checks only that a token is present. tools/list does not access the database.
@@ -174,7 +176,7 @@ class McpOriginPolicyTest {
     try (var client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build()) {
       var response = client.send(request, HttpResponse.BodyHandlers.ofString());
       assertThat(response.statusCode()).as(path).isEqualTo(403);
-      assertThat(response.body()).as(path).isEqualTo(McpOriginFilter.REJECTION_BODY);
+      assertThat(response.body()).as(path).isEqualTo(EXPECTED_REJECTION_BODY);
     }
   }
 
@@ -215,7 +217,7 @@ class McpOriginPolicyTest {
     assertThat(response.statusCode()).as(response.asString()).isEqualTo(403);
     assertThat(response.contentType()).startsWith("application/json");
     // A fixed body, so neither the request payload nor its credentials can appear in it.
-    assertThat(response.asString()).isEqualTo(McpOriginFilter.REJECTION_BODY);
+    assertThat(response.asString()).isEqualTo(EXPECTED_REJECTION_BODY);
     assertThat(response.header("Access-Control-Allow-Origin")).isNull();
     assertThat(response.header("Access-Control-Allow-Methods")).isNull();
     assertThat(response.headers().getValues("Vary")).contains("Origin");
