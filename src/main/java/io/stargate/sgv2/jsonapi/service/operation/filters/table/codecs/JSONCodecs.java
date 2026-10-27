@@ -60,7 +60,7 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  // Counters are read/filter-only; mirror BIGINT's variants so filters can bind them (#2462).
+  // Counter columns support reads and filters, but not writes through the Data API.
   public static final JSONCodec<BigDecimal, Long> COUNTER_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,

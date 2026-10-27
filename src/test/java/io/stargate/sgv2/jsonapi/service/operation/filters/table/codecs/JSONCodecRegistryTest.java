@@ -204,7 +204,6 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.BIGINT, -456L, -456L),
         Arguments.of(DataTypes.BIGINT, BigInteger.valueOf(123), 123L),
         Arguments.of(DataTypes.BIGINT, BigDecimal.valueOf(999.0), 999L),
-        // counters are filterable (#2462): they bind the same 3 Java types as BIGINT
         Arguments.of(DataTypes.COUNTER, -456L, -456L),
         Arguments.of(DataTypes.COUNTER, BigInteger.valueOf(123), 123L),
         Arguments.of(DataTypes.COUNTER, BigDecimal.valueOf(999.0), 999L),
@@ -910,6 +909,11 @@ public class JSONCodecRegistryTest {
             DataTypes.BIGINT,
             TEST_DATA.OUT_OF_RANGE_FOR_BIGINT.toBigIntegerExact(),
             "BigInteger out of long range"),
+        Arguments.of(DataTypes.COUNTER, TEST_DATA.OUT_OF_RANGE_FOR_BIGINT, "Overflow"),
+        Arguments.of(
+            DataTypes.COUNTER,
+            TEST_DATA.OUT_OF_RANGE_FOR_BIGINT.toBigIntegerExact(),
+            "BigInteger out of long range"),
         Arguments.of(DataTypes.INT, TEST_DATA.OVERFLOW_FOR_INT, "Overflow"),
         Arguments.of(
             DataTypes.INT,
@@ -953,6 +957,7 @@ public class JSONCodecRegistryTest {
     // Arguments: (DataType, Number-not-exact-as-integer)
     return Stream.of(
         Arguments.of(DataTypes.BIGINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
+        Arguments.of(DataTypes.COUNTER, TEST_DATA.NOT_EXACT_AS_INTEGER),
         Arguments.of(DataTypes.INT, TEST_DATA.NOT_EXACT_AS_INTEGER),
         Arguments.of(DataTypes.SMALLINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
         Arguments.of(DataTypes.TINYINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
