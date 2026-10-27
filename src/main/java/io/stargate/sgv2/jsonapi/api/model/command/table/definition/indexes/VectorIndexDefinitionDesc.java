@@ -90,6 +90,12 @@ public record VectorIndexDefinitionDesc(
   public record VectorIndexingDesc(
       @Nullable String profile, @Nullable Map<String, Object> options) {
 
+    public VectorIndexingDesc {
+      if ((profile == null) == (options == null)) {
+        throw new IllegalArgumentException("Exactly one of profile or options must be set");
+      }
+    }
+
     /** A {@code vectorIndexing} that selects a named profile. */
     public static VectorIndexingDesc ofProfile(String profile) {
       return new VectorIndexingDesc(profile, null);

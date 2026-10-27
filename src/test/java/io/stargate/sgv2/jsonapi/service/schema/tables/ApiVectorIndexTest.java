@@ -53,6 +53,14 @@ class ApiVectorIndexTest {
   class RequestShape {
 
     @Test
+    void requiresExactlyOneRepresentation() {
+      assertThatThrownBy(() -> new VectorIndexingDesc("small-high-recall", Map.of()))
+          .isInstanceOf(IllegalArgumentException.class);
+      assertThatThrownBy(() -> new VectorIndexingDesc(null, null))
+          .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void stringDeserializesToProfile() throws Exception {
       var opts =
           MAPPER.readValue(
