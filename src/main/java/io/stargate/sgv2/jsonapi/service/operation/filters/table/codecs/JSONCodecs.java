@@ -60,7 +60,21 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  // we can only read counters from CQL, do not support writing them
+  // Counter columns support reads and filters, but not writes through the Data API.
+  public static final JSONCodec<BigDecimal, Long> COUNTER_FROM_BIG_DECIMAL =
+      new JSONCodec<>(
+          GenericType.BIG_DECIMAL,
+          DataTypes.COUNTER,
+          JSONCodec.ToCQL.safeNumber(BigDecimal::longValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigInteger, Long> COUNTER_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.COUNTER,
+          JSONCodec.ToCQL.safeNumber(BigInteger::longValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
   public static final JSONCodec<Long, Long> COUNTER_FROM_LONG =
       new JSONCodec<>(
           GenericType.LONG,

@@ -161,6 +161,16 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
       assertThat(executeCqlStatement(createTable.build())).isTrue();
     }
 
+    @Test
+    @Order(2)
+    public final void listTablesReportsCounterFilterable() {
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .listTables(true)
+          .wasSuccessful()
+          .hasTableColumnApiSupport(TABLE_COUNTER, "counter", false, false, true, true);
+    }
+
     // In Cassandra, you cannot use an INSERT statement directly for counters.
     // Instead, counter columns require a special kind of update operation.
     // Counters in Cassandra are designed to increment or decrement a value,
@@ -206,17 +216,30 @@ public class UnsupportedTypeTableIntegrationTest extends AbstractTableIntegratio
               "The operation was not supported by the columns: counter(counter).");
     }
 
-    // TODO filter on counter, INVALID_FILTER_COLUMN_VALUES
+    // Seed with CQL because the Data API does not support counter writes.
     @Test
     @Order(4)
     public final void filterCounter() {
+      var ksCql =
+          CqlIdentifierUtil.cqlIdentifierToCQL(
+              CqlIdentifierUtil.cqlIdentifierFromUserInput(keyspaceName));
+      var tableCql =
+          CqlIdentifierUtil.cqlIdentifierToCQL(
+              CqlIdentifierUtil.cqlIdentifierFromUserInput(TABLE_COUNTER));
+      assertThat(
+              executeCqlStatement(
+                  SimpleStatement.newInstance(
+                      "UPDATE %s.%s SET counter = counter + 5 WHERE id = '1'"
+                          .formatted(ksCql, tableCql))))
+          .isTrue();
+
       assertTableCommand(keyspaceName, TABLE_COUNTER)
           .templated()
-          .findOne(ImmutableMap.of("counter", 1), null)
-          .hasSingleApiError(
-              FilterException.Code.INVALID_FILTER_COLUMN_VALUES,
-              FilterException.class,
-              "Only values that are supported by the column data type can be included");
+          .findOne(ImmutableMap.of("counter", 5), null)
+          .hasNoErrors()
+          .hasSingleWarning(WarningException.Code.MISSING_INDEX)
+          .body("data.document.id", is("1"))
+          .body("data.document.counter", is(5));
     }
   }
 
