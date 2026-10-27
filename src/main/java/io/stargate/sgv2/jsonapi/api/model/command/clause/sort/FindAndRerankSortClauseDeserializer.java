@@ -1,5 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.HYBRID_FIELD;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.LEXICAL_CONTENT_FIELD;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 import static io.stargate.sgv2.jsonapi.util.JsonUtil.arrayNodeToVector;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -13,6 +17,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.exception.SortException;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
 import java.io.IOException;
@@ -43,10 +48,10 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           JsonNode.class,
           List.of(),
           List.of(
-              LegMode.HYBRID.sortField(),
-              LegMode.VECTORIZE.sortField(),
-              LegMode.VECTOR.sortField(),
-              LegMode.LEXICAL.sortField()));
+              SortField.HYBRID.sortField(),
+              SortField.VECTORIZE.sortField(),
+              SortField.VECTOR.sortField(),
+              SortField.LEXICAL.sortField()));
 
   // user is specifying the sorts individually inside the $hybrid object
   // can be
@@ -59,9 +64,9 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           JsonNode.class,
           List.of(),
           List.of(
-              LegMode.LEXICAL.sortField(),
-              LegMode.VECTORIZE.sortField(),
-              LegMode.VECTOR.sortField()));
+              SortField.LEXICAL.sortField(),
+              SortField.VECTORIZE.sortField(),
+              SortField.VECTOR.sortField()));
 
   public FindAndRerankSortClauseDeserializer() {
     super(FindAndRerankSort.class);
@@ -111,22 +116,22 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
 
     // the matcher has checked the field name, so fromSortField cannot fail here
     var topLevelField = sortMatch.matched().entrySet().iterator().next();
-    var legMode = LegMode.fromSortField(topLevelField.getKey());
+    var sortField = SortField.fromSortField(topLevelField.getKey());
     var topLevelValue = topLevelField.getValue();
 
-    return switch (legMode) {
+    return switch (sortField) {
       case HYBRID ->
           switch (topLevelValue) {
             case TextNode textNode ->
                 FindAndRerankSort.fromHybridText(
                     normalizedText(textNode.asText()),
-                    CommandFeatures.of(LegMode.HYBRID.commandFeature()));
+                    CommandFeatures.of(SortField.HYBRID.commandFeature()));
             case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
             case JsonNode node ->
                 throw JsonFieldMatcher.errorForWrongType(
                     jsonParser,
                     ERROR_CONTEXT,
-                    LegMode.HYBRID.sortField(),
+                    SortField.HYBRID.sortField(),
                     node,
                     TextNode.class,
                     ObjectNode.class);
@@ -134,20 +139,18 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       case VECTORIZE -> {
         var commandFeatures = CommandFeatures.create();
         yield FindAndRerankSort.fromVectorizeSort(
-            textSortValue(jsonParser, legMode, topLevelValue, commandFeatures), commandFeatures);
+            textSortValue(jsonParser, sortField, topLevelValue, commandFeatures), commandFeatures);
       }
       case LEXICAL -> {
         var commandFeatures = CommandFeatures.create();
         yield FindAndRerankSort.fromLexicalSort(
-            textSortValue(jsonParser, legMode, topLevelValue, commandFeatures), commandFeatures);
+            textSortValue(jsonParser, sortField, topLevelValue, commandFeatures), commandFeatures);
       }
       case VECTOR -> {
         var commandFeatures = CommandFeatures.create();
         yield FindAndRerankSort.fromVectorSort(
             vectorSortValue(jsonParser, topLevelValue, commandFeatures), commandFeatures);
       }
-      case FILTER ->
-          throw new IllegalStateException("FILTER has no sort field: " + topLevelField.getKey());
     };
   }
 
@@ -158,33 +161,33 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
         MATCH_HYBRID_OBJECT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
     // NOTE: commandFeatures are only for metrics, the FindAndRerankPlanner decides what to run
     // from the legMode and the sort values
-    CommandFeatures commandFeatures = CommandFeatures.of(LegMode.HYBRID.commandFeature());
+    CommandFeatures commandFeatures = CommandFeatures.of(SortField.HYBRID.commandFeature());
 
     var vectorizeText =
         textSortValue(
             jsonParser,
-            LegMode.VECTORIZE,
-            sortMatch.matched().get(LegMode.VECTORIZE.sortField()),
+            SortField.VECTORIZE,
+            sortMatch.matched().get(SortField.VECTORIZE.sortField()),
             commandFeatures);
     var lexicalText =
         textSortValue(
             jsonParser,
-            LegMode.LEXICAL,
-            sortMatch.matched().get(LegMode.LEXICAL.sortField()),
+            SortField.LEXICAL,
+            sortMatch.matched().get(SortField.LEXICAL.sortField()),
             commandFeatures);
     var vector =
         vectorSortValue(
-            jsonParser, sortMatch.matched().get(LegMode.VECTOR.sortField()), commandFeatures);
+            jsonParser, sortMatch.matched().get(SortField.VECTOR.sortField()), commandFeatures);
 
     return FindAndRerankSort.fromHybridObject(vectorizeText, lexicalText, vector, commandFeatures);
   }
 
   /**
-   * A text sort value for {@code legMode}'s field, from inside the {@code $hybrid} object or from a
-   * top-level single-leg sort. The field and its metrics feature both come from {@code legMode}, so
-   * they cannot mismatch.
+   * A text sort value for {@code sortField}, from inside the {@code $hybrid} object or from a
+   * top-level single-leg sort. The field and its metrics feature both come from {@code sortField},
+   * so they cannot mismatch.
    *
-   * @param legMode {@link LegMode#VECTORIZE} or {@link LegMode#LEXICAL}.
+   * @param sortField {@link SortField#VECTORIZE} or {@link SortField#LEXICAL}.
    * @param node The field value, or {@code null} when the field is missing.
    * @param commandFeatures The mode's feature is added when the field was present, even if null.
    * @return The trimmed text, or {@code null} when the field is missing, JSON null or blank. Inside
@@ -192,7 +195,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
    *     the planner rejects it.
    */
   private static String textSortValue(
-      JsonParser jsonParser, LegMode legMode, JsonNode node, CommandFeatures commandFeatures)
+      JsonParser jsonParser, SortField sortField, JsonNode node, CommandFeatures commandFeatures)
       throws JsonMappingException {
     return switch (node) {
       case null -> {
@@ -204,20 +207,20 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
         // explicit setting to null is allowed
         // { "sort" : { "$hybrid" : { "$vectorize" : null } } } or { "sort" : { "$lexical" : null }
         // }
-        commandFeatures.addFeature(legMode.commandFeature());
+        commandFeatures.addFeature(sortField.commandFeature());
         yield null;
       }
       case TextNode textNode -> {
         // { "sort" : { "$hybrid" : { "$vectorize" : "I like cheese" } } } or
         // { "sort" : { "$lexical" : "cheese" } }
-        commandFeatures.addFeature(legMode.commandFeature());
+        commandFeatures.addFeature(sortField.commandFeature());
         yield normalizedText(textNode.asText());
       }
       case JsonNode wrongType ->
           throw JsonFieldMatcher.errorForWrongType(
               jsonParser,
               ERROR_CONTEXT,
-              legMode.sortField(),
+              sortField.sortField(),
               wrongType,
               NullNode.class,
               TextNode.class);
@@ -245,12 +248,12 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       case NullNode ignored -> {
         // explicit setting to null is allowed
         // { "sort" : { "$hybrid" : { "$vector" : null } } } or { "sort" : { "$vector" : null } }
-        commandFeatures.addFeature(LegMode.VECTOR.commandFeature());
+        commandFeatures.addFeature(SortField.VECTOR.commandFeature());
         yield null;
       }
       case ArrayNode arrayNode -> {
         // { "sort" : { "$hybrid" : { "$vector" : [1,2,3] } } } or { "sort" : { "$vector" : [] } }
-        commandFeatures.addFeature(LegMode.VECTOR.commandFeature());
+        commandFeatures.addFeature(SortField.VECTOR.commandFeature());
         yield arrayNodeToVector(arrayNode);
       }
       case ObjectNode objectNode -> {
@@ -264,25 +267,56 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           throw JsonFieldMatcher.errorForWrongType(
               jsonParser,
               ERROR_CONTEXT + " (binary vector)",
-              LegMode.VECTOR.sortField(),
+              SortField.VECTOR.sortField(),
               objectNode,
               NullNode.class,
               ArrayNode.class,
               ObjectNode.class);
         }
-        commandFeatures.addFeature(LegMode.VECTOR.commandFeature());
+        commandFeatures.addFeature(SortField.VECTOR.commandFeature());
         yield ejson.getVectorValueForBinary();
       }
       case JsonNode wrongType ->
           throw JsonFieldMatcher.errorForWrongType(
               jsonParser,
               ERROR_CONTEXT,
-              LegMode.VECTOR.sortField(),
+              SortField.VECTOR.sortField(),
               wrongType,
               NullNode.class,
               ArrayNode.class,
               ObjectNode.class);
     };
+  }
+
+  /** JSON sort field names and their metrics features. */
+  private enum SortField {
+    HYBRID(HYBRID_FIELD, CommandFeature.HYBRID),
+    VECTORIZE(VECTOR_EMBEDDING_TEXT_FIELD, CommandFeature.VECTORIZE),
+    VECTOR(VECTOR_EMBEDDING_FIELD, CommandFeature.VECTOR),
+    LEXICAL(LEXICAL_CONTENT_FIELD, CommandFeature.LEXICAL);
+
+    private final String sortField;
+    private final CommandFeature commandFeature;
+
+    SortField(String sortField, CommandFeature commandFeature) {
+      this.sortField = sortField;
+      this.commandFeature = commandFeature;
+    }
+
+    String sortField() {
+      return sortField;
+    }
+
+    CommandFeature commandFeature() {
+      return commandFeature;
+    }
+
+    static SortField fromSortField(String sortField) {
+      return Arrays.stream(values())
+          .filter(field -> field.sortField.equals(sortField))
+          .findFirst()
+          .orElseThrow(() -> new IllegalArgumentException("unknown sort field: " + sortField));
+    }
   }
 
   /**

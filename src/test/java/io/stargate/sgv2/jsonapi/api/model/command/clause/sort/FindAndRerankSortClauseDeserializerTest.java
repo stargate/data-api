@@ -513,6 +513,12 @@ public class FindAndRerankSortClauseDeserializerTest {
                 LegMode.LEXICAL, null, null, null, null, CommandFeatures.of(LEXICAL))),
         Arguments.of(
             """
+            { "$lexical" : null }
+            """,
+            new FindAndRerankSort(
+                LegMode.LEXICAL, null, null, null, null, CommandFeatures.of(LEXICAL))),
+        Arguments.of(
+            """
             { "$vector" : [1.1, 2.2, 3.3] }
             """,
             new FindAndRerankSort(
