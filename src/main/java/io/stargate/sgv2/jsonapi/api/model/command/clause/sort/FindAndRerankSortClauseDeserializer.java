@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * {@link StdDeserializer} for the {@link FindAndRerankSort}.
  *
- * <p>Note: There is no validation, this is handled when resolving the command to an operation.
+ * <p>Note: Validation of field combinations is handled when resolving the command to an operation.
  */
 public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAndRerankSort> {
 
