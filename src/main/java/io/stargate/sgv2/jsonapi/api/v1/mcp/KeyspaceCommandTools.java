@@ -30,7 +30,8 @@ public class KeyspaceCommandTools {
           CreateCollectionCommand.Options options) {
 
     var command = new CreateCollectionCommand(collection, options);
-    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+    return mcpResource.processCommand(
+        () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
   @Tool(description = "Command that deletes a collection if one exists.")
@@ -39,7 +40,8 @@ public class KeyspaceCommandTools {
       @ToolArg(description = "Name of the existing Collection") String collection) {
 
     var command = new DeleteCollectionCommand(collection);
-    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+    return mcpResource.processCommand(
+        () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
   @Tool(description = "Command that lists all available collections in a keyspace.")
@@ -49,7 +51,8 @@ public class KeyspaceCommandTools {
           FindCollectionsCommand.Options options) {
 
     var command = new FindCollectionsCommand(options);
-    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+    return mcpResource.processCommand(
+        () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
   /**
@@ -64,7 +67,8 @@ public class KeyspaceCommandTools {
       @ToolArg(description = "Operation to add fields", required = false) TypeDefinitionDesc add) {
 
     var command = new AlterTypeCommand(name, rename, add);
-    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+    return mcpResource.processCommand(
+        () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
   @Tool(description = "Command that creates an API Table.")
@@ -76,7 +80,8 @@ public class KeyspaceCommandTools {
           CreateTableCommand.Options options) {
 
     var command = new CreateTableCommand(table, definition, options);
-    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+    return mcpResource.processCommand(
+        () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
   @Tool(description = "Command that creates a user defined type.")
@@ -88,7 +93,8 @@ public class KeyspaceCommandTools {
           CreateTypeCommand.Options options) {
 
     var command = new CreateTypeCommand(name, definition, options);
-    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+    return mcpResource.processCommand(
+        () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
   @Tool(description = "Command that drops an index for a column.")
@@ -99,7 +105,8 @@ public class KeyspaceCommandTools {
           DropIndexCommand.Options options) {
 
     var command = new DropIndexCommand(name, options);
-    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+    return mcpResource.processCommand(
+        () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
   @Tool(description = "Command that drops a table if one exists.")
@@ -110,7 +117,8 @@ public class KeyspaceCommandTools {
           DropTableCommand.Options options) {
 
     var command = new DropTableCommand(table, options);
-    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+    return mcpResource.processCommand(
+        () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
   @Tool(description = "Command that drops a user defined type if one exists.")
@@ -121,7 +129,8 @@ public class KeyspaceCommandTools {
           DropTypeCommand.Options options) {
 
     var command = new DropTypeCommand(name, options);
-    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+    return mcpResource.processCommand(
+        () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
   @Tool(description = "Command that lists all available tables in a keyspace")
@@ -131,7 +140,8 @@ public class KeyspaceCommandTools {
           ListTablesCommand.Options options) {
 
     var command = new ListTablesCommand(options);
-    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+    return mcpResource.processCommand(
+        () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 
   @Tool(description = "Command that lists all available types in a keyspace")
@@ -141,6 +151,7 @@ public class KeyspaceCommandTools {
           ListTypesCommand.Options options) {
 
     var command = new ListTypesCommand(options);
-    return mcpResource.processCommand(mcpResource.buildKeyspaceContext(keyspace, command), command);
+    return mcpResource.processCommand(
+        () -> mcpResource.buildKeyspaceContext(keyspace, command), command);
   }
 }
