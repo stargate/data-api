@@ -1,0 +1,121 @@
+# Static analysis and unit test coverage on IBM SonarQube.
+# Analysis scope (project key, exclusions, coverage report) lives in the "sonar.*" properties of pom.xml;
+# run-specific settings (host, token, truststore, branch or PR keys) are passed here.
+name: IBM SonarQube Scan
+
+# runs on
+# * pushes to "main" (branch analysis)
+# * pull requests against "main" (PR analysis, fails if the quality gate fails)
+# * manual trigger
+on:
+  push:
+    branches: [ "main" ]
+
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+# cancel same workflows in progress for pull request branches
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+# global env vars, available in all jobs and steps
+env:
+  MAVEN_OPTS: '-Xmx4g'
+  DS_ARTIFACTORY_USERNAME: ${{ secrets.DS_ARTIFACTORY_USERNAME }}
+  DS_ARTIFACTORY_PASSWORD: ${{ secrets.DS_ARTIFACTORY_PASSWORD }}
+
+jobs:
+
+  sonarqube:
+    name: IBM SonarQube
+    # pull requests from forks get no org secrets, so the scan could not authenticate
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+
+    # max run time 20 minutes (unit tests alone take up to 12)
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # full history so SonarQube can tell new code from old
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: maven
+
+      - name: Setup Maven
+        run: |
+          mkdir -p ~/.m2
+          cat <<EOF > ~/.m2/settings.xml
+          <settings>
+            <servers>
+              <server>
+                <id>stargate-central</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>stargate-snapshots</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+             </server>
+              <server>
+                <id>artifactory</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-snapshots</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-releases</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+             </server>
+           </servers>
+          </settings>
+          EOF
+
+      # IBM SonarQube uses an internal CA; the truststore lives outside the workspace so it is never analyzed
+      - name: Create IBM SonarQube truststore
+        env:
+          TRUSTSTORE_BASE64: ${{ secrets.IBM_SONARQUBE_CERT_TRUSTSTORE_BASE64 }}
+        run: |
+          printf '%s' "$TRUSTSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/ibm-sonarqube-truststore"
+
+      # SonarSource recommends the Maven scanner over sonarqube-scan-action for Maven builds:
+      # it picks up sources, compiled classes, the classpath and the Java release from the POM.
+      # Branch and PR values go through env vars so branch names are never interpolated into the script.
+      - name: Build, test & analyze
+        env:
+          SONAR_HOST_URL: https://sonarqube-prod.whitewater.ibm.com
+          SONAR_TOKEN: ${{ secrets.IBM_SONARQUBE_API_TOKEN }}
+          TRUSTSTORE_PASSWORD: ${{ secrets.IBM_SONARQUBE_CERT_PASSWORD }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BRANCH: ${{ github.head_ref }}
+          PR_BASE: ${{ github.base_ref }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
+            scope_args=(-Dsonar.pullrequest.key="$PR_NUMBER" -Dsonar.pullrequest.branch="$PR_BRANCH" -Dsonar.pullrequest.base="$PR_BASE" -Dsonar.qualitygate.wait=true)
+          else
+            scope_args=(-Dsonar.branch.name="$GITHUB_REF_NAME")
+          fi
+          ./mvnw -B -ntp -Dstyle.color=always clean test \
+            org.sonarsource.scanner.maven:sonar-maven-plugin:5.8.0.7211:sonar \
+            -Dsonar.scanner.truststorePath="$RUNNER_TEMP/ibm-sonarqube-truststore" \
+            -Dsonar.scanner.truststorePassword="$TRUSTSTORE_PASSWORD" \
+            "${scope_args[@]}"
