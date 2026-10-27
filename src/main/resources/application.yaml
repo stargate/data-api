@@ -216,6 +216,11 @@ quarkus:
     server:
       http:
         root-path: /v1/mcp
+        # McpOriginFilter applies the stargate.jsonapi.mcp.allowed-origins policy on every
+        # binding. The framework check only runs for localhost bindings and would reject
+        # approved non-local Origins there.
+        dns-rebinding-check:
+          enabled: false
         streamable:
           # It performs an automatic initialization when the first message from the client is not initialize.
           # A new MCP session is created for each request.
