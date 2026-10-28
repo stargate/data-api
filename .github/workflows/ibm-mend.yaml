@@ -4,6 +4,10 @@
 # * SAST ("mend sast") checks our own source code and fails on any finding
 # Results land under Products//<product>//Astra DB - data-api in the IBM Mend platform.
 #
+# This repo is public, so anyone signed in to GitHub can read its run logs and artifacts. Scan output
+# therefore stays in runner temp files, the logs show only finding counts, and no report is uploaded.
+# The findings themselves live on the Mend platform.
+#
 # The jobs follow riptano/shared-github-actions mend-sca.yml and mend-sast.yml, which riptano/cloud-billing
 # calls. We copy their steps instead of calling them, because GitHub does not let a public repository use
 # reusable workflows that live in an internal one.
@@ -15,10 +19,10 @@
 name: IBM Mend Scan
 
 # runs on
-# * pushes to "main"
-# * release tags (SCA also updates the project inventory on the Mend platform)
-# * pull requests against "main"
-# * manual trigger
+# * pushes to "main" and release tags, where SCA also updates the project on the Mend platform
+# * pull requests against "main", where SCA only reports
+# * manual trigger, where SCA only reports
+# SAST updates the Mend platform on every run.
 on:
   push:
     branches: [ "main" ]
@@ -65,7 +69,6 @@ jobs:
       MAVEN_OPTS: '-Xmx4g'
       DS_ARTIFACTORY_USERNAME: ${{ secrets.DS_ARTIFACTORY_USERNAME }}
       DS_ARTIFACTORY_PASSWORD: ${{ secrets.DS_ARTIFACTORY_PASSWORD }}
-      MEND_REPORT: "mend-sca-result.json"
 
     steps:
       - name: Check Mend settings
@@ -133,31 +136,39 @@ jobs:
             https://downloads.mend.io/cli/linux_amd64/mend -o "$RUNNER_TEMP/mend"
           chmod +x "$RUNNER_TEMP/mend"
 
-      # release tags update the Mend platform, and every other run only reports.
-      # pipefail keeps a CLI failure (bad credentials, unresolvable build) from hiding behind tee.
+      # pushes to "main" and release tags update the Mend platform, and every other run only reports.
+      # the CLI output names every finding, so it stays in a temp file. If the CLI fails, only lines that
+      # look like connection or credential errors reach the log, and never a findings table row.
       - name: Mend dependency scan
         env:
           MEND_USER_KEY: ${{ secrets.ASTRA_DB_MEND_USER_KEY }}
         run: |
-          set -o pipefail
           update_args=()
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "push" && ( "$GITHUB_REF" == refs/heads/main || "$GITHUB_REF" == refs/tags/* ) ]]; then
             update_args=(--update)
           fi
+          output="$RUNNER_TEMP/mend-sca-output.txt"
+          status=0
           "$RUNNER_TEMP/mend" dep --dir . \
             --scope "$MEND_ORGNAME//$MEND_PRODUCTNAME//$MEND_PROJECTNAME - $MEND_REPO" \
-            --export-results "$MEND_REPORT" \
             --non-interactive \
-            "${update_args[@]}" 2>&1 | tee mend-output.txt
+            "${update_args[@]}" > "$output" 2>&1 || status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "::error::Mend CLI failed with exit code $status."
+            grep -i -E 'unauthori[sz]ed|forbidden|denied|invalid|authenticat|connection|timed out' "$output" \
+              | grep -v '^|' | head -n 20 || true
+            exit "$status"
+          fi
 
       # the Mend CLI exits 0 on findings, so parse its summary line and fail the job on Critical/High.
       # CVE IDs listed in .github/mend-allowlist.txt (one per line, # for comments) are reviewed
-      # exceptions and do not count.
+      # exceptions and do not count. Only the counts reach the log.
       - name: Fail on Critical/High findings
         if: always()
         run: |
-          [ -f mend-output.txt ] || { echo "::warning::Mend scan output not found."; exit 0; }
-          summary=$(grep 'Detected .* vulnerabilities' mend-output.txt || true)
+          output="$RUNNER_TEMP/mend-sca-output.txt"
+          [ -f "$output" ] || { echo "::warning::Mend scan output not found."; exit 0; }
+          summary=$(grep 'Detected .* vulnerabilities' "$output" || true)
           critical=$(echo "$summary" | sed 's/.*(\([0-9]*\) Critical.*/\1/' | grep -E '^[0-9]+$' || echo 0)
           high=$(echo "$summary" | sed 's/.*(\([0-9]* Critical, \)\([0-9]*\) High.*/\2/' | grep -E '^[0-9]+$' || echo 0)
 
@@ -165,7 +176,7 @@ jobs:
           if [ -f .github/mend-allowlist.txt ]; then
             while read -r cve _rest; do
               case "$cve" in ''|\#*) continue ;; esac
-              n=$(grep -cE "^\| (CRITICAL|HIGH) .*\| ${cve} " mend-output.txt || true)
+              n=$(grep -cE "^\| (CRITICAL|HIGH) .*\| ${cve} " "$output" || true)
               if [ "${n:-0}" -gt 0 ]; then
                 echo "::notice::Accepted finding ${cve} (listed in .github/mend-allowlist.txt)"
                 accepted=$((accepted + n))
@@ -176,17 +187,9 @@ jobs:
           blocking=$(( ${critical:-0} + ${high:-0} - accepted ))
           echo "Mend SCA: ${critical:-0} Critical, ${high:-0} High (${accepted} accepted)" | tee -a "$GITHUB_STEP_SUMMARY"
           if [ "$blocking" -gt 0 ]; then
-            echo "::error::Mend SCA: ${blocking} blocking Critical/High findings. See the mend-sca-report artifact."
+            echo "::error::Mend SCA: ${blocking} blocking Critical/High findings. They stay out of this public log, so see the Mend platform or run mend dep locally."
             exit 1
           fi
-
-      - name: Upload Mend scan report
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: mend-sca-report
-          path: ${{ env.MEND_REPORT }}
-          if-no-files-found: warn
 
   mend-sast:
     name: IBM Mend SAST
@@ -227,24 +230,26 @@ jobs:
             https://downloads.mend.io/cli/linux_amd64/mend -o "$RUNNER_TEMP/mend"
           chmod +x "$RUNNER_TEMP/mend"
 
-      # every SAST run uploads to the same Mend project, so the latest scan (PR or main) is what it shows
+      # every SAST run uploads to the same Mend project, so the latest scan (PR or main) is what it shows.
+      # the CLI output stays in a temp file, the same way as for SCA.
       - name: Mend SAST scan
         env:
           MEND_USER_KEY: ${{ secrets.ASTRA_DB_MEND_USER_KEY }}
         run: |
+          output="$RUNNER_TEMP/mend-sast-output.txt"
+          status=0
           "$RUNNER_TEMP/mend" sast --dir . \
             --scope "$MEND_ORGNAME//$MEND_PRODUCTNAME//$MEND_PROJECTNAME - $MEND_REPO" \
-            --report --formats json --filename "$MEND_REPORT"
+            --report --formats json --filename "$MEND_REPORT" > "$output" 2>&1 || status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "::error::Mend CLI failed with exit code $status."
+            grep -i -E 'unauthori[sz]ed|forbidden|denied|invalid|authenticat|connection|timed out' "$output" \
+              | grep -v '^|' | head -n 20 || true
+            exit "$status"
+          fi
 
-      - name: Upload Mend scan report
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: mend-sast-report
-          path: ${{ env.MEND_REPORT }}.json
-          if-no-files-found: warn
-
-      # unlike SCA, SAST fails on a finding of any severity, and a missing or malformed report also fails
+      # unlike SCA, SAST fails on a finding of any severity, and a missing or malformed report also fails.
+      # the report stays on the runner, and only its total reaches the log.
       - name: Fail on any SAST finding
         if: always()
         run: |
@@ -263,6 +268,6 @@ jobs:
           ' "$MEND_REPORT.json")
           echo "Mend SAST total vulnerabilities: $total" | tee -a "$GITHUB_STEP_SUMMARY"
           if [ "$total" -gt 0 ]; then
-            echo "::error::Mend SAST found $total vulnerabilities. See the mend-sast-report artifact."
+            echo "::error::Mend SAST found $total vulnerabilities. They stay out of this public log, so see the Mend platform."
             exit 1
           fi
