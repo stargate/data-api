@@ -1,5 +1,5 @@
 # IBM Mend scans, using the Mend CLI path that the DataStax Mend onboarding runbook requires for repos
-# outside IBM's GitHub Enterprise space:
+# outside IBM's GitHub Enterprise space. It runs two jobs.
 # * SCA ("mend dep") checks open-source dependencies and fails on Critical or High findings
 # * SAST ("mend sast") checks our own source code and fails on any finding
 # Results land under Products//<product>//Astra DB - data-api in the IBM Mend platform.
@@ -8,7 +8,7 @@
 # calls. We copy their steps instead of calling them, because GitHub does not let a public repository use
 # reusable workflows that live in an internal one.
 #
-# Needs the same settings as cloud-billing, set on the stargate org or this repo:
+# Needs the same settings as cloud-billing, set on the stargate org or on this repo.
 # * variables ASTRA_DB_MEND_EMAIL and ASTRA_DB_MEND_PRODUCTNAME (PSIRT_PRODxxxxxx)
 # * optional variables ASTRA_DB_MEND_PROJECTNAME (defaults to "Astra DB") and ASTRA_DB_MEND_URL
 # * secret ASTRA_DB_MEND_USER_KEY
@@ -51,8 +51,8 @@ jobs:
 
   mend-sca:
     name: IBM Mend SCA
-    # fork and Dependabot pull requests get no Actions secrets, so the scan could not authenticate;
-    # their changes are scanned on the push to "main" after merge
+    # fork and Dependabot pull requests get no Actions secrets, so the scan could not authenticate,
+    # and their changes are scanned on the push to "main" after merge
     if: >-
       github.event_name != 'pull_request' ||
       (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
@@ -133,7 +133,7 @@ jobs:
             https://downloads.mend.io/cli/linux_amd64/mend -o "$RUNNER_TEMP/mend"
           chmod +x "$RUNNER_TEMP/mend"
 
-      # release tags update the Mend platform; every other run only reports.
+      # release tags update the Mend platform, and every other run only reports.
       # pipefail keeps a CLI failure (bad credentials, unresolvable build) from hiding behind tee.
       - name: Mend dependency scan
         env:
@@ -150,7 +150,7 @@ jobs:
             --non-interactive \
             "${update_args[@]}" 2>&1 | tee mend-output.txt
 
-      # the Mend CLI exits 0 on findings; parse its summary line and fail the job on Critical/High.
+      # the Mend CLI exits 0 on findings, so parse its summary line and fail the job on Critical/High.
       # CVE IDs listed in .github/mend-allowlist.txt (one per line, # for comments) are reviewed
       # exceptions and do not count.
       - name: Fail on Critical/High findings
@@ -190,8 +190,8 @@ jobs:
 
   mend-sast:
     name: IBM Mend SAST
-    # fork and Dependabot pull requests get no Actions secrets, so the scan could not authenticate;
-    # their changes are scanned on the push to "main" after merge
+    # fork and Dependabot pull requests get no Actions secrets, so the scan could not authenticate,
+    # and their changes are scanned on the push to "main" after merge
     if: >-
       github.event_name != 'pull_request' ||
       (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
@@ -201,7 +201,7 @@ jobs:
     timeout-minutes: 30
 
     env:
-      # base name only; the Mend CLI appends .json
+      # base name only, since the Mend CLI appends .json
       MEND_REPORT: "mend-sast-results"
 
     steps:
@@ -244,7 +244,7 @@ jobs:
           path: ${{ env.MEND_REPORT }}.json
           if-no-files-found: warn
 
-      # unlike SCA, SAST fails on a finding of any severity; a missing or malformed report also fails
+      # unlike SCA, SAST fails on a finding of any severity, and a missing or malformed report also fails
       - name: Fail on any SAST finding
         if: always()
         run: |
