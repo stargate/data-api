@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,6 +30,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -2991,6 +2993,175 @@ public class FindCollectionOperationTest extends OperationTestBase {
       assertThat(commandError.errorCode())
           .isEqualTo(DatabaseException.Code.FAILED_READ_REQUEST.name());
       assertThat(commandError.message()).contains("The number of nodes blocked for was: 0.");
+    }
+  }
+
+  @Nested
+  class BuildBaseDocument {
+    @Test
+    public void buildsFullDocumentWhenPredicateIsTrue() throws Exception {
+      var andExpr = new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+
+      andExpr.addFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("user-1")));
+      andExpr.addFilter(
+          new TextCollectionFilter("address.city", MapCollectionFilter.Operator.EQ, "NYC"));
+      andExpr.addFilter(
+          new TextCollectionFilter("address.post.code", MapCollectionFilter.Operator.EQ, "BTSME"));
+      andExpr.addFilter(
+          new BoolCollectionFilter("is_alive", MapCollectionFilter.Operator.EQ, true));
+
+      var operation = mkUnsortedOperation(andExpr);
+      var result = operation.reconstructDocumentFromFilter(path -> true);
+
+      var expected =
+          """
+            {
+              "_id": "user-1",
+              "address": {
+                "city": "NYC",
+                "post": {
+                  "code": "BTSME"
+                }
+              },
+              "is_alive": true
+            }
+          """;
+      assertThat(result).isEqualTo(objectMapper.readTree(expected));
+    }
+
+    @Test
+    public void filtersPathsBasedOnPredicate() throws Exception {
+      var andExpr = new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+
+      andExpr.addFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("user-1")));
+      andExpr.addFilter(
+          new TextCollectionFilter("address.city", MapCollectionFilter.Operator.EQ, "London"));
+      andExpr.addFilter(
+          new TextCollectionFilter("preferences.email", MapCollectionFilter.Operator.EQ, "true"));
+
+      var operation = mkUnsortedOperation(andExpr);
+      var result =
+          operation.reconstructDocumentFromFilter(
+              path -> path.equals("_id") || path.startsWith("preferences"));
+
+      var expected =
+          """
+            {
+              "_id": "user-1",
+              "preferences": {
+                "email": "true"
+              }
+            }
+          """;
+      assertThat(result).isEqualTo(objectMapper.readTree(expected));
+    }
+
+    @Test
+    public void throwsExceptionOnOverlappingPaths() {
+      var andExpr = new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+
+      andExpr.addFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("1")));
+      andExpr.addFilter(
+          new TextCollectionFilter("conf.net", MapCollectionFilter.Operator.EQ, "wifi"));
+      andExpr.addFilter(
+          new TextCollectionFilter("conf.net.ip", MapCollectionFilter.Operator.EQ, "10.0.0.1"));
+
+      var operation = mkUnsortedOperation(andExpr);
+
+      assertThatThrownBy(() -> operation.reconstructDocumentFromFilter(path -> true))
+          .isInstanceOf(UpdateException.class)
+          .hasMessageContaining("Both paths 'conf.net' and 'conf.net.ip' are matched");
+    }
+
+    @Test
+    public void bypassesExceptionIfOverlappingPathsFilteredOut() throws Exception {
+      var andExpr = new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+
+      andExpr.addFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("1")));
+      andExpr.addFilter(
+          new TextCollectionFilter("conf.net", MapCollectionFilter.Operator.EQ, "wifi"));
+      andExpr.addFilter(
+          new TextCollectionFilter("conf.net.ip", MapCollectionFilter.Operator.EQ, "10.0.0.1"));
+
+      var operation = mkUnsortedOperation(andExpr);
+      var result = operation.reconstructDocumentFromFilter(path -> path.equals("_id"));
+
+      var expected =
+          """
+            {
+              "_id": "1"
+            }
+          """;
+      assertThat(result).isEqualTo(objectMapper.readTree(expected));
+    }
+
+    @Test
+    public void handlesArbitrarilyNestedAndExpressions() {
+      var depth = 50;
+      var top = new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+      top.addFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("user-1")));
+
+      var current = top;
+      for (int i = 1; i <= depth; i++) {
+        var nested = new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+        nested.addFilter(
+            new TextCollectionFilter("field" + i, MapCollectionFilter.Operator.EQ, "value" + i));
+        current.addSubExpressionReturnSub(nested);
+        current = nested;
+      }
+
+      var operation = mkUnsortedOperation(top);
+      var result = operation.reconstructDocumentFromFilter(path -> true);
+
+      var expected = objectMapper.createObjectNode();
+      expected.put("_id", "user-1");
+      for (int i = 1; i <= depth; i++) {
+        expected.put("field" + i, "value" + i);
+      }
+      assertThat(result).isEqualTo(expected);
+    }
+
+    @Test
+    public void ignoresFiltersUnderOrSubExpressions() throws Exception {
+      var top = new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+      top.addFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("user-1")));
+
+      var orExpr = new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.OR);
+      orExpr.addFilter(
+          new TextCollectionFilter("address.city", MapCollectionFilter.Operator.EQ, "NYC"));
+      orExpr.addFilter(
+          new TextCollectionFilter("address.city", MapCollectionFilter.Operator.EQ, "LA"));
+      top.addSubExpressionReturnSub(orExpr);
+
+      var operation = mkUnsortedOperation(top);
+      var result = operation.reconstructDocumentFromFilter(path -> true);
+
+      var expected =
+          """
+            {
+              "_id": "user-1"
+            }
+          """;
+      assertThat(result).isEqualTo(objectMapper.readTree(expected));
+    }
+
+    private FindCollectionOperation mkUnsortedOperation(DBLogicalExpression expression) {
+      return FindCollectionOperation.unsorted(
+          COMMAND_CONTEXT,
+          expression,
+          DocumentProjector.defaultProjector(),
+          null,
+          20,
+          20,
+          CollectionReadType.DOCUMENT,
+          objectMapper,
+          false);
     }
   }
 

@@ -17,7 +17,10 @@ public class IsNullCollectionFilter extends SetCollectionFilter<String> {
 
   @Override
   protected Optional<JsonNode> jsonNodeForNewDocument(JsonNodeFactory nodeFactory) {
-    return Optional.of(toJsonNode(nodeFactory));
+    if (Operator.CONTAINS.equals(operator)) {
+      return Optional.of(toJsonNode(nodeFactory));
+    }
+    return Optional.empty();
   }
 
   //    @Override

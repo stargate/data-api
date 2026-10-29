@@ -28,7 +28,10 @@ public class SubDocEqualsCollectionFilter extends MapCollectionFilter<String> {
    */
   @Override
   protected Optional<JsonNode> jsonNodeForNewDocument(JsonNodeFactory nodeFactory) {
-    return Optional.of(toJsonNode(nodeFactory, subDocValue));
+    if (Operator.MAP_EQUALS.equals(operator)) {
+      return Optional.of(toJsonNode(nodeFactory, subDocValue));
+    }
+    return Optional.empty();
   }
 
   //    @Override
