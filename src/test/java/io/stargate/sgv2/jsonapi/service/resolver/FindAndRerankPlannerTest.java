@@ -86,7 +86,7 @@ class FindAndRerankPlannerTest {
       throws Exception {
     var plan = FindAndRerankPlanner.plan(command(sort, options), commandContext(collection));
 
-    assertThat(plan.vectorize() == null ? null : plan.vectorize().text())
+    assertThat(plan.vectorizeStep() == null ? null : plan.vectorizeStep().text())
         .as("%s: text to vectorize", description)
         .isEqualTo(vectorizeText);
     assertThat(plan.legs()).as("%s: legs", description).containsExactlyInAnyOrderElementsOf(legs);
@@ -453,8 +453,9 @@ class FindAndRerankPlannerTest {
         FindAndRerankPlanner.plan(
             command(VECTOR_SORT, options), commandContext(Collection.VECTOR_NO_RERANK));
 
-    assertThat(plan.rerank().rerankServiceDef().provider()).isEqualTo("nvidia");
-    assertThat(plan.rerank().rerankServiceDef().modelName()).isEqualTo(TestConstants.RERANK_MODEL);
+    assertThat(plan.rerankStep().rerankServiceDef().provider()).isEqualTo("nvidia");
+    assertThat(plan.rerankStep().rerankServiceDef().modelName())
+        .isEqualTo(TestConstants.RERANK_MODEL);
   }
 
   // ===========================================================================================
@@ -578,9 +579,10 @@ class FindAndRerankPlannerTest {
                 """),
             commandContext(Collection.VECTORIZE_NO_LEXICAL));
 
-    assertThat(plan.rerank().rerankingQuery().query()).isEqualTo("cheese");
-    assertThat(plan.rerank().rerankingQuery().source()).isEqualTo(RerankingQuery.Source.VECTORIZE);
-    assertThat(plan.rerank().passageLocator().path()).isEqualTo(VECTOR_EMBEDDING_TEXT_FIELD);
+    assertThat(plan.rerankStep().rerankingQuery().query()).isEqualTo("cheese");
+    assertThat(plan.rerankStep().rerankingQuery().source())
+        .isEqualTo(RerankingQuery.Source.VECTORIZE);
+    assertThat(plan.rerankStep().passageLocator().path()).isEqualTo(VECTOR_EMBEDDING_TEXT_FIELD);
   }
 
   // ===========================================================================================
@@ -629,7 +631,7 @@ class FindAndRerankPlannerTest {
             .vectorConfig()
             .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
             .orElseThrow();
-    assertThat(plan.vectorize())
+    assertThat(plan.vectorizeStep())
         .isEqualTo(
             new FindAndRerankPlan.VectorizeStep(
                 "cheese", vectorizeColumn.vectorSize(), vectorizeColumn.vectorizeDefinition()));
@@ -637,15 +639,15 @@ class FindAndRerankPlannerTest {
         .containsExactlyInAnyOrder(
             vectorizedLeg(DEFAULT_READ_LIMIT), lexicalLeg("cheese", DEFAULT_READ_LIMIT));
 
-    var rerank = plan.rerank();
-    assertThat(rerank.rerankServiceDef())
+    var rerankStep = plan.rerankStep();
+    assertThat(rerankStep.rerankServiceDef())
         .isEqualTo(
             new CollectionRerankDef.RerankServiceDef(
                 "nvidia", TestConstants.RERANK_MODEL, null, null));
-    assertThat(rerank.rerankingQuery().query()).isEqualTo("cheese");
-    assertThat(rerank.rerankingQuery().source()).isEqualTo(RerankingQuery.Source.VECTORIZE);
-    assertThat(rerank.passageLocator().path()).isEqualTo(VECTOR_EMBEDDING_TEXT_FIELD);
-    assertThat(rerank.limit()).isEqualTo(OperationsConfig.DEFAULT_FIND_AND_RERANK_LIMIT);
+    assertThat(rerankStep.rerankingQuery().query()).isEqualTo("cheese");
+    assertThat(rerankStep.rerankingQuery().source()).isEqualTo(RerankingQuery.Source.VECTORIZE);
+    assertThat(rerankStep.passageLocator().path()).isEqualTo(VECTOR_EMBEDDING_TEXT_FIELD);
+    assertThat(rerankStep.limit()).isEqualTo(OperationsConfig.DEFAULT_FIND_AND_RERANK_LIMIT);
     assertThat(plan.includeScores()).isFalse();
     assertThat(plan.includeSortVector()).isFalse();
   }
@@ -665,14 +667,14 @@ class FindAndRerankPlannerTest {
                 """),
             commandContext(Collection.VECTOR_LEXICAL));
 
-    assertThat(plan.vectorize()).isNull();
+    assertThat(plan.vectorizeStep()).isNull();
     assertThat(plan.legs()).containsExactlyInAnyOrder(vectorLeg(20), lexicalLeg("cows", 30));
 
-    var rerank = plan.rerank();
-    assertThat(rerank.rerankingQuery().query()).isEqualTo("q");
-    assertThat(rerank.rerankingQuery().source()).isEqualTo(RerankingQuery.Source.OPTIONS);
-    assertThat(rerank.passageLocator().path()).isEqualTo("body");
-    assertThat(rerank.limit()).isEqualTo(5);
+    var rerankStep = plan.rerankStep();
+    assertThat(rerankStep.rerankingQuery().query()).isEqualTo("q");
+    assertThat(rerankStep.rerankingQuery().source()).isEqualTo(RerankingQuery.Source.OPTIONS);
+    assertThat(rerankStep.passageLocator().path()).isEqualTo("body");
+    assertThat(rerankStep.limit()).isEqualTo(5);
     assertThat(plan.includeScores()).isTrue();
     assertThat(plan.includeSortVector()).isTrue();
   }
