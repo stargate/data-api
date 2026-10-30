@@ -225,8 +225,8 @@ class FindAndRerankOperationBuilderTest {
   }
 
   private static FindAndRerankPlan plan(
-      FindAndRerankPlan.VectorizeStep vectorize, FindAndRerankPlan.RerankLeg... legs) {
-    return new FindAndRerankPlan(vectorize, List.of(legs), RERANK_STEP, false, false);
+      FindAndRerankPlan.VectorizeStep vectorizeStep, FindAndRerankPlan.RerankLeg... legs) {
+    return new FindAndRerankPlan(vectorizeStep, List.of(legs), RERANK_STEP, false, false);
   }
 
   /** A VECTOR_LEG that reads with {@link #VECTOR}. */
