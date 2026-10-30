@@ -13,6 +13,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +66,15 @@ public class ErrorChallengeSender
 
       // Return the status code from the challenge data
       context.response().setStatusCode(challengeData.status);
+
+      if (challengeData.status == Response.Status.UNAUTHORIZED.getStatusCode()) {
+        context
+            .response()
+            .headers()
+            .set(
+                "WWW-Authenticate",
+                "Bearer resource_metadata=\"/.well-known/oauth-protected-resource\"");
+      }
 
       // write and map to true
       return Uni.createFrom()

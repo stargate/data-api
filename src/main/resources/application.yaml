@@ -1,6 +1,22 @@
 ---
 # please keep properties in the alphabetical order
 
+# SmallRye JWT — RS256 verification for PKCE-issued JWTs.
+# auth-manager signs tokens; cloud-session proxies the public JWKS at /.well-known/jwks.json.
+# Override mp.jwt.verify.publickey.location per environment (dev/test/prod have different
+# cloud-session base URLs).  The issuer is always "auth-manager" regardless of environment.
+mp:
+  jwt:
+    verify:
+      publickey:
+        # Cloud-session proxies auth-manager's JWKS at this well-known path.
+        # Override in deployment config with the env-specific cloud-session base URL, e.g.:
+        #   https://api.astra.datastax.com/.well-known/jwks.json  (prod)
+        #   http://cloud-session.svc.cluster.local:8080/.well-known/jwks.json  (in-cluster)
+        # [LOCAL-DEV ONLY] — Do not merge to production. Override via QUARKUS_MP_JWT_VERIFY_PUBLICKEY_LOCATION env var.
+        location: http://localhost:8080/.well-known/jwks.json
+      issuer: auth-manager
+
 stargate:
   # security and authentication configuration
   # see io.stargate.sgv2.jsonapi.config.AuthConfig for all config properties and options
@@ -10,7 +26,11 @@ stargate:
     header-based:
       enabled: true
 
-    # Cassandra token resolver from principal
+    # Cassandra token resolver from principal.
+    # SmallRye JWT validates the RS256 Bearer JWT and sets the principal name to the
+    # raw JWT string; PrincipalTokenResolver forwards that as the Cassandra token.
+    # Switch to type: header (with headerName: Token) for AstraCS token passthrough
+    # once ingress-fp JWT validation is fully deployed.
     token-resolver:
       type: principal
 
@@ -98,6 +118,9 @@ quarkus:
         default:
           paths: /v1/*
           policy: authenticated
+        well-known:
+          paths: /.well-known/*
+          policy: permit
 
     limits:
       # Let's limit low-level maximum HTTP request size to 20 megs: stricter

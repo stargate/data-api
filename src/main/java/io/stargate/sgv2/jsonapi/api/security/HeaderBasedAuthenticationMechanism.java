@@ -70,6 +70,13 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
     if (null == headerValue) {
       headerValue = context.request().getHeader(DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME);
     }
+    // MCP clients send Authorization: Bearer <token>
+    if (null == headerValue) {
+      String authorizationHeader = context.request().getHeader("Authorization");
+      if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+        headerValue = authorizationHeader.substring("Bearer ".length()).trim();
+      }
+    }
     if (null != headerValue) {
       HeaderAuthenticationRequest request =
           new HeaderAuthenticationRequest(headerName, headerValue);
