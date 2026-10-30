@@ -37,7 +37,7 @@ class FindAndRerankPlanTest {
   private static final FindAndRerankPlan.RerankLeg LEXICAL_LEG =
       new FindAndRerankPlan.RerankLeg(RerankLegType.LEXICAL_LEG, null, "cows", 50);
 
-  private static final FindAndRerankPlan.VectorizeStep VECTORIZE =
+  private static final FindAndRerankPlan.VectorizeStep VECTORIZE_STEP =
       new FindAndRerankPlan.VectorizeStep(
           "cheese", 3, new VectorizeDefinition("custom", "custom", null, null));
 
@@ -51,10 +51,10 @@ class FindAndRerankPlanTest {
   @MethodSource("invalidPlans")
   void rejectsInvalidPlan(
       String description,
-      FindAndRerankPlan.VectorizeStep vectorize,
+      FindAndRerankPlan.VectorizeStep vectorizeStep,
       List<FindAndRerankPlan.RerankLeg> legs,
       String message) {
-    assertThatThrownBy(() -> new FindAndRerankPlan(vectorize, legs, RERANK_STEP, false, false))
+    assertThatThrownBy(() -> new FindAndRerankPlan(vectorizeStep, legs, RERANK_STEP, false, false))
         .as(description)
         .isExactlyInstanceOf(IllegalArgumentException.class)
         .hasMessage(message);
@@ -72,21 +72,21 @@ class FindAndRerankPlanTest {
             "VECTOR_LEG without a vector, no vectorize step",
             null,
             List.of(VECTORIZED_LEG),
-            "vectorize must not be null when the VECTOR_LEG has no vector"),
+            "vectorizeStep must not be null when the VECTOR_LEG has no vector"),
         Arguments.of(
             "vectorize step, the VECTOR_LEG has a vector",
-            VECTORIZE,
+            VECTORIZE_STEP,
             List.of(VECTOR_LEG),
-            "vectorize must be null when there is no VECTOR_LEG without a vector"));
+            "vectorizeStep must be null when there is no VECTOR_LEG without a vector"));
   }
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("validPlans")
   void acceptsValidPlan(
       String description,
-      FindAndRerankPlan.VectorizeStep vectorize,
+      FindAndRerankPlan.VectorizeStep vectorizeStep,
       List<FindAndRerankPlan.RerankLeg> legs) {
-    assertThatCode(() -> new FindAndRerankPlan(vectorize, legs, RERANK_STEP, false, false))
+    assertThatCode(() -> new FindAndRerankPlan(vectorizeStep, legs, RERANK_STEP, false, false))
         .as(description)
         .doesNotThrowAnyException();
   }
@@ -97,7 +97,7 @@ class FindAndRerankPlanTest {
         Arguments.of("VECTOR_LEG with a vector, no vectorize step", null, List.of(VECTOR_LEG)),
         Arguments.of(
             "VECTOR_LEG without a vector, vectorize step, LEXICAL_LEG",
-            VECTORIZE,
+            VECTORIZE_STEP,
             List.of(VECTORIZED_LEG, LEXICAL_LEG)));
   }
 
