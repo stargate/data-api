@@ -13,34 +13,39 @@ import java.util.Set;
 /**
  * The steps a findAndRerank command runs: vectorize the sort text when there is a {@link
  * VectorizeStep}, read with each {@link RerankLeg}, then rerank what the legs read with the {@link
- * RerankStep}.
+ * RerankStep}. {@link FindAndRerankOperationBuilder} builds the tasks from it.
  *
- * <p>Made by {@link FindAndRerankPlanner}, {@link FindAndRerankOperationBuilder} builds the tasks
- * from it.
+ * <p><b>NOTE:</b> create new plans with {@link FindAndRerankPlanner#plan}, that is where the
+ * command is validated. The checks in the constructors of these records are sanity checks that the
+ * code making a plan is correct, they do not validate the command.
  *
- * @param vectorize The vectorize step for the vector leg, <code>null</code> when the command does
- *     not vectorize.
+ * @param vectorizeStep The vectorize step for the vector leg, <code>null</code> when the command
+ *     does not vectorize.
  * @param legs The reads that find the documents to rerank, never empty, at most one of each type.
- * @param rerank How to rerank the documents and how many to return.
+ * @param rerankStep How to rerank the documents and how many to return.
  * @param includeScores The <code>includeScores</code> option of the command.
  * @param includeSortVector The <code>includeSortVector</code> option of the command.
  */
 record FindAndRerankPlan(
-    VectorizeStep vectorize,
+    VectorizeStep vectorizeStep,
     List<RerankLeg> legs,
-    RerankStep rerank,
+    RerankStep rerankStep,
+    // TODO: move includeScores, includeSortVector and the projector of the RerankStep into a
+    // ProjectionStep
     boolean includeScores,
     boolean includeSortVector) {
 
   FindAndRerankPlan {
     // sanity checks, the planner never makes a plan that fails these
     Objects.requireNonNull(legs, "legs must not be null");
-    Objects.requireNonNull(rerank, "rerank must not be null");
+    Objects.requireNonNull(rerankStep, "rerankStep must not be null");
     if (legs.isEmpty()) {
       throw new IllegalArgumentException("legs must not be empty");
     }
     legs = List.copyOf(legs);
 
+    // all the checks below are sanity checks to make sure the plan is valid, not the user input
+    // validation
     var legTypes = legs.stream().map(RerankLeg::legType).toList();
     if (legTypes.size() != Set.copyOf(legTypes).size()) {
       throw new IllegalArgumentException(
@@ -51,13 +56,13 @@ record FindAndRerankPlan(
     var needsVectorizeStep =
         legs.stream()
             .anyMatch(leg -> leg.legType() == RerankLegType.VECTOR_LEG && leg.vector() == null);
-    if (needsVectorizeStep && vectorize == null) {
+    if (needsVectorizeStep && vectorizeStep == null) {
       throw new IllegalArgumentException(
-          "vectorize must not be null when the VECTOR_LEG has no vector");
+          "vectorizeStep must not be null when the VECTOR_LEG has no vector");
     }
-    if (!needsVectorizeStep && vectorize != null) {
+    if (!needsVectorizeStep && vectorizeStep != null) {
       throw new IllegalArgumentException(
-          "vectorize must be null when there is no VECTOR_LEG without a vector");
+          "vectorizeStep must be null when there is no VECTOR_LEG without a vector");
     }
   }
 
@@ -90,6 +95,7 @@ record FindAndRerankPlan(
   record RerankLeg(RerankLegType legType, float[] vector, String lexicalText, int readLimit) {
 
     RerankLeg {
+      // sanity checks, the planner never makes a leg that fails these
       Objects.requireNonNull(legType, "legType must not be null");
       switch (legType) {
         case VECTOR_LEG -> {
