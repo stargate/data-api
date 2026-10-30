@@ -23,11 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Validates a findAndRerank command and makes the {@link FindAndRerankPlan} for it.
- *
- * <p>{@link FindAndRerankCommandResolver} calls {@link #plan} and gives the plan to {@link
- * FindAndRerankOperationBuilder}, which builds the tasks from it. Deciding what to run is kept
- * apart from building the tasks, so each can be tested on its own.
+ * Validates a {@link FindAndRerankCommand} and translates the intention of the user, expressed in
+ * the command, into a {@link FindAndRerankPlan} that is used to build the operation that runs it.
  */
 class FindAndRerankPlanner {
 
@@ -36,7 +33,7 @@ class FindAndRerankPlanner {
   }
 
   /**
-   * Validates the command and makes its plan, throws an API error when the command cannot run.
+   * Validates the command and makes its plan.
    *
    * @param command The command to plan.
    * @param commandContext Context for the command, it has the collection and the config.
@@ -55,13 +52,19 @@ class FindAndRerankPlanner {
     checkSortSupported(sort, schemaObject);
     validateHybridLimits(command, operationsConfig);
     var rerankServiceDef = resolveRerankServiceDef(command, commandContext);
-    var rerankingQuery = RerankingQuery.create(command);
+    var rerankingQuery =
+        RerankingQuery.create(
+            getOrDefault(command.options(), FindAndRerankCommand.Options::rerankQuery, null),
+            vectorizeText(sort));
     var passageLocator = passageLocator(command);
     var projector = command.buildProjector();
 
     // NOTE: the legs are planned after the options and the projection are checked, to keep the
     // error order of the command: e.g. {"$hybrid": ""} with no rerankQuery fails with
     // MISSING_RERANK_QUERY_TEXT, not MISSING_HYBRID_SORT_VALUE
+
+    // NOTE: a sort with no $vector or $vectorize fails here with a SORT error, not later with an
+    // UNEXPECTED_SERVER_ERROR, see GH #2577
     var legs =
         switch (sort.rerankLegMode()) {
             // TODO: GH #2602, GH #2603 - plan single leg sorts, until then only a command with no
@@ -69,7 +72,7 @@ class FindAndRerankPlanner {
           case SINGLE_LEG -> throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
           case MULTI_LEG -> multiLegs(command, schemaObject);
         };
-    var vectorize = isVectorizeSort(sort) ? vectorizeStep(sort, schemaObject) : null;
+    var vectorizeStep = isVectorizeSort(sort) ? planVectorizeStep(sort, schemaObject) : null;
 
     int limit =
         getOrDefault(
@@ -78,7 +81,7 @@ class FindAndRerankPlanner {
             operationsConfig.defaultFindAndRerankLimit());
 
     return new FindAndRerankPlan(
-        vectorize,
+        vectorizeStep,
         legs,
         new FindAndRerankPlan.RerankStep(
             rerankServiceDef, rerankingQuery, passageLocator, projector, limit),
@@ -196,7 +199,7 @@ class FindAndRerankPlanner {
       if (schemaObject.lexicalDef().enabled()) {
         legs.add(
             new FindAndRerankPlan.RerankLeg(
-                RerankLegType.LEXICAL_LEG, null, sort.lexicalText(), hybridLimits.lexicalLimit()));
+                RerankLegType.LEXICAL_LEG, null, lexicalText(sort), hybridLimits.lexicalLimit()));
       } else if (isExplicitLexicalSort(sort)) {
         // error should have been caught in checkSortSupported() safety here
         throwIfNoLexicalIndex(schemaObject);
@@ -209,13 +212,14 @@ class FindAndRerankPlanner {
    * The {@link FindAndRerankPlan.VectorizeStep} for the vectorize text of the sort, using the
    * vectorize column of the collection.
    */
-  private static FindAndRerankPlan.VectorizeStep vectorizeStep(
+  private static FindAndRerankPlan.VectorizeStep planVectorizeStep(
       FindAndRerankSort sort, CollectionSchemaObject schemaObject) {
 
+    // sanity check, checkSortSupported() checked the collection has a vectorize column
     var vectorizeColumn =
         schemaObject.vectorConfig().getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
     return new FindAndRerankPlan.VectorizeStep(
-        sort.vectorizeText(), vectorizeColumn.vectorSize(), vectorizeColumn.vectorizeDefinition());
+        vectorizeText(sort), vectorizeColumn.vectorSize(), vectorizeColumn.vectorizeDefinition());
   }
 
   /**
@@ -280,8 +284,20 @@ class FindAndRerankPlanner {
     }
   }
 
+  /** The text to vectorize: the $hybrid text, or the $vectorize value, or <code>null</code>. */
+  private static String vectorizeText(FindAndRerankSort sort) {
+    return sort.hybridSort() != null ? sort.hybridSort() : sort.vectorizeSort();
+  }
+
+  /**
+   * The text for the lexical sort: the $hybrid text, or the $lexical value, or <code>null</code>.
+   */
+  private static String lexicalText(FindAndRerankSort sort) {
+    return sort.hybridSort() != null ? sort.hybridSort() : sort.lexicalSort();
+  }
+
   private static boolean isLexicalSort(FindAndRerankSort sort) {
-    return sort.lexicalText() != null;
+    return lexicalText(sort) != null;
   }
 
   /** The $hybrid object has $lexical text, so the collection must have a lexical index. */
@@ -290,7 +306,7 @@ class FindAndRerankPlanner {
   }
 
   private static boolean isVectorizeSort(FindAndRerankSort sort) {
-    return sort.vectorizeText() != null;
+    return vectorizeText(sort) != null;
   }
 
   private static boolean isVectorSort(FindAndRerankSort sort) {
