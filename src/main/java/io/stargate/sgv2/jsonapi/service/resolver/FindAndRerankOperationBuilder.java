@@ -29,7 +29,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Builds the operation for a {@link FindAndRerankCommand} from the {@link FindAndRerankPlan} made
- * by {@link FindAndRerankPlanner}.
+ * by {@link FindAndRerankPlanner}, and from the command for the filter and for the hybridLimits
+ * hack in readTasks() (GH #1961).
+ *
+ * <p>The builder trusts the plan is valid, so it does not check the plan as it reads from it.
+ *
+ * <p>TODO: move the filter and the hybridLimits into the plan, so the builder only needs the plan.
  */
 class FindAndRerankOperationBuilder {
 
@@ -121,7 +126,7 @@ class FindAndRerankOperationBuilder {
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
       rerankTasks(List<RerankingTask.DeferredCommandWithSource> deferredCommandResults) {
 
-    var rerankStep = plan.rerank();
+    var rerankStep = plan.rerankStep();
     var rerankServiceDef = rerankStep.rerankServiceDef();
     RerankingProvider rerankingProvider =
         commandContext
@@ -212,7 +217,7 @@ class FindAndRerankOperationBuilder {
 
   private IntermediateCollectionReadTask buildBm25Read(DeferredCommandResultAction deferredAction) {
 
-    var lexicalLeg = leg(RerankLegType.LEXICAL_LEG);
+    var lexicalLeg = legByType(RerankLegType.LEXICAL_LEG);
     if (lexicalLeg.isEmpty()) {
       // we can fake it now, the value will be waiting when the rerank command comes to get it
       deferredAction.setEmptyMultiDocumentResponse();
@@ -246,7 +251,7 @@ class FindAndRerankOperationBuilder {
     // sanity check, the planner always makes a VECTOR_LEG
     // TODO: GH #2597 - the builder should not need a VECTOR_LEG
     var vectorLeg =
-        leg(RerankLegType.VECTOR_LEG)
+        legByType(RerankLegType.VECTOR_LEG)
             .orElseThrow(
                 () ->
                     new IllegalStateException(
@@ -257,13 +262,17 @@ class FindAndRerankOperationBuilder {
     var sortClause = new SortClause(new ArrayList<>());
     DeferredVectorize deferredVectorize = null;
 
-    var vectorize = plan.vectorize();
-    if (vectorize != null) {
+    var vectorizeStep = plan.vectorizeStep();
+    if (vectorizeStep != null) {
       // pass the vector sort clause through so it will be updated when we get the vector
       deferredVectorize =
           new DeferredVectorize(
-              vectorize.text(), vectorize.dimension(), vectorize.vectorizeDefinition(), sortClause);
+              vectorizeStep.text(),
+              vectorizeStep.dimension(),
+              vectorizeStep.vectorizeDefinition(),
+              sortClause);
     } else {
+      // the plan is valid, so the VECTOR_LEG has a vector when there is no vectorize step
       sortClause.sortExpressions().add(SortExpression.collectionVectorSort(vectorLeg.vector()));
     }
 
@@ -295,7 +304,7 @@ class FindAndRerankOperationBuilder {
   }
 
   /** The leg of the plan with this type, there is at most one of each type. */
-  private Optional<FindAndRerankPlan.RerankLeg> leg(RerankLegType legType) {
+  private Optional<FindAndRerankPlan.RerankLeg> legByType(RerankLegType legType) {
     return plan.legs().stream().filter(leg -> leg.legType() == legType).findFirst();
   }
 }
