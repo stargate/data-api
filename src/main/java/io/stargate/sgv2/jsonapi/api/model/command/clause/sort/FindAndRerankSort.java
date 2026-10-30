@@ -119,18 +119,6 @@ public record FindAndRerankSort(
     Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
   }
 
-  /** The text to vectorize: the $hybrid text, or the $vectorize value, or <code>null</code>. */
-  public String vectorizeText() {
-    return hybridSort != null ? hybridSort : vectorizeSort;
-  }
-
-  /**
-   * The text for the lexical sort: the $hybrid text, or the $lexical value, or <code>null</code>.
-   */
-  public String lexicalText() {
-    return hybridSort != null ? hybridSort : lexicalSort;
-  }
-
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
     return dataRecorder
