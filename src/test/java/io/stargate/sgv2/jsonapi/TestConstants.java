@@ -23,6 +23,9 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
+import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
+import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.*;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
@@ -119,10 +122,14 @@ public class TestConstants {
   // Schema Objects
   // ============================================================
 
+  /** The reranking model of the collection schema objects that have reranking enabled. */
+  public static final String RERANK_MODEL = "nvidia/llama-3.2-nv-rerankqa-1b-v2";
+
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT_LEGACY;
   public final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject VECTORIZE_RERANK_COLLECTION_SCHEMA_OBJECT;
+  public final CollectionSchemaObject VECTORIZE_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
   public final TableSchemaObject TABLE_SCHEMA_OBJECT;
   public final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
@@ -200,8 +207,7 @@ public class TestConstants {
             CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
                 new CollectionRerankDef(
                     true,
-                    new CollectionRerankDef.RerankServiceDef(
-                        "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
+                    new CollectionRerankDef.RerankServiceDef("nvidia", RERANK_MODEL, null, null))));
 
     // Schema object for testing with legacy (pre-lexical-config) defaults
     COLLECTION_SCHEMA_OBJECT_LEGACY =
@@ -247,8 +253,27 @@ public class TestConstants {
             CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
                 new CollectionRerankDef(
                     true,
-                    new CollectionRerankDef.RerankServiceDef(
-                        "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
+                    new CollectionRerankDef.RerankServiceDef("nvidia", RERANK_MODEL, null, null))));
+
+    // Same as VECTORIZE_RERANK_COLLECTION_SCHEMA_OBJECT, but with a lexical index
+    VECTORIZE_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT =
+        new CollectionSchemaObject(
+            COLLECTION_IDENTIFIER,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.fromColumnDefinitions(
+                List.of(
+                    new VectorColumnDefinition(
+                        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                        -1,
+                        SimilarityFunction.COSINE,
+                        EmbeddingSourceModel.OTHER,
+                        new VectorizeDefinition("custom", "custom", null, null)))),
+            null,
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
+                new CollectionRerankDef(
+                    true,
+                    new CollectionRerankDef.RerankServiceDef("nvidia", RERANK_MODEL, null, null))));
 
     VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT =
         new CollectionSchemaObject(
@@ -267,8 +292,7 @@ public class TestConstants {
             CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
                 new CollectionRerankDef(
                     true,
-                    new CollectionRerankDef.RerankServiceDef(
-                        "nvidia", "nvidia/llama-3.2-nv-rerankqa-1b-v2", null, null))));
+                    new CollectionRerankDef.RerankServiceDef("nvidia", RERANK_MODEL, null, null))));
 
     TABLE_SCHEMA_OBJECT = new TableSchemaObject(TABLE_IDENTIFIER);
 
@@ -298,11 +322,30 @@ public class TestConstants {
     return collectionContext(commandName.getApiName(), schema, null, null);
   }
 
+  /**
+   * A collection context that reads its config from <code>commandConfig</code>, so a test can give
+   * it config without starting Quarkus.
+   */
+  public CommandContext<CollectionSchemaObject> collectionContext(
+      CommandName commandName, CollectionSchemaObject schema, CommandConfig commandConfig) {
+    return collectionContext(commandName.getApiName(), schema, null, null, commandConfig);
+  }
+
   public CommandContext<CollectionSchemaObject> collectionContext(
       String commandName,
       CollectionSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
+    return collectionContext(
+        commandName, schema, metricsReporter, embeddingProvider, new CommandConfig());
+  }
+
+  private CommandContext<CollectionSchemaObject> collectionContext(
+      String commandName,
+      CollectionSchemaObject schema,
+      JsonProcessingMetricsReporter metricsReporter,
+      EmbeddingProvider embeddingProvider,
+      CommandConfig commandConfig) {
 
     // Build the no-op Billing before opening a new stubbing chain — Mockito treats nested
     // when()/thenReturn() calls as unfinished stubbing.
@@ -323,7 +366,7 @@ public class TestConstants {
         .withJsonProcessingMetricsReporter(
             metricsReporter == null ? mock(JsonProcessingMetricsReporter.class) : metricsReporter)
         .withCqlSessionCache(mock(CQLSessionCache.class))
-        .withCommandConfig(new CommandConfig())
+        .withCommandConfig(commandConfig)
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
         .withMeterRegistry(mock(MeterRegistry.class))
@@ -383,6 +426,46 @@ public class TestConstants {
         .withCommandName(COMMAND_NAME)
         .withRequestContext(requestContext())
         .build();
+  }
+
+  // ====================================================
+  // Reranking providers config
+  // ====================================================
+
+  /**
+   * A reranking providers config with one provider, built from the real config classes so that the
+   * rerank service of a collection, or a command override, is validated the same way as in
+   * production. A mocked config has no providers and rejects every override.
+   *
+   * @param providerName Name of the provider, the collection schema objects use "nvidia".
+   * @param enabled If the provider is enabled.
+   * @param models The models of the provider, see {@link #rerankingModelConfig(String,
+   *     ApiModelSupport.SupportStatus)}.
+   */
+  public static RerankingProvidersConfig rerankingProvidersConfig(
+      String providerName,
+      boolean enabled,
+      RerankingProvidersConfig.RerankingProviderConfig.ModelConfig... models) {
+    return new RerankingProvidersConfigImpl(
+        Map.of(
+            providerName,
+            new RerankingProvidersConfigImpl.RerankingProviderConfigImpl(
+                false, providerName, enabled, Map.of(), List.of(models))));
+  }
+
+  /**
+   * A reranking model with the given support status. The URL and request properties are fixed
+   * values, the tests that use this config do not call the model.
+   */
+  public static RerankingProvidersConfig.RerankingProviderConfig.ModelConfig rerankingModelConfig(
+      String name, ApiModelSupport.SupportStatus status) {
+    return new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl(
+        name,
+        new ApiModelSupport.ApiModelSupportImpl(status, Optional.empty()),
+        false,
+        "https://example.com/rerank",
+        new RerankingProvidersConfigImpl.RerankingProviderConfigImpl.ModelConfigImpl
+            .RequestPropertiesImpl(3, 10, 100, 100, 0.5, 10));
   }
 
   // ====================================================

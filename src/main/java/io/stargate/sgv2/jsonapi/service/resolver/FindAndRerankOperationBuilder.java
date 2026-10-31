@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -12,13 +10,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import io.stargate.sgv2.jsonapi.config.IntConfigWithBounds;
-import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.RequestException;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.exception.SortException;
-import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAction;
@@ -26,19 +17,25 @@ import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingTaskGroupB
 import io.stargate.sgv2.jsonapi.service.operation.reranking.*;
 import io.stargate.sgv2.jsonapi.service.operation.tasks.*;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProvider;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.Deferrable;
 import io.stargate.sgv2.jsonapi.service.shredding.DeferredAction;
-import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** */
+/**
+ * Builds the operation for a {@link FindAndRerankCommand} from the {@link FindAndRerankPlan} made
+ * by {@link FindAndRerankPlanner}, and from the command for the filter and for the hybridLimits
+ * hack in readTasks() (GH #1961).
+ *
+ * <p>The builder trusts the plan is valid, so it does not check the plan as it reads from it.
+ *
+ * <p>TODO: move the filter and the hybridLimits into the plan, so the builder only needs the plan.
+ */
 class FindAndRerankOperationBuilder {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FindAndRerankOperationBuilder.class);
@@ -51,24 +48,22 @@ class FindAndRerankOperationBuilder {
 
   private final CommandContext<CollectionSchemaObject> commandContext;
 
-  // we use this in a bunch of places
-  private final OperationsConfig operationsConfig;
-
   // things set in the builder pattern.
   private FindAndRerankCommand command;
+  private FindAndRerankPlan plan;
   private FindCommandResolver findCommandResolver;
-
-  // lazily computed effective rerank service def (command override or collection default)
-  private CollectionRerankDef.RerankServiceDef effectiveRerankServiceDef;
 
   public FindAndRerankOperationBuilder(CommandContext<CollectionSchemaObject> commandContext) {
     this.commandContext = Objects.requireNonNull(commandContext, "commandContext cannot be null");
-
-    operationsConfig = commandContext.config().get(OperationsConfig.class);
   }
 
   public FindAndRerankOperationBuilder withCommand(FindAndRerankCommand command) {
     this.command = command;
+    return this;
+  }
+
+  public FindAndRerankOperationBuilder withPlan(FindAndRerankPlan plan) {
+    this.plan = plan;
     return this;
   }
 
@@ -81,10 +76,7 @@ class FindAndRerankOperationBuilder {
   public Operation<CollectionSchemaObject> build() {
 
     Objects.requireNonNull(command, "command cannot be null");
-
-    checkSortSupported();
-    validateHybridLimits();
-    this.effectiveRerankServiceDef = resolveRerankServiceDef();
+    Objects.requireNonNull(plan, "plan cannot be null");
 
     // Step 1 - we need a reranking task and the deferrable actions to do the intermediate reads
     // Making the deferrables here so we can associate them with read types that will fill them
@@ -131,146 +123,35 @@ class FindAndRerankOperationBuilder {
         rerankTasksAndDeferrables.accumulator());
   }
 
-  /**
-   * Validate user-supplied hybridLimits against the dynamic OperationsConfig bounds. Cannot be done
-   * in the Jackson deserializer because it has no access to OperationsConfig (config-file and
-   * env-var overrides).
-   */
-  private void validateHybridLimits() {
-    if (command.options() == null || command.options().hybridLimits() == null) {
-      return;
-    }
-    var hybridLimits = command.options().hybridLimits();
-    checkLimitInBounds(
-        "hybridLimits.$vector",
-        hybridLimits.vectorLimit(),
-        operationsConfig.hybridSearchVectorLimit());
-    checkLimitInBounds(
-        "hybridLimits.$lexical",
-        hybridLimits.lexicalLimit(),
-        operationsConfig.hybridSearchLexicalLimit());
-  }
-
-  private void checkLimitInBounds(String field, int value, IntConfigWithBounds bounds) {
-    if (bounds.isValid(value)) {
-      return;
-    }
-    throw RequestException.Code.COMMAND_FIELD_VALUE_INVALID.get(
-        Map.of(
-            "field",
-            field,
-            "value",
-            String.valueOf(value),
-            "message",
-            "must be between %d and %d (inclusive)".formatted(bounds.min(), bounds.max())));
-  }
-
-  /**
-   * Check that collection supports the sort features the request uses (vector / vectorize /
-   * lexical), throw if it does not.
-   */
-  private void checkSortSupported() {
-
-    if (isVectorSort() || isVectorizeSort()) {
-      if (!commandContext.schemaObject().vectorConfig().vectorEnabled()) {
-        throw SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION.get(
-            errVars(commandContext.schemaObject()));
-      }
-    }
-
-    if (isVectorizeSort()) {
-      // the service definition is on the $vectorize field, not $vector
-      var vectorizeEnabled =
-          commandContext
-              .schemaObject()
-              .vectorConfig()
-              .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
-              .map(VectorColumnDefinition::vectorizeDefinition)
-              .isPresent();
-
-      if (!vectorizeEnabled) {
-        throw SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION.get(
-            errVars(commandContext.schemaObject()));
-      }
-    }
-
-    // The index is only required if the user explicitly asked for lexical,
-    // they could also have used $hybrid and it expanded into the lexical sort.
-    if (isLexicalSort() && isExplicitLexicalSort()) {
-      throwIfNoLexicalIndex();
-    }
-  }
-
-  /**
-   * Resolve the effective {@link CollectionRerankDef.RerankServiceDef} for this command: a command
-   * override replaces the collection-level config entirely; otherwise fall back to the collection's
-   * configured defaults. Any non-null {@code rerank} payload is treated as an override attempt and
-   * validated — {@code "rerank": {}} or a payload whose fields are all explicit nulls fails with
-   * {@link RequestException.Code#INVALID_RERANK_OVERRIDE} rather than silently falling back. Throws
-   * {@link RequestException.Code#UNSUPPORTED_RERANKING_COMMAND} when no override is supplied and
-   * the collection itself has reranking disabled.
-   */
-  private CollectionRerankDef.RerankServiceDef resolveRerankServiceDef() {
-    var rerankOverride =
-        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankServiceOverride, null);
-    boolean hasOverride = rerankOverride != null;
-
-    if (!commandContext.schemaObject().rerankDef().enabled() && !hasOverride) {
-      throw RequestException.Code.UNSUPPORTED_RERANKING_COMMAND.get();
-    }
-
-    var rerankingProvidersConfig = commandContext.rerankingProviderFactory().getRerankingConfig();
-
-    if (hasOverride) {
-      return CollectionRerankDef.validateServiceDesc(
-          rerankingProvidersConfig,
-          rerankOverride.provider(),
-          rerankOverride.modelName(),
-          rerankOverride.authentication(),
-          rerankOverride.parameters(),
-          RequestException.Code.INVALID_RERANK_OVERRIDE);
-    }
-    // Collection defaults: check END_OF_LIFE since model may have become EOL after creation.
-    var serviceDef = commandContext.schemaObject().rerankDef().rerankServiceDef();
-    CollectionRerankDef.checkExistingModelStatus(rerankingProvidersConfig, serviceDef);
-    return serviceDef;
-  }
-
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
       rerankTasks(List<RerankingTask.DeferredCommandWithSource> deferredCommandResults) {
 
-    Objects.requireNonNull(
-        effectiveRerankServiceDef,
-        "effectiveRerankServiceDef must be resolved before rerankTasks()");
+    var rerankStep = plan.rerankStep();
+    var rerankServiceDef = rerankStep.rerankServiceDef();
     RerankingProvider rerankingProvider =
         commandContext
             .rerankingProviderFactory()
             .create(
                 commandContext.requestContext().tenant(),
                 commandContext.requestContext().authToken(),
-                effectiveRerankServiceDef.provider(),
-                effectiveRerankServiceDef.modelName(),
-                effectiveRerankServiceDef.authentication(),
+                rerankServiceDef.provider(),
+                rerankServiceDef.modelName(),
+                rerankServiceDef.authentication(),
                 commandContext.commandName());
 
     // todo: move to a builder pattern, mostly to make it easier to manage the task position and
     // retry policy
-    int commandLimit =
-        getOrDefault(
-            command.options(),
-            FindAndRerankCommand.Options::limit,
-            operationsConfig.defaultFindAndRerankLimit());
     RerankingTask<CollectionSchemaObject> task =
         new RerankingTask<>(
             0,
             commandContext.schemaObject(),
             TaskRetryPolicy.NO_RETRY,
             rerankingProvider,
-            RerankingQuery.create(command),
-            passageLocator(),
-            command.buildProjector(),
+            rerankStep.rerankingQuery(),
+            rerankStep.passageLocator(),
+            rerankStep.projector(),
             deferredCommandResults,
-            commandLimit);
+            rerankStep.limit());
 
     // there is only 1 task, but making it clear that we want sequential for this step
     TaskGroup<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject> taskGroup =
@@ -279,11 +160,8 @@ class FindAndRerankOperationBuilder {
 
     var rerankAccumulator =
         RerankingTaskPage.accumulator(commandContext)
-            .withIncludeScores(
-                getOrDefault(command.options(), FindAndRerankCommand.Options::includeScores, false))
-            .withIncludeSortVector(
-                getOrDefault(
-                    command.options(), FindAndRerankCommand.Options::includeSortVector, false));
+            .withIncludeScores(plan.includeScores())
+            .withIncludeSortVector(plan.includeSortVector());
 
     return new TaskGroupAndDeferrables<>(
         taskGroup,
@@ -339,34 +217,22 @@ class FindAndRerankOperationBuilder {
 
   private IntermediateCollectionReadTask buildBm25Read(DeferredCommandResultAction deferredAction) {
 
-    if (!isLexicalSort()) {
+    var lexicalLeg = legByType(RerankLegType.LEXICAL_LEG);
+    if (lexicalLeg.isEmpty()) {
       // we can fake it now, the value will be waiting when the rerank command comes to get it
       deferredAction.setEmptyMultiDocumentResponse();
       return null;
     }
 
-    // if there is a lexical sort, but the user did not ask explicitly for it
-    // then it is OK to skip. If the user explicitly asked for it and the index did not
-    // exist then we should have caught in checkSortSUpport() but also safety throw here.
-    if (!commandContext.schemaObject().lexicalDef().enabled()) {
-      if (isExplicitLexicalSort()) {
-        // error should have been caught in checkSortSUpport() safety here
-        throwIfNoLexicalIndex();
-      }
-      // ok user only getting lexical because of $hybrid
-      deferredAction.setEmptyMultiDocumentResponse();
-      return null;
-    }
-
-    var bm25SortTerm = command.sortClause().lexicalSort();
     var bm25SortClause =
-        new SortClause(List.of(SortExpression.collectionLexicalSort(bm25SortTerm)));
+        new SortClause(
+            List.of(SortExpression.collectionLexicalSort(lexicalLeg.get().lexicalText())));
     var bm25ReadCommand =
         new FindCommand(
             command.filterDefinition(),
             INCLUDE_ALL_PROJECTION,
             SortDefinition.wrap(bm25SortClause),
-            buildFindOptions(false));
+            buildFindOptions(lexicalLeg.get()));
 
     return new IntermediateCollectionReadTask(
         0,
@@ -382,32 +248,32 @@ class FindAndRerankOperationBuilder {
   private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject>
       buildVectorRead(DeferredCommandResultAction deferredAction) {
 
+    // sanity check, the planner always makes a VECTOR_LEG
+    // TODO: GH #2597 - the builder should not need a VECTOR_LEG
+    var vectorLeg =
+        legByType(RerankLegType.VECTOR_LEG)
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "buildVectorRead() - plan has no VECTOR_LEG, legs=%s"
+                            .formatted(plan.legs())));
+
     // we can sort with either vectorize OR a BYO vector
     var sortClause = new SortClause(new ArrayList<>());
     DeferredVectorize deferredVectorize = null;
 
-    if (isVectorizeSort()) {
-
-      VectorColumnDefinition vectorDef =
-          commandContext
-              .schemaObject()
-              .vectorConfig()
-              .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
-              .orElseThrow();
-
+    var vectorizeStep = plan.vectorizeStep();
+    if (vectorizeStep != null) {
       // pass the vector sort clause through so it will be updated when we get the vector
       deferredVectorize =
           new DeferredVectorize(
-              command.sortClause().vectorizeSort(),
-              vectorDef.vectorSize(),
-              vectorDef.vectorizeDefinition(),
+              vectorizeStep.text(),
+              vectorizeStep.dimension(),
+              vectorizeStep.vectorizeDefinition(),
               sortClause);
-    } else if (isVectorSort()) {
-      sortClause
-          .sortExpressions()
-          .add(SortExpression.collectionVectorSort(command.sortClause().vectorSort()));
     } else {
-      throw new IllegalArgumentException("buildVectorRead() - no vector or vectorize");
+      // the plan is valid, so the VECTOR_LEG has a vector when there is no vectorize step
+      sortClause.sortExpressions().add(SortExpression.collectionVectorSort(vectorLeg.vector()));
     }
 
     // The intermediate task will set the sort when we give it the deferred vectorize
@@ -416,7 +282,7 @@ class FindAndRerankOperationBuilder {
             command.filterDefinition(),
             INCLUDE_ALL_PROJECTION,
             SortDefinition.wrap(sortClause),
-            buildFindOptions(true));
+            buildFindOptions(vectorLeg));
     var readTask =
         new IntermediateCollectionReadTask(
             1,
@@ -432,64 +298,13 @@ class FindAndRerankOperationBuilder {
         : new TaskAndDeferrables<>(readTask, deferredVectorize);
   }
 
-  private FindCommand.Options buildFindOptions(boolean forVectorRead) {
-
-    var hybridLimits =
-        getOrDefault(
-            command.options(),
-            FindAndRerankCommand.Options::hybridLimits,
-            FindAndRerankCommand.HybridLimits.DEFAULT);
-
-    var findLimit = forVectorRead ? hybridLimits.vectorLimit() : hybridLimits.lexicalLimit();
-
+  private FindCommand.Options buildFindOptions(FindAndRerankPlan.RerankLeg leg) {
     return new FindCommand.Options(
-        findLimit,
-        0,
-        null,
-        getOrDefault(command.options(), FindAndRerankCommand.Options::includeScores, false),
-        getOrDefault(command.options(), FindAndRerankCommand.Options::includeSortVector, false));
+        leg.readLimit(), 0, null, plan.includeScores(), plan.includeSortVector());
   }
 
-  private PathMatchLocator passageLocator() {
-
-    var rerankOn = getOrDefault(command.options(), FindAndRerankCommand.Options::rerankOn, null);
-    var isRerankOn = rerankOn != null && !rerankOn.isBlank();
-
-    String finalRerankField;
-
-    if (isVectorizeSort()) {
-      // use the vectorize field, unless the user has overridden
-      finalRerankField = isRerankOn ? rerankOn : VECTOR_EMBEDDING_TEXT_FIELD;
-    } else if (isRerankOn) {
-      // user has to provide a field to rerank on
-      finalRerankField = rerankOn;
-    } else {
-      throw RequestException.Code.MISSING_RERANK_ON.get();
-    }
-
-    return PathMatchLocator.forPath(finalRerankField);
-  }
-
-  private void throwIfNoLexicalIndex() {
-    if (!commandContext.schemaObject().lexicalDef().enabled()) {
-      throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(
-          errVars(commandContext.schemaObject()));
-    }
-  }
-
-  private boolean isLexicalSort() {
-    return command.sortClause().lexicalSort() != null;
-  }
-
-  private boolean isExplicitLexicalSort() {
-    return command.sortClause().commandFeatures().contains(CommandFeature.LEXICAL);
-  }
-
-  private boolean isVectorizeSort() {
-    return command.sortClause().vectorizeSort() != null;
-  }
-
-  private boolean isVectorSort() {
-    return command.sortClause().vectorSort() != null;
+  /** The leg of the plan with this type, there is at most one of each type. */
+  private Optional<FindAndRerankPlan.RerankLeg> legByType(RerankLegType legType) {
+    return plan.legs().stream().filter(leg -> leg.legType() == legType).findFirst();
   }
 }
