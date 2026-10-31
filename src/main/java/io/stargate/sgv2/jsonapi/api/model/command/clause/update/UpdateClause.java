@@ -22,7 +22,7 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
     implementation = Object.class,
     additionalProperties = Schema.False.class,
     description =
-        "A Data API update object mapping operators such as $set and $unset to objects of document paths and values. Operators may be combined on distinct paths.",
+        "A Data API update object mapping operators such as $set and $unset to objects of document paths and values. Operators may be combined on distinct paths. Tables support only $set, $unset, $push, and $pullAll; collections support every operator except $pullAll.",
     properties = {
       @SchemaProperty(
           name = UpdateOperator.Names.SET,
@@ -69,11 +69,16 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
           name = UpdateOperator.Names.PUSH,
           type = SchemaType.OBJECT,
           description =
-              "Appends array values. Use $each for multiple values and optional $position."),
+              "Appends values to arrays, or to list, set, and map columns. Use $each for multiple values; only collections accept $position."),
       @SchemaProperty(
           name = UpdateOperator.Names.ADD_TO_SET,
           type = SchemaType.OBJECT,
-          description = "Adds unique array values. Use {\"$each\": [...]} for multiple values.")
+          description = "Adds unique array values. Use {\"$each\": [...]} for multiple values."),
+      @SchemaProperty(
+          name = UpdateOperator.Names.PULL_ALL,
+          type = SchemaType.OBJECT,
+          description =
+              "Tables only. Removes the listed values from list and set columns, and the listed keys from map columns.")
     },
     examples = {
       """

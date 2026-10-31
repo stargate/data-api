@@ -22,8 +22,10 @@ import jakarta.inject.Inject;
 import jakarta.validation.Validator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -94,10 +96,7 @@ class McpUpdateSchemaContractTest {
   void toolSchemasRejectMalformedUpdates(String tool, String json) throws Exception {
     var update = objectMapper.readTree(json);
     assertSchemaRejects(inputSchema(tool), toolInput(update));
-    // Operator recognition is deferred until build for unsupported operators such as $pullAll.
-    assertThrows(
-        UpdateException.class,
-        () -> objectMapper.treeToValue(update, UpdateClause.class).buildOperations());
+    assertThrows(UpdateException.class, () -> objectMapper.treeToValue(update, UpdateClause.class));
   }
 
   static Stream<Arguments> invalidUpdates() {
@@ -109,12 +108,21 @@ class McpUpdateSchemaContractTest {
             "{\"name\": \"Ada\"}",
             "{\"updateOperationDefs\": {}}",
             "{\"$unknown\": {}}",
-            "{\"$pullAll\": {\"items\": [1]}}",
             "{\"$set\": null}",
             "{\"$set\": 5}",
             "{\"$set\": []}",
             "{\"$set\": \"value\"}");
     return TOOLS.stream().flatMap(tool -> updates.stream().map(json -> Arguments.of(tool, json)));
+  }
+
+  // updateOne is the only update tool that also serves tables.
+  @Test
+  void updateOneAcceptsTableOnlyPullAll() throws Exception {
+    var payload = toolInput(objectMapper.readTree("{\"$pullAll\": {\"listColumn\": [1]}}"));
+    assertSchemaAccepts(inputSchema("updateOne"), payload);
+    assertEquals(
+        Set.of(UpdateOperator.PULL_ALL),
+        parseCommand("updateOne", payload).updateClause().updateOperationDefs().keySet());
   }
 
   @ParameterizedTest
@@ -159,6 +167,7 @@ class McpUpdateSchemaContractTest {
     }
   }
 
+  // $pullAll is table-only, and every advertised example must also build for collections.
   @ParameterizedTest
   @EnumSource(value = UpdateOperator.class, names = "PULL_ALL", mode = EnumSource.Mode.EXCLUDE)
   void everySupportedOperatorHasAnAdvertisedExample(UpdateOperator operator) throws Exception {
