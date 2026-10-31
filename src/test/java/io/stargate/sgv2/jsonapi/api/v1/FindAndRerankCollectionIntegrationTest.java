@@ -6,9 +6,11 @@ import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.restassured.response.ValidatableResponse;
 import io.stargate.sgv2.jsonapi.exception.EmbeddingProviderException;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
@@ -154,7 +156,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
 
   @Test
   void failOnHybridLimitsAboveMax() {
-    // Validation now runs in FindAndRerankOperationBuilder.build(), so the collection must exist.
+    // Validation runs when the command is resolved to an operation, so the collection must exist.
     Assumptions.assumeTrue(isLexicalAvailableForDB());
 
     String collectionName = "find_rerank_hybrid_limits_too_large";
@@ -242,6 +244,108 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
             "errors[0].message",
             containsString(
                 "findAndRerank command is missing the text to use as the query with the reranking"));
+  }
+
+  /** Every kind of sort can run on it: vectorize, lexical and reranking are all enabled. */
+  private static final String VECTORIZE_LEXICAL_AND_RERANK_SPEC =
+      """
+      {
+        "name" : "%s",
+        "options": {
+          "vector": {
+            "metric": "cosine",
+            "dimension": 1024,
+            "service": {
+              "provider": "openai",
+              "modelName": "text-embedding-3-small"
+            }
+          },
+          "lexical": {
+            "enabled": true,
+            "analyzer": "standard"
+          },
+          "rerank": {
+            "enabled": true
+          }
+        }
+      }
+      """;
+
+  // https://github.com/stargate/data-api/issues/2577
+  @Test
+  void failOnSortWithNoVectorOrVectorize() {
+    // the $lexical sort needs a lexical index, so skip on DSE
+    Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+    // one collection for every sort, every kind of sort can run on it so only the sort is wrong
+    String collectionName = "find_rerank_no_vector_sort";
+    createCollectionWithCleanup(collectionName, VECTORIZE_LEXICAL_AND_RERANK_SPEC);
+
+    // $lexical with no $vectorize or $vector
+    findAndRerankWithSort(
+            collectionName,
+            """
+            {"$hybrid": {"$lexical": "hello"}}
+            """)
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode",
+            is(SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT.name()));
+
+    // $hybrid text is empty
+    findAndRerankWithSort(
+            collectionName,
+            """
+            {"$hybrid": ""}
+            """)
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(SortException.Code.MISSING_HYBRID_SORT_VALUE.name()));
+
+    // $hybrid object is empty
+    findAndRerankWithSort(
+            collectionName,
+            """
+            {"$hybrid": {}}
+            """)
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(SortException.Code.MISSING_HYBRID_SORT_VALUE.name()));
+
+    // no sort
+    findAndRerankWithSort(collectionName, null)
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode", is(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.name()));
+
+    // empty sort
+    findAndRerankWithSort(collectionName, "{}")
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode", is(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.name()));
+
+    // null sort
+    findAndRerankWithSort(collectionName, "null")
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode", is(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.name()));
+  }
+
+  /**
+   * Sends a findAndRerank command with the sort. The command has the rerankQuery and rerankOn
+   * options, so the sort is checked before anything fails for missing them.
+   *
+   * @param sort The JSON for the sort, or <code>null</code> to send no sort.
+   */
+  private ValidatableResponse findAndRerankWithSort(String collectionName, String sort) {
+    var sortField = sort == null ? "" : "\"sort\": %s,".formatted(sort);
+    var commandTemplate =
+        """
+        {"findAndRerank": {
+            %s
+            "options": {"rerankQuery": "hello", "rerankOn": "content"}
+        }}
+        """;
+    return givenHeadersPostJsonThen(
+        keyspaceName, collectionName, commandTemplate.formatted(sortField));
   }
 
   private void errorOnNotEnabled(
