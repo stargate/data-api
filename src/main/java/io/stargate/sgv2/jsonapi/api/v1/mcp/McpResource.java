@@ -39,6 +39,7 @@ import jakarta.inject.Provider;
 import jakarta.ws.rs.WebApplicationException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,82 +159,95 @@ public class McpResource {
    */
   public Uni<ToolResponse> processCollectionCommand(
       String keyspace, String collection, CollectionCommand command) {
-    Uni<CommandContext<?>> contextUni =
-        Uni.createFrom()
-            .deferred(
-                () -> {
-                  var requestContext = createRequestContext();
-                  var unscopedSchemaIdentifier =
-                      new UnscopedSchemaObjectIdentifier.DefaultKeyspaceScopedName(
-                          cqlIdentifierFromUserInput(keyspace),
-                          cqlIdentifierFromUserInput(collection));
+    return processCommand(
+        () -> {
+          var requestContext = createRequestContext();
+          var unscopedSchemaIdentifier =
+              new UnscopedSchemaObjectIdentifier.DefaultKeyspaceScopedName(
+                  cqlIdentifierFromUserInput(keyspace), cqlIdentifierFromUserInput(collection));
 
-                  return schemaObjectCacheSupplier
-                      .get()
-                      .getTableBased(
-                          requestContext,
-                          unscopedSchemaIdentifier,
-                          requestContext.userAgent(),
-                          command.isForceSchemaRefresh())
-                      .map(
-                          schemaObject -> {
-                            VectorColumnDefinition vectorColDef = null;
-                            if (schemaObject.type() == SchemaObjectType.COLLECTION) {
-                              vectorColDef =
-                                  schemaObject
-                                      .vectorConfig()
-                                      .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
-                                      .orElse(null);
-                            } else if (schemaObject.type() == SchemaObjectType.TABLE) {
-                              vectorColDef =
-                                  schemaObject
-                                      .vectorConfig()
-                                      .getFirstVectorColumnWithVectorizeDefinition()
-                                      .orElse(null);
-                            }
+          return schemaObjectCacheSupplier
+              .get()
+              .getTableBased(
+                  requestContext,
+                  unscopedSchemaIdentifier,
+                  requestContext.userAgent(),
+                  command.isForceSchemaRefresh())
+              .map(
+                  schemaObject -> {
+                    VectorColumnDefinition vectorColDef = null;
+                    if (schemaObject.type() == SchemaObjectType.COLLECTION) {
+                      vectorColDef =
+                          schemaObject
+                              .vectorConfig()
+                              .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+                              .orElse(null);
+                    } else if (schemaObject.type() == SchemaObjectType.TABLE) {
+                      vectorColDef =
+                          schemaObject
+                              .vectorConfig()
+                              .getFirstVectorColumnWithVectorizeDefinition()
+                              .orElse(null);
+                    }
 
-                            EmbeddingProvider embeddingProvider = null;
-                            if (vectorColDef != null
-                                && vectorColDef.vectorizeDefinition() != null) {
-                              embeddingProvider =
-                                  embeddingProviderFactory.create(
-                                      requestContext.tenant(),
-                                      requestContext.authToken(),
-                                      vectorColDef.vectorizeDefinition().provider(),
-                                      vectorColDef.vectorizeDefinition().modelName(),
-                                      vectorColDef.vectorSize(),
-                                      vectorColDef.vectorizeDefinition().parameters(),
-                                      vectorColDef.vectorizeDefinition().authentication(),
-                                      command.getClass().getSimpleName());
-                            }
+                    EmbeddingProvider embeddingProvider = null;
+                    if (vectorColDef != null && vectorColDef.vectorizeDefinition() != null) {
+                      embeddingProvider =
+                          embeddingProviderFactory.create(
+                              requestContext.tenant(),
+                              requestContext.authToken(),
+                              vectorColDef.vectorizeDefinition().provider(),
+                              vectorColDef.vectorizeDefinition().modelName(),
+                              vectorColDef.vectorSize(),
+                              vectorColDef.vectorizeDefinition().parameters(),
+                              vectorColDef.vectorizeDefinition().authentication(),
+                              command.getClass().getSimpleName());
+                    }
 
-                            return contextBuilderSupplier
-                                .getBuilder(schemaObject)
-                                .withEmbeddingProvider(embeddingProvider)
-                                .withCommandName(command.getClass().getSimpleName())
-                                .withRequestContext(requestContext)
-                                .build();
-                          });
-                });
-    return processCommand(contextUni, command);
+                    return contextBuilderSupplier
+                        .getBuilder(schemaObject)
+                        .withEmbeddingProvider(embeddingProvider)
+                        .withCommandName(command.getClass().getSimpleName())
+                        .withRequestContext(requestContext)
+                        .build();
+                  });
+        },
+        command);
   }
 
   /**
    * Normalize context setup failures, then process a command and map its result to an MCP tool
    * response.
    *
-   * @param contextUni The command context
+   * @param contextSupplier Builds the command context after request logging is active
    * @param command The command to execute
    * @return Uni of ToolResponse
    */
-  public Uni<ToolResponse> processCommand(Uni<CommandContext<?>> contextUni, Command command) {
-
-    return contextUni
-        .onItemOrFailure()
-        .transformToUni(
-            (context, failure) ->
-                failure == null ? executeCommand(context, command) : handleSetupFailure(failure))
-        .map(CommandResult::toToolResponse);
+  public Uni<ToolResponse> processCommand(
+      Supplier<Uni<CommandContext<?>>> contextSupplier, Command command) {
+    return Uni.createFrom()
+        .deferred(
+            () -> {
+              Uni<CommandContext<?>> contextUni;
+              try {
+                // Mutiny captures context when callbacks are assembled.
+                McpRequestLogging.activate(routingContextProvider.get());
+                contextUni = contextSupplier.get();
+              } catch (Exception failure) {
+                contextUni = Uni.createFrom().failure(failure);
+              }
+              return contextUni
+                  .onItemOrFailure()
+                  .transformToUni(
+                      (context, failure) ->
+                          failure == null
+                              ? executeCommand(context, command)
+                              : handleSetupFailure(failure))
+                  .map(CommandResult::toToolResponse)
+                  .invoke(result -> McpRequestLogging.commandCompleted(command, result))
+                  .onFailure()
+                  .invoke(failure -> McpRequestLogging.commandFailed(command));
+            });
   }
 
   private Uni<CommandResult> executeCommand(CommandContext<?> context, Command command) {
@@ -287,6 +301,9 @@ public class McpResource {
 
     // Only APIException messages are intended for clients. Arbitrary setup failures may include
     // credentials or provider payloads, so do not pass them to the generic throwable mapper.
+    if (!(failure instanceof APIException)) {
+      McpRequestLogging.setupFailed();
+    }
     var error =
         failure instanceof APIException apiException
             ? apiException
