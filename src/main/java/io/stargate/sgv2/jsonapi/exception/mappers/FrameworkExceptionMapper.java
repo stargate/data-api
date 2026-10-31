@@ -20,6 +20,7 @@ import jakarta.ws.rs.*;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
@@ -132,17 +133,22 @@ public class FrameworkExceptionMapper {
   @ServerExceptionMapper({ConstraintViolationException.class})
   public RestResponse<CommandResult> constraintViolationException(
       ConstraintViolationException exception) {
+    return constraintViolationResult(exception.getConstraintViolations()).toRestResponse();
+  }
 
+  /** Maps command constraints to the same API errors for HTTP and MCP. */
+  public static CommandResult constraintViolationResult(
+      Set<? extends ConstraintViolation<?>> violations) {
     var builder = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP);
 
     // this used to have a distinct() call, but it was doing it on all CommandError objects which
     // like the ApiException has a unique ID so had not affect.
     // LOGGING is in apiExceptionFor()
-    exception.getConstraintViolations().stream()
+    violations.stream()
         .map(FrameworkExceptionMapper::apiExceptionFor)
         .forEach(builder::addThrowable);
 
-    return builder.build().toRestResponse();
+    return builder.build();
   }
 
   private static RestResponse<CommandResult> responseForException(RuntimeException exception) {

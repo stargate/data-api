@@ -23,6 +23,7 @@ import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
+import io.stargate.sgv2.jsonapi.exception.mappers.FrameworkExceptionMapper;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CqlSessionCacheSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
@@ -36,6 +37,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
 import jakarta.ws.rs.WebApplicationException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
@@ -53,6 +56,7 @@ public class McpResource {
   private static final Logger LOGGER = LoggerFactory.getLogger(McpResource.class);
 
   private final ObjectMapper objectMapper;
+  private final Validator validator;
   private final MeteredCommandProcessor meteredCommandProcessor;
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final EmbeddingProviderFactory embeddingProviderFactory;
@@ -67,6 +71,7 @@ public class McpResource {
   @Inject
   public McpResource(
       ObjectMapper objectMapper,
+      Validator validator,
       MeteredCommandProcessor meteredCommandProcessor,
       MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
@@ -82,6 +87,7 @@ public class McpResource {
     // TODO: these vars are needed to replicate what we do in GeneralResource,
     // KeyspaceResource, etc. We should refactor to avoid duplication later.
     this.objectMapper = objectMapper;
+    this.validator = validator;
     this.meteredCommandProcessor = meteredCommandProcessor;
     this.embeddingProviderFactory = embeddingProviderFactory;
     this.schemaObjectCacheSupplier = schemaObjectCacheSupplier;
@@ -232,6 +238,10 @@ public class McpResource {
               try {
                 // Mutiny captures context when callbacks are assembled.
                 McpRequestLogging.activate(routingContextProvider.get());
+                var violations = validator.validate(command);
+                if (!violations.isEmpty()) {
+                  throw new ConstraintViolationException(violations);
+                }
                 contextUni = contextSupplier.get();
               } catch (Exception failure) {
                 contextUni = Uni.createFrom().failure(failure);
@@ -282,6 +292,13 @@ public class McpResource {
     // Synchronous cache reads use CompletableFuture.join(), unlike the asynchronous cache path.
     while (failure instanceof CompletionException && failure.getCause() != null) {
       failure = failure.getCause();
+    }
+
+    if (failure instanceof ConstraintViolationException validationFailure) {
+      return Uni.createFrom()
+          .item(
+              FrameworkExceptionMapper.constraintViolationResult(
+                  validationFailure.getConstraintViolations()));
     }
 
     // Authentication, protocol errors, and framework control signals retain their own handling.
