@@ -235,7 +235,7 @@ class FindAndRerankOperationBuilderTest {
     assertThatThrownBy(() -> build(commandContext(), plan))
         .isExactlyInstanceOf(IllegalStateException.class)
         .hasMessageContaining("rankSource() - the builder cannot read with a FILTER_LEG yet")
-        .hasMessageContaining("legTypes=[FILTER_LEG]");
+        .hasMessageContaining("legType=FILTER_LEG");
   }
 
   // ===========================================================================================

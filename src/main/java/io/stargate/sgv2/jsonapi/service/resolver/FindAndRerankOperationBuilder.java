@@ -214,8 +214,8 @@ class FindAndRerankOperationBuilder {
               // sanity check, rankSource() has already thrown for a FILTER_LEG
             case FILTER_LEG ->
                 throw new IllegalStateException(
-                    "readTasks() - the builder cannot read with a FILTER_LEG yet, legTypes=%s"
-                        .formatted(legTypes()));
+                    "readTasks() - the builder cannot read with a FILTER_LEG yet, leg=%s"
+                        .formatted(leg));
           };
       taskGroup.add(readAndDeferrables.task());
       deferrables.addAll(readAndDeferrables.deferrables());
@@ -311,13 +311,8 @@ class FindAndRerankOperationBuilder {
         // TODO: GH #2603 - add a rank source for the FILTER_LEG, and build its read in readTasks()
       case FILTER_LEG ->
           throw new IllegalStateException(
-              "rankSource() - the builder cannot read with a FILTER_LEG yet, legTypes=%s"
-                  .formatted(legTypes()));
+              "rankSource() - the builder cannot read with a FILTER_LEG yet, leg=%s"
+                  .formatted(leg));
     };
-  }
-
-  /** The types of the legs of the plan, in the plan order, for error messages. */
-  private List<RerankLegType> legTypes() {
-    return plan.legs().stream().map(FindAndRerankPlan.RerankLeg::legType).toList();
   }
 }
