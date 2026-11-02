@@ -204,25 +204,25 @@ class FindAndRerankOperationBuilder {
     // parallel, and the reranking task sorts the documents by their scores and then by _id.
     for (int position = 0; position < legsAndResults.size(); position++) {
       var legAndResult = legsAndResults.get(position);
-      var leg = legAndResult.rerankLeg();
+      var rerankLeg = legAndResult.rerankLeg();
 
       // the action the read calls when it is done, to put its command result in the
       // deferredCommandResult of its leg
-      var resultAction =
+      var deferredCommandResultAction =
           DeferredAction.filtered(
                   DeferredCommandResultAction.class,
                   Deferrable.deferred(legAndResult.deferredCommandResult()))
               .getFirst();
 
       var readAndDeferrables =
-          switch (leg.legType()) {
-            case VECTOR_LEG -> buildVectorRead(position, leg, resultAction);
-            case LEXICAL_LEG -> buildBm25Read(position, leg, resultAction);
+          switch (rerankLeg.legType()) {
+            case VECTOR_LEG -> buildVectorRead(position, rerankLeg, deferredCommandResultAction);
+            case LEXICAL_LEG -> buildBm25Read(position, rerankLeg, deferredCommandResultAction);
               // sanity check, rankSource() has already thrown for a FILTER_LEG
             case FILTER_LEG ->
                 throw new IllegalStateException(
                     "readTasks() - the builder cannot read with a FILTER_LEG yet, leg=%s"
-                        .formatted(leg));
+                        .formatted(rerankLeg));
           };
       taskGroup.add(readAndDeferrables.task());
       deferrables.addAll(readAndDeferrables.deferrables());
