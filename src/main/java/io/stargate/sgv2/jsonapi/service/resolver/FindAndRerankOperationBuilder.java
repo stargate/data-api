@@ -79,21 +79,18 @@ class FindAndRerankOperationBuilder {
     Objects.requireNonNull(plan, "plan cannot be null");
 
     // Step 1 - we need a reranking task and the deferrable actions to do the intermediate reads
-    // Making one deferrable for each leg of the plan, in the plan order, so the read built for the
-    // leg at the same index fills it
-    var deferredReads =
+    // Each leg of the plan gets a deferred result, the read for the leg fills it and the reranking
+    // task waits for it
+    var legsAndResults =
         plan.legs().stream()
-            .map(
-                leg ->
-                    new RerankingTask.DeferredCommandWithSource(
-                        rankSource(leg), new DeferredCommandResult()))
+            .map(leg -> new LegAndResult(leg, new DeferredCommandResult()))
             .toList();
 
-    var rerankTasksAndDeferrables = rerankTasks(deferredReads);
+    var rerankTasksAndDeferrables = rerankTasks(legsAndResults);
 
     // Step 2 - we need to read the data from the collections, we are wrapping the old collections
     // in the new tasks so we do not change the collection code
-    var readTasksAndDeferrables = readTasks(deferredReads);
+    var readTasksAndDeferrables = readTasks(legsAndResults);
 
     // Step 3 - we may need an embedding task, lets get one of those :)
     var embeddingActions =
@@ -126,7 +123,7 @@ class FindAndRerankOperationBuilder {
   }
 
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
-      rerankTasks(List<RerankingTask.DeferredCommandWithSource> deferredCommandResults) {
+      rerankTasks(List<LegAndResult> legsAndResults) {
 
     var rerankStep = plan.rerankStep();
     var rerankServiceDef = rerankStep.rerankServiceDef();
@@ -141,6 +138,15 @@ class FindAndRerankOperationBuilder {
                 rerankServiceDef.authentication(),
                 commandContext.commandName());
 
+    // the reranking task ranks the documents of each result by the kind of read that found them
+    var resultsWithSource =
+        legsAndResults.stream()
+            .map(
+                legAndResult ->
+                    new RerankingTask.DeferredCommandWithSource(
+                        rankSource(legAndResult.rerankLeg()), legAndResult.deferredCommandResult()))
+            .toList();
+
     // todo: move to a builder pattern, mostly to make it easier to manage the task position and
     // retry policy
     RerankingTask<CollectionSchemaObject> task =
@@ -152,7 +158,7 @@ class FindAndRerankOperationBuilder {
             rerankStep.rerankingQuery(),
             rerankStep.passageLocator(),
             rerankStep.projector(),
-            deferredCommandResults,
+            resultsWithSource,
             rerankStep.limit());
 
     // there is only 1 task, but making it clear that we want sequential for this step
@@ -168,13 +174,13 @@ class FindAndRerankOperationBuilder {
     return new TaskGroupAndDeferrables<>(
         taskGroup,
         rerankAccumulator,
-        deferredCommandResults.stream()
-            .map(RerankingTask.DeferredCommandWithSource::deferredRead)
+        legsAndResults.stream()
+            .map(LegAndResult::deferredCommandResult)
             .collect(java.util.stream.Collectors.toUnmodifiableList()));
   }
 
   private TaskGroupAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> readTasks(
-      List<RerankingTask.DeferredCommandWithSource> deferredReads) {
+      List<LegAndResult> legsAndResults) {
 
     // we can run these tasks in parallel
     TaskGroup<IntermediateCollectionReadTask, CollectionSchemaObject> taskGroup =
@@ -192,25 +198,26 @@ class FindAndRerankOperationBuilder {
     // the deferred vectorize of the vector read, when the plan vectorizes
     var deferrables = new ArrayList<Deferrable>();
 
-    // one read for each leg, the read fills the deferred read at the index of its leg
+    // one read for each leg, the read fills the deferred result of its leg
     // NOTE: the reads are in the plan order, so the vector read comes before the lexical read, the
     // old builder put the BM25 read first. The order does not change the result: the reads run in
     // parallel, and the reranking task sorts the documents by their scores and then by _id.
-    for (int position = 0; position < plan.legs().size(); position++) {
-      var leg = plan.legs().get(position);
+    for (int position = 0; position < legsAndResults.size(); position++) {
+      var legAndResult = legsAndResults.get(position);
+      var leg = legAndResult.rerankLeg();
 
-      // this is the action the read should call when done, to pass the command result into the
-      // next tasks
-      var deferredReadAction =
+      // the action the read calls when it is done, to put its command result in the
+      // deferredCommandResult of its leg
+      var resultAction =
           DeferredAction.filtered(
                   DeferredCommandResultAction.class,
-                  Deferrable.deferred(deferredReads.get(position).deferredRead()))
+                  Deferrable.deferred(legAndResult.deferredCommandResult()))
               .getFirst();
 
       var readAndDeferrables =
           switch (leg.legType()) {
-            case VECTOR_LEG -> buildVectorRead(position, leg, deferredReadAction);
-            case LEXICAL_LEG -> buildBm25Read(position, leg, deferredReadAction);
+            case VECTOR_LEG -> buildVectorRead(position, leg, resultAction);
+            case LEXICAL_LEG -> buildBm25Read(position, leg, resultAction);
               // sanity check, rankSource() has already thrown for a FILTER_LEG
             case FILTER_LEG ->
                 throw new IllegalStateException(
@@ -314,5 +321,23 @@ class FindAndRerankOperationBuilder {
               "rankSource() - the builder cannot read with a FILTER_LEG yet, leg=%s"
                   .formatted(leg));
     };
+  }
+
+  /**
+   * A leg of the plan and the deferred result of the read for the leg. {@link #build()} pairs them
+   * when it makes the result, so the reranking task and the read tasks cannot pair them up
+   * differently.
+   *
+   * @param rerankLeg The leg to read with.
+   * @param deferredCommandResult The read for the leg puts its command result here, the reranking
+   *     task waits for it.
+   */
+  private record LegAndResult(
+      FindAndRerankPlan.RerankLeg rerankLeg, DeferredCommandResult deferredCommandResult) {
+
+    LegAndResult {
+      Objects.requireNonNull(rerankLeg, "rerankLeg must not be null");
+      Objects.requireNonNull(deferredCommandResult, "deferredCommandResult must not be null");
+    }
   }
 }
