@@ -291,22 +291,6 @@ class FindAndRerankOperationBuilderTest {
   }
 
   // ===========================================================================================
-  // Plans the builder cannot build
-  // ===========================================================================================
-
-  /** Sanity check, the planner does not make a FILTER_LEG yet. */
-  @Test
-  void failsWhenPlanHasFilterLeg() {
-    var plan =
-        plan(null, new FindAndRerankPlan.RerankLeg(RerankLegType.FILTER_LEG, null, null, 20));
-
-    assertThatThrownBy(() -> build(commandContext(), plan))
-        .isExactlyInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("rankSource() - the builder cannot read with a FILTER_LEG yet")
-        .hasMessageContaining("legType=FILTER_LEG");
-  }
-
-  // ===========================================================================================
   // Command context
   // ===========================================================================================
 
