@@ -70,13 +70,11 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
     if (null == headerValue) {
       headerValue = context.request().getHeader(DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME);
     }
-    // MCP clients send Authorization: Bearer <token>
-    if (null == headerValue) {
-      String authorizationHeader = context.request().getHeader("Authorization");
-      if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-        headerValue = authorizationHeader.substring("Bearer ".length()).trim();
-      }
-    }
+    // Authorization: Bearer <token> (MCP clients) is deliberately NOT read here.
+    // HeaderIdentityProvider accepts any header value without checking it, so treating a Bearer
+    // token as a header credential would authenticate forged tokens (alg:none, bad signature,
+    // wrong issuer, expired).  Returning empty for Bearer requests lets the SmallRye JWT
+    // mechanism (quarkus-smallrye-jwt, mp.jwt.verify.*) verify signature, issuer and expiry.
     if (null != headerValue) {
       HeaderAuthenticationRequest request =
           new HeaderAuthenticationRequest(headerName, headerValue);
