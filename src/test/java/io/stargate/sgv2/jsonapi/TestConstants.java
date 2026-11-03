@@ -328,7 +328,17 @@ public class TestConstants {
    */
   public CommandContext<CollectionSchemaObject> collectionContext(
       CommandName commandName, CollectionSchemaObject schema, CommandConfig commandConfig) {
-    return collectionContext(commandName.getApiName(), schema, null, null, commandConfig);
+    return collectionContext(commandName.getApiName(), schema, null, null, commandConfig, null);
+  }
+
+  /**
+   * A collection context that records metrics in <code>meterRegistry</code>, for a test that runs
+   * code that records metrics, such as a reranking task that calls its provider.
+   */
+  public CommandContext<CollectionSchemaObject> collectionContext(
+      CommandName commandName, CollectionSchemaObject schema, MeterRegistry meterRegistry) {
+    return collectionContext(
+        commandName.getApiName(), schema, null, null, new CommandConfig(), meterRegistry);
   }
 
   public CommandContext<CollectionSchemaObject> collectionContext(
@@ -337,7 +347,7 @@ public class TestConstants {
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider) {
     return collectionContext(
-        commandName, schema, metricsReporter, embeddingProvider, new CommandConfig());
+        commandName, schema, metricsReporter, embeddingProvider, new CommandConfig(), null);
   }
 
   private CommandContext<CollectionSchemaObject> collectionContext(
@@ -345,7 +355,8 @@ public class TestConstants {
       CollectionSchemaObject schema,
       JsonProcessingMetricsReporter metricsReporter,
       EmbeddingProvider embeddingProvider,
-      CommandConfig commandConfig) {
+      CommandConfig commandConfig,
+      MeterRegistry meterRegistry) {
 
     // Build the no-op Billing before opening a new stubbing chain — Mockito treats nested
     // when()/thenReturn() calls as unfinished stubbing.
@@ -369,7 +380,7 @@ public class TestConstants {
         .withCommandConfig(commandConfig)
         .withEmbeddingProviderFactory(mock(EmbeddingProviderFactory.class))
         .withRerankingProviderFactory(mock(RerankingProviderFactory.class))
-        .withMeterRegistry(mock(MeterRegistry.class))
+        .withMeterRegistry(meterRegistry == null ? mock(MeterRegistry.class) : meterRegistry)
         .getBuilder(schema)
         .withEmbeddingProvider(embeddingProvider)
         .withCommandName(commandName)
