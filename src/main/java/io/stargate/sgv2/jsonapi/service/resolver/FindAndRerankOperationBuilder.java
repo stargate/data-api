@@ -319,13 +319,13 @@ class FindAndRerankOperationBuilder {
   }
 
   /**
-   * A leg of the plan and the deferred result of the read for the leg. {@link #build()} pairs them
-   * when it makes the result, so the reranking task and the read tasks cannot pair them up
-   * differently.
+   * A leg of the plan and the deferred result of its read.
+   *
+   * <p>The read that readTasks() builds for the leg fills the result, and the reranking task that
+   * rerankTasks() builds waits for it.
    *
    * @param rerankLeg The leg to read with.
-   * @param deferredCommandResult The read for the leg puts its command result here, the reranking
-   *     task waits for it.
+   * @param deferredCommandResult The deferred result that the read for the leg fills.
    */
   private record LegAndResult(
       FindAndRerankPlan.RerankLeg rerankLeg, DeferredCommandResult deferredCommandResult) {
