@@ -138,7 +138,7 @@ class FindAndRerankOperationBuilder {
                 rerankServiceDef.authentication(),
                 commandContext.commandName());
 
-    // the reranking task ranks the documents of each result by the kind of read that found them
+    // the reranking task needs to know if each result is from a vector or a BM25 read
     var resultsWithSource =
         legsAndResults.stream()
             .map(
@@ -195,13 +195,9 @@ class FindAndRerankOperationBuilder {
             FindAndRerankCommand.Options::hybridLimits,
             FindAndRerankCommand.HybridLimits.DEFAULT));
 
-    // the deferred vectorize of the vector read, when the plan vectorizes
     var deferrables = new ArrayList<Deferrable>();
 
     // one read for each leg, the read fills the deferred result of its leg
-    // NOTE: the reads are in the plan order, so the vector read comes before the lexical read, the
-    // old builder put the BM25 read first. The order does not change the result: the reads run in
-    // parallel, and the reranking task sorts the documents by their scores and then by _id.
     for (int position = 0; position < legsAndResults.size(); position++) {
       var legAndResult = legsAndResults.get(position);
       var rerankLeg = legAndResult.rerankLeg();
