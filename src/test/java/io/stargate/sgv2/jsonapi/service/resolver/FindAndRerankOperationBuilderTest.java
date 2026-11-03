@@ -56,6 +56,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
@@ -65,8 +66,9 @@ import org.mockito.ArgumentCaptor;
  * FindAndRerankPlannerTest}.
  *
  * <p>The operation does not expose its tasks, so the tests check the providers the builder creates,
- * the hybridLimits it sets on the command context, and the inner finds the operation runs when the
- * test runs it with reads that return no documents.
+ * the hybridLimits it sets on the command context, and what happens when the test runs the
+ * operation with mock reads: the inner finds it runs, and the ranks the reranking task gives the
+ * documents each read finds.
  */
 class FindAndRerankOperationBuilderTest {
 
@@ -215,19 +217,28 @@ class FindAndRerankOperationBuilderTest {
         Arguments.of("lexical leg", plan(null, lexicalLeg(25)), List.of(lexicalRead(25))));
   }
 
-  /** The inner finds get includeScores as includeSimilarity, and get includeSortVector. */
-  @Test
-  void readsUseIncludeScoresAndIncludeSortVectorOfPlan() throws Exception {
+  /**
+   * The inner finds get includeScores as includeSimilarity, and get includeSortVector. The two
+   * options have different values, so the test fails if the builder swaps them.
+   */
+  @ParameterizedTest(name = "includeScores={0}, includeSortVector={1}")
+  @CsvSource({"true, false", "false, true"})
+  void readsUseIncludeScoresAndIncludeSortVectorOfPlan(
+      boolean includeScores, boolean includeSortVector) throws Exception {
     var plan =
         new FindAndRerankPlan(
-            null, List.of(vectorLeg(100), lexicalLeg(25)), RERANK_STEP, true, true);
+            null,
+            List.of(vectorLeg(100), lexicalLeg(25)),
+            RERANK_STEP,
+            includeScores,
+            includeSortVector);
 
     var reads = runAndCaptureReads(commandContext(), plan);
 
     assertThat(reads)
         .containsExactlyInAnyOrder(
-            new InnerRead(vectorSort(VECTOR), 100, true, true),
-            new InnerRead(lexicalSort(), 25, true, true));
+            new InnerRead(vectorSort(VECTOR), 100, includeScores, includeSortVector),
+            new InnerRead(lexicalSort(), 25, includeScores, includeSortVector));
   }
 
   /**
@@ -275,12 +286,8 @@ class FindAndRerankOperationBuilderTest {
     var result = build(commandContext, plan).execute(commandContext).await().indefinitely().get();
 
     assertThat(result.errors()).isEmpty();
-    var scoresById = scoresById(result);
-    assertThat(scoresById).containsOnlyKeys("from-vector", "from-lexical");
-    assertThat(scoresById.get("from-vector").vectorRank()).isEqualTo(1);
-    assertThat(scoresById.get("from-vector").bm25Rank()).isNull();
-    assertThat(scoresById.get("from-lexical").vectorRank()).isNull();
-    assertThat(scoresById.get("from-lexical").bm25Rank()).isEqualTo(1);
+    assertThat(ranksById(result))
+        .isEqualTo(Map.of("from-vector", new Ranks(1, null), "from-lexical", new Ranks(null, 1)));
   }
 
   // ===========================================================================================
@@ -356,10 +363,7 @@ class FindAndRerankOperationBuilderTest {
             .create(any(), any(), any(), any(), anyInt(), any(), any(), any()))
         .thenReturn(TestEmbeddingProvider.TEST_EMBEDDING_PROVIDER);
 
-    var noDocuments = CommandResult.multiDocumentBuilder(RequestTracing.NO_OP).build();
-    Operation<CollectionSchemaObject> emptyRead = mock();
-    when(emptyRead.execute(commandContext))
-        .thenReturn(Uni.createFrom().item(() -> () -> noDocuments));
+    var emptyRead = readFinding(commandContext);
     when(findCommandResolver.resolveCommand(eq(commandContext), any())).thenReturn(emptyRead);
 
     var result = build(commandContext, plan).execute(commandContext).await().indefinitely().get();
@@ -374,13 +378,15 @@ class FindAndRerankOperationBuilderTest {
         .toList();
   }
 
-  /** An inner find that finds only this document. */
+  /** An inner find that finds only these documents, no documents when there are none. */
   private Operation<CollectionSchemaObject> readFinding(
-      CommandContext<CollectionSchemaObject> commandContext, String documentJson) throws Exception {
-    var found =
-        CommandResult.multiDocumentBuilder(RequestTracing.NO_OP)
-            .addDocument(objectMapper.readTree(documentJson))
-            .build();
+      CommandContext<CollectionSchemaObject> commandContext, String... documentsJson)
+      throws Exception {
+    var resultBuilder = CommandResult.multiDocumentBuilder(RequestTracing.NO_OP);
+    for (var documentJson : documentsJson) {
+      resultBuilder.addDocument(objectMapper.readTree(documentJson));
+    }
+    var found = resultBuilder.build();
     Operation<CollectionSchemaObject> read = mock();
     when(read.execute(commandContext)).thenReturn(Uni.createFrom().item(() -> () -> found));
     return read;
@@ -408,9 +414,19 @@ class FindAndRerankOperationBuilderTest {
     return rerankingProvider;
   }
 
-  /** The scores in the response, by the _id of their document. */
+  /**
+   * The ranks of a document in the response.
+   *
+   * @param vectorRank The rank from the vector read, <code>null</code> when it did not find the
+   *     document.
+   * @param bm25Rank The rank from the lexical read, <code>null</code> when it did not find the
+   *     document.
+   */
+  private record Ranks(Integer vectorRank, Integer bm25Rank) {}
+
+  /** The ranks in the response, by the _id of their document. */
   @SuppressWarnings("unchecked")
-  private static Map<String, DocumentScoresDesc.Scores> scoresById(CommandResult result) {
+  private static Map<String, Ranks> ranksById(CommandResult result) {
     var documents = ((ResponseData.MultiResponseData) result.data()).documents();
     var scores = (List<DocumentScoresDesc>) result.status().get(CommandStatus.DOCUMENT_RESPONSES);
     // the response lists the scores in the same order as the documents
@@ -420,7 +436,10 @@ class FindAndRerankOperationBuilderTest {
         .collect(
             Collectors.toMap(
                 index -> documents.get(index).get(DOC_ID).asText(),
-                index -> scores.get(index).scores()));
+                index ->
+                    new Ranks(
+                        scores.get(index).scores().vectorRank(),
+                        scores.get(index).scores().bm25Rank())));
   }
 
   private FindAndRerankCommand command(String json) throws Exception {

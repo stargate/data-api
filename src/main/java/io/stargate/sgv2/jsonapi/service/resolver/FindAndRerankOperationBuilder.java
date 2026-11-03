@@ -252,7 +252,7 @@ class FindAndRerankOperationBuilder {
             deferredAction));
   }
 
-  /** Builder either a vectorize or BYO vector read. */
+  /** Builds either a vectorize or a BYO vector read. */
   private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject>
       buildVectorRead(
           int position,
