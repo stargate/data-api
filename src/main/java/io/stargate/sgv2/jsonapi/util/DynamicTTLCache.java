@@ -140,8 +140,9 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     // which will not be null however it is
     // technically possible for the value loader to return a completed stage that has a null value
     // so extra check just in case.
+    // A canceled request must not cancel the shared load and orphan its eventual value.
     return Uni.createFrom()
-        .completionStage(cache.get(key))
+        .completionStage(cache.get(key).minimalCompletionStage())
         .map(valueHolder -> valueHolder != null ? valueHolder.value() : null);
   }
 
