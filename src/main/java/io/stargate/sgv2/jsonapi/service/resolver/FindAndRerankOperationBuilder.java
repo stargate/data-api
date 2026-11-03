@@ -202,8 +202,7 @@ class FindAndRerankOperationBuilder {
       var legAndResult = legsAndResults.get(position);
       var rerankLeg = legAndResult.rerankLeg();
 
-      // the action the read calls when it is done, to put its command result in the
-      // deferredCommandResult of its leg
+      // the read calls this action when it is done, to fill the deferredCommandResult
       var deferredCommandResultAction =
           DeferredAction.filtered(
                   DeferredCommandResultAction.class,
