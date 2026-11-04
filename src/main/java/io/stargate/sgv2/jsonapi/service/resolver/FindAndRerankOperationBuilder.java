@@ -174,8 +174,8 @@ class FindAndRerankOperationBuilder {
     return new TaskGroupAndDeferrables<>(
         taskGroup,
         rerankAccumulator,
-        legsAndResults.stream()
-            .map(LegAndResult::deferredCommandResult)
+        resultsWithSource.stream()
+            .map(RerankingTask.DeferredCommandWithSource::deferredRead)
             .collect(java.util.stream.Collectors.toUnmodifiableList()));
   }
 
@@ -213,7 +213,8 @@ class FindAndRerankOperationBuilder {
           switch (rerankLeg.legType()) {
             case VECTOR_LEG -> buildVectorRead(position, rerankLeg, deferredCommandResultAction);
             case LEXICAL_LEG -> buildBm25Read(position, rerankLeg, deferredCommandResultAction);
-              // sanity check, rankSource() has already thrown for a FILTER_LEG
+              // the compiler needs a case for every RerankLegType, this is a sanity check because
+              // rankSource() has already thrown for a FILTER_LEG
             case FILTER_LEG ->
                 throw new IllegalStateException(
                     "readTasks() - the builder cannot read with a FILTER_LEG yet, leg=%s"
