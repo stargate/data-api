@@ -76,8 +76,12 @@ Other Quarkus properties that are specifically relevant for the service:
 | `stargate.jsonapi.logging.enabled-tenants`          | `string`  | `ALL`   | Comma separated list of tenants for which command level logging should be enabled. Default is a special keyword called `ALL` which prints this log for all tenants |
 
 ## API Feature enabling configuration
-*Configuration for enabling Features, defined by [FeaturesConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/CommandLoggingConfig.java).*
+*Configuration for enabling Features, defined by [FeaturesConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/feature/FeaturesConfig.java).*
 
-| Property                        | Type      | Default | Description                                                                                                         |
-|---------------------------------|-----------|---------|---------------------------------------------------------------------------------------------------------------------|
-| `stargate.feature.flags.tables` | `boolean` | `true` (enabled by default)   | Setting it to `true` enables Tables functionality; `false` disables; leaving as `null` uses the default (enabled).|
+| Property                             | Type      | Default                      | Environment Variable                   | Description                                                                                                           |
+|--------------------------------------|-----------|------------------------------|----------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
+| `stargate.feature.flags.open-search` | `boolean` | `false` (disabled by default)| `STARGATE_FEATURE_FLAGS_OPEN_SEARCH`   | Setting to `true` enables OpenSearch support (collection mappings, indexes, `$openSearch`). Disabled by default.     |
+| `stargate.feature.flags.lexical`     | `boolean` | `true` (enabled by default)  | `STARGATE_FEATURE_FLAGS_LEXICAL`       | Setting to `true` enables BM25 / `$lexical` / `$match` indexing.                                                      |
+| `stargate.feature.flags.reranking`   | `boolean` | `false` (disabled by default)| `STARGATE_FEATURE_FLAGS_RERANKING`     | Setting to `true` enables Reranking endpoints and `$hybrid` / `findAndRerank`.                                      |
+| `stargate.feature.flags.mcp`         | `boolean` | `false` (disabled by default)| `STARGATE_FEATURE_FLAGS_MCP`           | Setting to `true` enables Model Context Protocol (MCP) tool integration.                                              |
+| `stargate.feature.flags.tables`      | `boolean` | `true` (enabled by default)  | `STARGATE_FEATURE_FLAGS_TABLES`        | Deprecated. Tables functionality support.                                                                             |

@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateOpenSearchIndexCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
@@ -42,6 +43,10 @@ public class CreateOpenSearchIndexCommandResolver
   @Override
   public Operation<TableSchemaObject> resolveTableCommand(
       CommandContext<TableSchemaObject> commandContext, CreateOpenSearchIndexCommand command) {
+
+    if (!commandContext.apiFeatures().isFeatureEnabled(ApiFeature.OPEN_SEARCH)) {
+      throw SchemaException.Code.OPEN_SEARCH_FEATURE_NOT_ENABLED.get();
+    }
 
     var schemaObject = commandContext.schemaObject();
 

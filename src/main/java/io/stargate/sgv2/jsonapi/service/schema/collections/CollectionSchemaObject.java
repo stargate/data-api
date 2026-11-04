@@ -62,7 +62,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         vectorConfig,
         indexingConfig,
         lexicalDef,
-        new CollectionOpenSearchDefSchemaFactory().currentVersion(null),
+        CollectionOpenSearchDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
         rerankDef);
   }
 
@@ -105,7 +105,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         vectorConfig,
         indexingConfig,
         lexicalDef,
-        new CollectionOpenSearchDefSchemaFactory().currentVersion(null),
+        CollectionOpenSearchDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
         rerankDef);
   }
 

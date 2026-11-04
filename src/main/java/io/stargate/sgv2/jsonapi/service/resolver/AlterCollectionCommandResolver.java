@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterCollectionOperation;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -80,6 +81,10 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
       CollectionSchemaObject schemaObject,
       AlterCollectionOperation.AddOpenSearch aos) {
 
+    if (!ctx.apiFeatures().isFeatureEnabled(ApiFeature.OPEN_SEARCH)) {
+      throw SchemaException.Code.OPEN_SEARCH_FEATURE_NOT_ENABLED.get();
+    }
+
     // 1. Guard: no duplicate OpenSearch index
     if (schemaObject.openSearchDef() != null && schemaObject.openSearchDef().enabled()) {
       throw SchemaException.Code.OPEN_SEARCH_INDEX_ALREADY_EXISTS.get(errVars(schemaObject));
@@ -94,7 +99,7 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
             aos.toOpenSearchDesc(),
             keyspace,
             collectionName,
-            new CollectionOpenSearchDefSchemaFactory());
+            ctx.versionedSchema().openSearchDef());
     var openSearchDef = openSearchHolder.runningValue();
 
     // 3. Prepare CQL statements (built eagerly — no lazy evaluation needed)

@@ -93,7 +93,7 @@ public record CreateCollectionOperation(
         indexingDesc,
         vectorDesc,
         lexicalDef,
-        new CollectionOpenSearchDefSchemaFactory().currentVersion(null),
+        CollectionOpenSearchDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
         rerankDef);
   }
 

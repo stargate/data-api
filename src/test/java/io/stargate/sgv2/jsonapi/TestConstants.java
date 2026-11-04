@@ -256,8 +256,8 @@ public class TestConstants {
             VectorConfig.NOT_ENABLED_CONFIG,
             null,
             CollectionLexicalDefSchemaFactory.FOR_TESTING_DISABLED.currentVersion(null),
-            new io.stargate.sgv2.jsonapi.service.schema.collections
-                    .CollectionOpenSearchDefSchemaFactory()
+            io.stargate.sgv2.jsonapi.service.schema.collections.CollectionOpenSearchDefSchemaFactory
+                .FOR_TESTING_ENABLED
                 .currentVersion(
                     new io.stargate.sgv2.jsonapi.service.schema.collections.CollectionOpenSearchDef(
                         true,

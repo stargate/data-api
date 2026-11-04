@@ -82,7 +82,24 @@ public enum ApiFeature {
    *
    * <p>Disabled by default.
    */
-  BILLING_EVENTS_LOGGING("billing-events-logging", false);
+  BILLING_EVENTS_LOGGING("billing-events-logging", false),
+
+  /**
+   * OpenSearch feature flag: if enabled, the API will expose OpenSearch functionality including:
+   *
+   * <ul>
+   *   <li>CreateCollection with openSearch options.
+   *   <li>AlterCollection with addOpenSearch / dropOpenSearch.
+   *   <li>CreateOpenSearchIndex command on tables.
+   *   <li>Querying with $openSearch filter on collections and tables.
+   * </ul>
+   *
+   * If disabled, schema operations attempting to enable OpenSearch will fail with {@link
+   * SchemaException.Code#OPEN_SEARCH_FEATURE_NOT_ENABLED}.
+   *
+   * <p>Disabled by default.
+   */
+  OPEN_SEARCH("open-search", false);
 
   /**
    * Prefix for HTTP headers used to override feature flags for specific requests: prepended before

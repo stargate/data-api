@@ -26,7 +26,9 @@ public class SchemaRegistry {
         new CollectionLexicalDefSchemaFactory(!apiFeatures.isFeatureEnabled(ApiFeature.LEXICAL));
     this.rerankDefFactory =
         new CollectionRerankDefSchemaFactory(!apiFeatures.isFeatureEnabled(ApiFeature.RERANKING));
-    this.openSearchDefFactory = new CollectionOpenSearchDefSchemaFactory();
+    this.openSearchDefFactory =
+        new CollectionOpenSearchDefSchemaFactory(
+            !apiFeatures.isFeatureEnabled(ApiFeature.OPEN_SEARCH));
   }
 
   public CollectionLexicalDefSchemaFactory lexicalDef() {

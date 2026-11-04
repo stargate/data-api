@@ -118,6 +118,11 @@ public class DseTestResource extends StargateTestResource {
     return "true";
   }
 
+  // By default, allow OpenSearch on HCD backend, but not on DSE
+  public String getFeatureFlagOpenSearch() {
+    return isHcd() ? "true" : "false";
+  }
+
   @Override
   public Map<String, String> start() {
     Map<String, String> env = super.start();
@@ -149,6 +154,12 @@ public class DseTestResource extends StargateTestResource {
     String featureFlagMcp = getFeatureFlagMcp();
     if (featureFlagMcp != null) {
       propsBuilder.put("stargate.feature.flags.mcp", featureFlagMcp);
+    }
+
+    // OpenSearch feature flag:
+    String featureFlagOpenSearch = getFeatureFlagOpenSearch();
+    if (featureFlagOpenSearch != null) {
+      propsBuilder.put("stargate.feature.flags.open-search", featureFlagOpenSearch);
     }
 
     propsBuilder.put(

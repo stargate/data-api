@@ -1446,6 +1446,12 @@ request-errors:
       Use createOpenSearchIndex to create one before using '$openSearch' on table ${keyspace}.${table}.
 
   - scope: SCHEMA
+    code: OPEN_SEARCH_FEATURE_NOT_ENABLED
+    title: OpenSearch feature not enabled
+    body: |-
+      OpenSearch feature is not enabled for this database.
+
+  - scope: SCHEMA
     code: LEXICAL_FEATURE_NOT_ENABLED
     title: Lexical search is not available on this database
     body: |-
