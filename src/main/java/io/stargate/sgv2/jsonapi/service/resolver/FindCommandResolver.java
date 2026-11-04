@@ -1,12 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SortException;
@@ -24,7 +24,7 @@ import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
 
-/** Resolves the {@link FindOneCommand } */
+/** Resolves collection and table {@link FindCommand}s. */
 @ApplicationScoped
 public class FindCommandResolver implements CommandResolver<FindCommand> {
 
@@ -72,6 +72,34 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   @Override
   public Operation<CollectionSchemaObject> resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> commandContext, FindCommand command) {
+    int pageSize = operationsConfig.defaultPageSize();
+    return resolveCollectionRead(
+        commandContext, command, new CollectionReadLimits(pageSize, pageSize, pageSize));
+  }
+
+  /**
+   * Resolves an internal reranking read. The planner validates user-supplied hybridLimits before
+   * building the inner find, so a missing or non-positive limit here is an internal state error.
+   */
+  public Operation<CollectionSchemaObject> resolveCollectionCandidateCommand(
+      CommandContext<CollectionSchemaObject> commandContext, FindCommand command) {
+    var options = command.options();
+    Preconditions.checkState(
+        options != null && options.limit() != null && options.limit() > 0,
+        "Candidate reads require an explicit positive options.limit");
+    return resolveCollectionRead(
+        commandContext,
+        command,
+        new CollectionReadLimits(
+            Math.min(options.limit(), operationsConfig.maxVectorSearchLimit()),
+            options.limit(),
+            operationsConfig.defaultPageSize()));
+  }
+
+  private FindCollectionOperation resolveCollectionRead(
+      CommandContext<CollectionSchemaObject> commandContext,
+      FindCommand command,
+      CollectionReadLimits readLimits) {
 
     var resolvedDbLogicalExpression =
         collectionFilterResolver.resolve(commandContext, command).target();
@@ -128,18 +156,13 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           Math.min(
               limit, operationsConfig.maxVectorSearchLimit()); // Max vector search support is 1000
 
-      // Hack: See https://github.com/stargate/data-api/issues/1961
-      int pageSize =
-          commandContext.getHybridLimits() == null
-              ? operationsConfig.defaultPageSize()
-              : commandContext.getHybridLimits().vectorLimit();
       return FindCollectionOperation.vsearch(
           commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(includeSimilarity),
           pageState,
           limit,
-          pageSize,
+          readLimits.vectorPageSize(),
           CollectionReadType.DOCUMENT,
           objectMapper,
           vector,
@@ -149,18 +172,13 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     // BM25 search / sort?
     SortExpression bm25Expr = SortClauseUtil.resolveBM25Search(sortClause);
     if (bm25Expr != null) {
-      // Hack: See https://github.com/stargate/data-api/issues/1961
-      int pageSize =
-          commandContext.getHybridLimits() == null
-              ? operationsConfig.defaultPageSize()
-              : commandContext.getHybridLimits().lexicalLimit();
       return FindCollectionOperation.bm25Multi(
           commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,
           limit,
-          pageSize,
+          readLimits.lexicalPageSize(),
           CollectionReadType.DOCUMENT,
           objectMapper,
           bm25Expr);
@@ -169,16 +187,12 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
     // if orderBy present
     if (orderBy != null) {
-      // Hack: See https://github.com/stargate/data-api/issues/1961
-      // not commandContext.getHybridLimits() becuase there is no limit for a non ANN or BM25 query
       return FindCollectionOperation.sorted(
           commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,
-          // For in-memory sorting if no limit provided in the request will use
-          // documentConfig.defaultPageSize() as limit
-          Math.min(limit, operationsConfig.defaultPageSize()),
+          Math.min(limit, readLimits.sortedLimit()),
           // For in-memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           CollectionReadType.SORTED_DOCUMENT,
@@ -188,8 +202,6 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           operationsConfig.maxDocumentSortCount(),
           includeSortVector);
     }
-    // Hack: See https://github.com/stargate/data-api/issues/1961
-    // not commandContext.getHybridLimits() becuase there is no limit for a non ANN or BM25 query
     return FindCollectionOperation.unsorted(
         commandContext,
         resolvedDbLogicalExpression,
@@ -201,4 +213,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
         objectMapper,
         includeSortVector);
   }
+
+  /** Concrete execution limits supplied by the caller, independent of query resolution. */
+  private record CollectionReadLimits(int vectorPageSize, int lexicalPageSize, int sortedLimit) {}
 }

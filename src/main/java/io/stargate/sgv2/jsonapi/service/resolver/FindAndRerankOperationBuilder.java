@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
@@ -185,15 +183,6 @@ class FindAndRerankOperationBuilder {
     // we can run these tasks in parallel
     TaskGroup<IntermediateCollectionReadTask, CollectionSchemaObject> taskGroup =
         new TaskGroup<>(false);
-
-    // Hack: See https://github.com/stargate/data-api/issues/1961
-    // copying the hybrid limits on the command context so the find command resolver can pick it up
-    // when the command runs later, so we can set the page size to be the same as the limit
-    commandContext.setHybridLimits(
-        getOrDefault(
-            command.options(),
-            FindAndRerankCommand.Options::hybridLimits,
-            FindAndRerankCommand.HybridLimits.DEFAULT));
 
     var deferrables = new ArrayList<Deferrable>();
 
