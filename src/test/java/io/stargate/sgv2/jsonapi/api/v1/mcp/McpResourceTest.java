@@ -17,6 +17,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
@@ -60,14 +61,14 @@ class McpResourceTest {
   @Test
   void closesContextOnSuccess() throws Exception {
     var context = commandContext(true);
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
     var result = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).build();
     when(commandProcessor.processCommand(context, command))
         .thenReturn(Uni.createFrom().item(result));
 
     var response =
         mcpResource()
-            .processCommand(Uni.createFrom().item(context), command)
+            .processCommand(() -> Uni.createFrom().item(context), command)
             .await()
             .atMost(Duration.ofSeconds(5));
 
@@ -78,14 +79,14 @@ class McpResourceTest {
   @Test
   void closesContextOnFailure() throws Exception {
     var context = commandContext(true);
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
     when(commandProcessor.processCommand(context, command))
         .thenReturn(Uni.createFrom().failure(new RuntimeException("processor failed")));
 
     assertThatThrownBy(
             () ->
                 mcpResource()
-                    .processCommand(Uni.createFrom().item(context), command)
+                    .processCommand(() -> Uni.createFrom().item(context), command)
                     .await()
                     .atMost(Duration.ofSeconds(5)))
         .hasMessage("processor failed");
@@ -95,14 +96,14 @@ class McpResourceTest {
   @Test
   void closesContextWhenProcessorThrowsSynchronously() throws Exception {
     var context = commandContext(true);
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
     var failure = new IllegalStateException("processor failed before returning a Uni");
     when(commandProcessor.processCommand(context, command)).thenThrow(failure);
 
     assertThatThrownBy(
             () ->
                 mcpResource()
-                    .processCommand(Uni.createFrom().item(context), command)
+                    .processCommand(() -> Uni.createFrom().item(context), command)
                     .await()
                     .atMost(Duration.ofSeconds(5)))
         .isSameAs(failure);
@@ -118,7 +119,7 @@ class McpResourceTest {
     assertThatThrownBy(
             () ->
                 mcpResource()
-                    .processCommand(Uni.createFrom().item(context), mock(KeyspaceCommand.class))
+                    .processCommand(() -> Uni.createFrom().item(context), keyspaceCommand())
                     .await()
                     .atMost(Duration.ofSeconds(5)))
         .isInstanceOf(IllegalArgumentException.class);
@@ -129,11 +130,11 @@ class McpResourceTest {
   @Test
   void closesContextWhenFeatureDisabled() throws Exception {
     var context = commandContext(false);
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
 
     var response =
         mcpResource()
-            .processCommand(Uni.createFrom().item(context), command)
+            .processCommand(() -> Uni.createFrom().item(context), command)
             .await()
             .atMost(Duration.ofSeconds(5));
 
@@ -145,13 +146,13 @@ class McpResourceTest {
   @Test
   void closesContextOnCancellation() throws Exception {
     var context = commandContext(true);
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
     when(commandProcessor.processCommand(context, command))
         .thenReturn(Uni.createFrom().emitter(emitter -> {}));
 
     var cancellable =
         mcpResource()
-            .processCommand(Uni.createFrom().item(context), command)
+            .processCommand(() -> Uni.createFrom().item(context), command)
             .subscribe()
             .with(response -> {}, failure -> {});
     cancellable.cancel();
@@ -163,14 +164,14 @@ class McpResourceTest {
   void closeFailureDoesNotReplaceResult() throws Exception {
     var context = commandContext(true);
     doThrow(new Exception("close failed")).when(context).close();
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
     var result = CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).build();
     when(commandProcessor.processCommand(context, command))
         .thenReturn(Uni.createFrom().item(result));
 
     var response =
         mcpResource()
-            .processCommand(Uni.createFrom().item(context), command)
+            .processCommand(() -> Uni.createFrom().item(context), command)
             .await()
             .atMost(Duration.ofSeconds(5));
 
@@ -182,14 +183,14 @@ class McpResourceTest {
   void closeFailureDoesNotReplaceError() throws Exception {
     var context = commandContext(true);
     doThrow(new Exception("close failed")).when(context).close();
-    var command = mock(KeyspaceCommand.class);
+    var command = keyspaceCommand();
     when(commandProcessor.processCommand(context, command))
         .thenReturn(Uni.createFrom().failure(new RuntimeException("processor failed")));
 
     assertThatThrownBy(
             () ->
                 mcpResource()
-                    .processCommand(Uni.createFrom().item(context), command)
+                    .processCommand(() -> Uni.createFrom().item(context), command)
                     .await()
                     .atMost(Duration.ofSeconds(5)))
         .hasMessage("processor failed");
@@ -204,13 +205,19 @@ class McpResourceTest {
 
     var context =
         mcpResourceWithRequest()
-            .buildKeyspaceContext(TEST_CONSTANTS.KEYSPACE_NAME, mock(KeyspaceCommand.class))
+            .buildKeyspaceContext(TEST_CONSTANTS.KEYSPACE_NAME, keyspaceCommand())
             .await()
             .atMost(Duration.ofSeconds(5));
 
     // The schema lookup and the built command context must see the same request, so the
     // call has one request ID from start to finish.
     assertThat(context.requestContext()).isSameAs(requestContextCaptor.getValue());
+  }
+
+  private KeyspaceCommand keyspaceCommand() {
+    var command = mock(KeyspaceCommand.class);
+    when(command.commandName()).thenReturn(CommandName.FIND_COLLECTIONS);
+    return command;
   }
 
   @SuppressWarnings("unchecked")
