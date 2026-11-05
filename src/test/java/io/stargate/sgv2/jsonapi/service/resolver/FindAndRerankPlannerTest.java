@@ -129,15 +129,6 @@ class FindAndRerankPlannerTest {
             null,
             List.of(vectorLeg(DEFAULT_READ_LIMIT))),
         Arguments.of(
-            "$vectorize and $vector, $vectorize is used",
-            """
-            {"$hybrid": {"$vectorize": "cheese", "$vector": [0.1, 0.2, 0.3]}}
-            """,
-            RERANK_OPTIONS,
-            Collection.VECTORIZE_NO_LEXICAL,
-            "cheese",
-            List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
             "$vectorize and $lexical",
             """
             {"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}

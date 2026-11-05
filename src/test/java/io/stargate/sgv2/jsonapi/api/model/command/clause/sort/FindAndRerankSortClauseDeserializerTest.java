@@ -190,18 +190,6 @@ public class FindAndRerankSortClauseDeserializerTest {
             new FindAndRerankSort(
                 RerankLegMode.MULTI_LEG, null, null, null, null, CommandFeatures.of(HYBRID))),
         // ----
-        // maximum fields, resolver works out the valid combinations
-        Arguments.of(
-            """
-            { "$hybrid" : { "$vectorize" : "vectorize sort", "$lexical" : "lexical sort", "$vector" : [1.1, 2.2, 3.3]} }
-            """,
-            new FindAndRerankSort(
-                RerankLegMode.MULTI_LEG,
-                null,
-                "vectorize sort",
-                "lexical sort",
-                new float[] {1.1f, 2.2f, 3.3f},
-                CommandFeatures.of(HYBRID, LEXICAL, VECTOR, VECTORIZE))),
         Arguments.of(
             """
             { "$hybrid" : { "$vectorize" : "vectorize sort", "$lexical" : "lexical sort"} }
@@ -298,50 +286,73 @@ public class FindAndRerankSortClauseDeserializerTest {
         // $vector variations
         Arguments.of(
             """
-            { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : null} }
+            { "$hybrid" : { "$lexical" : "lexical", "$vector" : null} }
             """,
             new FindAndRerankSort(
                 RerankLegMode.MULTI_LEG,
                 null,
-                "vectorize",
+                null,
                 "lexical",
                 null,
-                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))),
+                CommandFeatures.of(HYBRID, LEXICAL, VECTOR))),
         Arguments.of(
             """
-            { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : [0.1, 0.2, 0.3]} }
+            { "$hybrid" : { "$lexical" : "lexical", "$vector" : [0.1, 0.2, 0.3]} }
             """,
             new FindAndRerankSort(
                 RerankLegMode.MULTI_LEG,
                 null,
-                "vectorize",
+                null,
                 "lexical",
                 new float[] {0.1f, 0.2f, 0.3f},
-                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))),
+                CommandFeatures.of(HYBRID, LEXICAL, VECTOR))),
         Arguments.of(
                 """
-            { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : {"$binary": "%s"}} }
+            { "$hybrid" : { "$lexical" : "lexical", "$vector" : {"$binary": "%s"}} }
             """
                 .formatted(emptyVectorBase64),
             new FindAndRerankSort(
                 RerankLegMode.MULTI_LEG,
                 null,
-                "vectorize",
+                null,
                 "lexical",
                 emptyVector,
-                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))),
+                CommandFeatures.of(HYBRID, LEXICAL, VECTOR))),
         Arguments.of(
                 """
-            { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : {"$binary": "%s"}} }
+            { "$hybrid" : { "$lexical" : "lexical", "$vector" : {"$binary": "%s"}} }
             """
                 .formatted(vectorBase64),
             new FindAndRerankSort(
                 RerankLegMode.MULTI_LEG,
                 null,
-                "vectorize",
+                null,
                 "lexical",
                 vector,
-                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))));
+                CommandFeatures.of(HYBRID, LEXICAL, VECTOR))));
+  }
+
+  @ParameterizedTest
+  @MethodSource("conflictingVectorSorts")
+  void rejectsBothVectorKeysRegardlessOfTheirValues(String vectorize, String vector)
+      throws Exception {
+    String sort =
+        "{\"$hybrid\": {\"$vectorize\": %s, \"$vector\": %s}}".formatted(vectorize, vector);
+
+    var error =
+        assertThrows(
+            JsonMappingException.class,
+            () -> new ObjectMapper().readValue(sort, FindAndRerankSort.class));
+
+    assertThat(error).hasMessageContaining("$vector and $vectorize cannot be used together");
+  }
+
+  private static Stream<Arguments> conflictingVectorSorts() {
+    return Stream.of("\"search text\"", "null", "\"\"", "\"   \"")
+        .flatMap(
+            vectorize ->
+                Stream.of("[1, 2, 3]", "[]", "null", "{\"$binary\": \"P4AAAEAAAABAQAAA\"}")
+                    .map(vector -> Arguments.of(vectorize, vector)));
   }
 
   @ParameterizedTest
@@ -391,12 +402,12 @@ public class FindAndRerankSortClauseDeserializerTest {
         // Combinations
         Arguments.of(
             """
-            { "$hybrid" : { "$vectorize" : 1, "$lexical" : "", "$vector" : [1.1, 2.2, 3.3]} }
+            { "$hybrid" : { "$vectorize" : 1, "$lexical" : ""} }
             """,
             "Field $vectorize may only be of types NullNode, TextNode, but got: IntNode"),
         Arguments.of(
             """
-            { "$hybrid" : { "$vectorize" : "", "$lexical" : 1, "$vector" : [1.1, 2.2, 3.3]} }
+            { "$hybrid" : { "$vectorize" : "", "$lexical" : 1} }
             """,
             "Field $lexical may only be of types NullNode, TextNode, but got: IntNode"),
         Arguments.of(
