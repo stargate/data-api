@@ -89,7 +89,7 @@ quarkus:
       pattern: "%h %l %t \"%r\" %s %b"
       # McpEndpointConfigSourceFactory excludes the effective MCP path from access logs.
 
-    # every /v1 path is authenticated by default
+    # every v1 path under the HTTP root is authenticated by default
     # adapt if changing the authentication mechanism
     auth:
       # disable basic auth completely
@@ -97,7 +97,7 @@ quarkus:
       proactive: false
       permission:
         default:
-          paths: /v1/*
+          paths: v1/*
           policy: authenticated
 
     limits:

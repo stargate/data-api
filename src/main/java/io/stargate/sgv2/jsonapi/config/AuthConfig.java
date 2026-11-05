@@ -38,6 +38,16 @@ public interface AuthConfig {
   @Valid
   HeaderBasedAuthConfig headerBased();
 
+  /** Configuration for verified Bearer authentication. */
+  @Valid
+  BearerAuthConfig bearer();
+
+  interface BearerAuthConfig {
+
+    @WithDefault("false")
+    boolean enabled();
+  }
+
   /** Configuration for the header based authentication. */
   interface HeaderBasedAuthConfig {
 
