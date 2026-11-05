@@ -439,7 +439,6 @@ public class CqlSessionCacheTests extends CacheTestsBase {
     verify(fixture.expectedSession, never()).close();
 
     fixture.cache.clearCache();
-    fixture.cache.clearCache();
     verify(fixture.expectedSession).close();
   }
 
