@@ -228,11 +228,10 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
           new IllegalStateException("valueFactory returned null CompletionStage for key: " + key));
     }
 
-    return stage
-        // if completed exceptionally, it is wrapped in a CompletionStage that is also completed
-        // exceptionally
-        .exceptionallyCompose(CompletableFuture::failedFuture)
-        .thenApply(
+    // Uni callbacks preserve the request context when the loader completes on a driver thread.
+    return Uni.createFrom()
+        .completionStage(stage)
+        .map(
             value -> {
               if (value == null) {
                 // sanity check
@@ -245,7 +244,9 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
               }
               return holder;
             })
-        .toCompletableFuture();
+        .subscribeAsCompletionStage()
+        // Keep cancellation of a dependent cache future from canceling the loader itself.
+        .copy();
   }
 
   /**

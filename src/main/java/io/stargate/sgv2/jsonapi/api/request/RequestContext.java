@@ -40,6 +40,7 @@ import org.slf4j.MDC;
 public class RequestContext implements LoggingMDCContext {
 
   private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
+  private static final String ROUTING_REQUEST_ID = RequestContext.class.getName() + ".requestId";
 
   private final String authToken;
   private final String requestId;
@@ -91,7 +92,7 @@ public class RequestContext implements LoggingMDCContext {
             securityIdentity.getPrincipal() != null
                 ? securityIdentity.getPrincipal().getName()
                 : null);
-    this.requestId = generateRequestId();
+    this.requestId = getOrCreateRequestId(routingContext);
     this.userAgent = new UserAgent(httpHeaders.getHeader(HttpHeaders.USER_AGENT));
     this.tenant = tenantResolver.get().resolve(routingContext, null);
 
@@ -133,6 +134,19 @@ public class RequestContext implements LoggingMDCContext {
 
   private static String generateRequestId() {
     return UUID_V7_GENERATOR.generate().toString();
+  }
+
+  /**
+   * Returns the server-generated ID shared by early MCP logging and the command's diagnostic trace.
+   * Routing data retains it across callbacks without reading client headers or metadata.
+   */
+  public static String getOrCreateRequestId(RoutingContext routingContext) {
+    String requestId = routingContext.get(ROUTING_REQUEST_ID);
+    if (requestId == null) {
+      requestId = generateRequestId();
+      routingContext.put(ROUTING_REQUEST_ID, requestId);
+    }
+    return requestId;
   }
 
   /**
