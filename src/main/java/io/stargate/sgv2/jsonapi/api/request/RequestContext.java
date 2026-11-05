@@ -82,16 +82,14 @@ public class RequestContext implements LoggingMDCContext {
       RoutingContext routingContext,
       SecurityIdentity securityIdentity,
       Instance<RequestTenantResolver> tenantResolver,
+      Instance<RequestAuthTokenResolver> tokenResolver,
       Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
 
     this.httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
 
-    // Token from SecurityIdentity principal (same as PrincipalTokenResolver logic)
     this.authToken =
         normalizeOptionalString(
-            securityIdentity.getPrincipal() != null
-                ? securityIdentity.getPrincipal().getName()
-                : null);
+            tokenResolver.get().resolve(routingContext, securityIdentity.getPrincipal()));
     this.requestId = getOrCreateRequestId(routingContext);
     this.userAgent = new UserAgent(httpHeaders.getHeader(HttpHeaders.USER_AGENT));
     this.tenant = tenantResolver.get().resolve(routingContext, null);
@@ -116,7 +114,8 @@ public class RequestContext implements LoggingMDCContext {
     this.httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
 
     this.authToken =
-        normalizeOptionalString(tokenResolver.get().resolve(routingContext, securityContext));
+        normalizeOptionalString(
+            tokenResolver.get().resolve(routingContext, securityContext.getUserPrincipal()));
     this.requestId = generateRequestId();
     this.userAgent = new UserAgent(httpHeaders.getHeader(HttpHeaders.USER_AGENT));
     this.tenant = tenantResolver.get().resolve(routingContext, securityContext);

@@ -18,16 +18,18 @@
 package io.stargate.sgv2.jsonapi.api.request.token;
 
 import io.vertx.ext.web.RoutingContext;
-import jakarta.ws.rs.core.SecurityContext;
 import java.security.Principal;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
-/** {@link RequestAuthTokenResolver} that reads the token from the {@link Principal#getName()}. */
+/** Resolves validated JWT credentials or the legacy token stored as the principal name. */
 public class PrincipalTokenResolver implements RequestAuthTokenResolver {
 
   /** {@inheritDoc} */
   @Override
-  public String resolve(RoutingContext context, SecurityContext securityContext) {
-    var principal = securityContext.getUserPrincipal();
+  public String resolve(RoutingContext context, Principal principal) {
+    if (principal instanceof JsonWebToken jwt) {
+      return jwt.getRawToken();
+    }
     return principal != null ? principal.getName() : null;
   }
 }

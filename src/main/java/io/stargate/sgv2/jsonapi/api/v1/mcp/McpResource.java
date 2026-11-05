@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsResolver;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
+import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -65,6 +66,7 @@ public class McpResource {
   private final Provider<RoutingContext> routingContextProvider;
   private final Provider<SecurityIdentity> securityIdentityProvider;
   private final Instance<RequestTenantResolver> tenantResolver;
+  private final Instance<RequestAuthTokenResolver> tokenResolver;
   private final Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver;
 
   @Inject
@@ -81,6 +83,7 @@ public class McpResource {
       Provider<RoutingContext> routingContextProvider,
       Provider<SecurityIdentity> securityIdentityProvider,
       Instance<RequestTenantResolver> tenantResolver,
+      Instance<RequestAuthTokenResolver> tokenResolver,
       Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
 
     // TODO: these vars are needed to replicate what we do in GeneralResource,
@@ -94,6 +97,7 @@ public class McpResource {
     this.routingContextProvider = routingContextProvider;
     this.securityIdentityProvider = securityIdentityProvider;
     this.tenantResolver = tenantResolver;
+    this.tokenResolver = tokenResolver;
     this.embeddingCredentialsResolver = embeddingCredentialsResolver;
 
     this.contextBuilderSupplier =
@@ -340,6 +344,7 @@ public class McpResource {
         routingContextProvider.get(),
         securityIdentityProvider.get(),
         tenantResolver,
+        tokenResolver,
         embeddingCredentialsResolver);
   }
 }
