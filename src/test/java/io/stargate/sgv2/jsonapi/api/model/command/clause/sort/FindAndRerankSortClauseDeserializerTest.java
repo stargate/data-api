@@ -137,8 +137,6 @@ public class FindAndRerankSortClauseDeserializerTest {
 
   private static Stream<Arguments> validSortsTestCases() {
 
-    float[] emptyVector = new float[] {};
-    String emptyVectorBase64 = encodeAsMimeBase64(floatsToBytes(emptyVector));
     float[] vector = new float[] {1.1f, 2.2f, 3.3f};
     String vectorBase64 = encodeAsMimeBase64(floatsToBytes(vector));
 
@@ -322,18 +320,6 @@ public class FindAndRerankSortClauseDeserializerTest {
                 """
             { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : {"$binary": "%s"}} }
             """
-                .formatted(emptyVectorBase64),
-            new FindAndRerankSort(
-                RerankLegMode.MULTI_LEG,
-                null,
-                "vectorize",
-                "lexical",
-                emptyVector,
-                CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))),
-        Arguments.of(
-                """
-            { "$hybrid" : { "$vectorize" : "vectorize", "$lexical" : "lexical", "$vector" : {"$binary": "%s"}} }
-            """
                 .formatted(vectorBase64),
             new FindAndRerankSort(
                 RerankLegMode.MULTI_LEG,
@@ -342,6 +328,40 @@ public class FindAndRerankSortClauseDeserializerTest {
                 "lexical",
                 vector,
                 CommandFeatures.of(HYBRID, LEXICAL, VECTORIZE, VECTOR))));
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidBinaryVectorsTestCases")
+  public void invalidBinaryVectors(String binaryValue, String message) throws Exception {
+    ObjectMapper mapper = new ObjectMapper();
+    String sort =
+            """
+        {"$hybrid": {"$vector": {"$binary": %s}}}
+        """
+            .formatted(binaryValue);
+    when(deserializationContext.readTree(jsonParser)).thenReturn(mapper.readTree(sort));
+
+    var error =
+        assertThrows(
+            JsonMappingException.class,
+            () -> deserializer.deserialize(jsonParser, deserializationContext));
+
+    assertThat(error)
+        .hasMessageContaining("sort.$hybrid.$vector.$binary")
+        .hasMessageContaining(message);
+  }
+
+  private static Stream<Arguments> invalidBinaryVectorsTestCases() {
+    return Stream.of(
+        Arguments.of("\"\"", "non-empty vector"),
+        Arguments.of("\" \"", "non-empty vector"),
+        Arguments.of("\"not base64!\"", "Base64"),
+        Arguments.of("\"AAA=\"", "multiple of 4 bytes"),
+        Arguments.of("123", "Base64-encoded string"),
+        Arguments.of("true", "Base64-encoded string"),
+        Arguments.of("null", "Base64-encoded string"),
+        Arguments.of("[]", "Base64-encoded string"),
+        Arguments.of("{}", "Base64-encoded string"));
   }
 
   @ParameterizedTest
