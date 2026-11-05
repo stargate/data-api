@@ -4,6 +4,7 @@ This project implements the stand-alone Data API microservice for Stargate.
 Data API is an HTTP service that gives access to data stored in a Cassandra cluster using a JSON Document based interface.
 
 Specifications and design documents for this service are defined in the [docs](docs) directory.
+See the [MCP guide](docs/mcp.md) for access through MCP tools.
 
 
 ##### Table of Contents
