@@ -106,7 +106,7 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
             .body("{invalid-json")
             .post(MCP_PATH);
 
-    // Quarkiverse 2.0.3 reports parse errors in a JSON-RPC envelope with HTTP 200.
+    // The MCP server reports parse errors in a JSON-RPC envelope with HTTP 200.
     assertProtocolError(response, null, JsonRpcErrorCodes.PARSE_ERROR);
     assertProviderDiscoverySucceeds(7);
   }
