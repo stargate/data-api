@@ -5,13 +5,17 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.ActionWithLocator;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -19,13 +23,13 @@ import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.CollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.spec.SuperShreddingMetadata;
-import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
+import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 /** Operation that returns the documents or its key based on the filter condition. */
@@ -454,41 +458,102 @@ public record FindCollectionOperation(
   }
 
   /**
-   * An operation method which can return ReadDocument with an empty document, if the filter
-   * condition has _id filter it will return document with this field added.
+   * Creates a new empty document with no fields. Intended as a placeholder for when the find
+   * operation does not return any documents, but the caller still needs a document to work with
+   * (e.g. an upsert).
+   *
+   * @return A new empty document with no fields.
    */
-  public ReadDocument getNewDocument() {
+  public ReadDocument newEmptyDocument() {
+    return ReadDocument.from(null, null, objectMapper().createObjectNode());
+  }
 
+  /**
+   * Reconstructs a document from the filter used in the find operation, intended for upserts.
+   *
+   * <p>Contradictory filters (e.g. {@code {"a": 1, "a": 2}}) will cause an error to be thrown.
+   *
+   * @param pathFilter A predicate to filter which paths should be included in the reconstructed
+   *     document. Contradictory paths not matched in the document won't cause an error.
+   * @return The reconstructed document as an {@code ObjectNode}.
+   */
+  public ObjectNode reconstructDocumentFromFilter(Predicate<String> pathFilter) {
     final var rootNode = objectMapper().createObjectNode();
-    DocumentId documentId = null;
+    final var paths = new ArrayList<PathMatchLocator>();
+    final var ops = new ArrayList<SetOperation>();
+
     final var stack = new Stack<DBLogicalExpression>();
     stack.push(dbLogicalExpression);
 
     while (!stack.empty()) {
       var currentDbLogicalExpression = stack.pop();
 
-      for (DBFilterBase filter : dbLogicalExpression.filters()) {
-        // every filter must be a collection filter, because we are making a new document,
-        // and we only do this for docs
-        if (filter instanceof IDCollectionFilter idFilter) {
-          documentId = idFilter.getSingularDocumentId();
-          idFilter
-              .updateForNewDocument(objectMapper().getNodeFactory())
-              .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
-        } else if (filter instanceof CollectionFilter collectionFilter) {
-          collectionFilter
-              .updateForNewDocument(objectMapper().getNodeFactory())
-              .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
-        } else {
-          throw new IllegalArgumentException(
-              "Unsupported filter type in getNewDocument: %s"
-                  .formatted(filter.getClass().getName()));
+      if (currentDbLogicalExpression.operator() != DBLogicalExpression.DBLogicalOperator.AND) {
+        continue;
+      }
+
+      for (var filter : currentDbLogicalExpression.filters()) {
+        switch (filter) {
+          case CollectionFilter cf ->
+              cf.updateForNewDocument(objectMapper().getNodeFactory())
+                  .ifPresent(
+                      op -> {
+                        var beforeSize = paths.size();
+
+                        op.actions().stream()
+                            .map(ActionWithLocator::locator)
+                            .filter(l -> pathFilter.test(l.path()))
+                            .forEach(paths::add);
+
+                        if (paths.size() > beforeSize) {
+                          ops.add(op);
+                        }
+                      });
+          default ->
+              throw new IllegalArgumentException(
+                  "Unsupported filter type in getNewDocument: %s"
+                      .formatted(filter.getClass().getName()));
         }
       }
 
       currentDbLogicalExpression.subExpressions().forEach(stack::push);
     }
-    return ReadDocument.from(documentId, null, rootNode);
+
+    validateUpsertPaths(paths);
+    ops.forEach(op -> op.updateDocument(rootNode));
+
+    return rootNode;
+  }
+
+  /**
+   * Validates that the given paths do not overlap or contradict each other.
+   *
+   * <p>Throws an {@code UNSUPPORTED_OVERLAPPING_UPSERT_PATHS} on error.
+   *
+   * @param paths The list of paths to validate.
+   */
+  private void validateUpsertPaths(List<PathMatchLocator> paths) {
+    Collections.sort(paths);
+
+    for (var i = 0; i < paths.size() - 1; i++) {
+      final var current = paths.get(i);
+      final var next = paths.get(i + 1);
+
+      if (current.compareTo(next) == 0) {
+        throwUnsupportedOverlappingUpsertPaths(
+            "Path '%s' is matched more than once".formatted(current));
+      }
+
+      if (next.isSubPathOf(current)) {
+        throwUnsupportedOverlappingUpsertPaths(
+            "Both paths '%s' and '%s' are matched".formatted(current, next));
+      }
+    }
+  }
+
+  private void throwUnsupportedOverlappingUpsertPaths(String message) {
+    throw UpdateException.Code.UNSUPPORTED_OVERLAPPING_UPSERT_PATHS.get(
+        errVars(commandContext.schemaObject(), map -> map.put("errorMessage", message)));
   }
 
   /**
