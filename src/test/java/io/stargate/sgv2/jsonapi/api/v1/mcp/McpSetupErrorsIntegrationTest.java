@@ -116,7 +116,8 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
     String method = "tools/unknownMethod";
     var response = request(method, null, true).body(rpcPayload(8, method, Map.of())).post(MCP_PATH);
 
-    assertProtocolError(response, 8, JsonRpcErrorCodes.METHOD_NOT_FOUND);
+    // Protocol 2026-07-28 answers an unknown method with HTTP 404 and a JSON-RPC error body.
+    assertProtocolError(response, 404, 8, JsonRpcErrorCodes.METHOD_NOT_FOUND);
     assertProtocolError(callTool(9, "unknownTool", Map.of()), 9, JsonRpcErrorCodes.INVALID_PARAMS);
     assertProviderDiscoverySucceeds(10);
   }
@@ -160,7 +161,12 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
   }
 
   private static void assertProtocolError(Response response, Integer id, int errorCode) {
-    assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
+    assertProtocolError(response, 200, id, errorCode);
+  }
+
+  private static void assertProtocolError(
+      Response response, int httpStatus, Integer id, int errorCode) {
+    assertThat(response.statusCode()).as(response.asString()).isEqualTo(httpStatus);
     var body = new JsonObject(response.asString());
     assertThat(body.getInteger("id")).isEqualTo(id);
     assertThat(body.containsKey("result")).isFalse();
