@@ -69,6 +69,7 @@ public record FindAndRerankCommand(
 
   public record Options(
       @Positive(message = "limit should be greater than `0`")
+          @JsonDeserialize(using = LimitDeserializer.class)
           @Schema(
               description = "The maximum number of documents to return after reranking.",
               type = SchemaType.INTEGER,
@@ -150,6 +151,37 @@ public record FindAndRerankCommand(
     public static final String REF = SCHEMA_REF_PREFIX + NAME;
   }
 
+  /** Deserializer for the outer limit, without Jackson's numeric coercions. */
+  public static class LimitDeserializer extends StdDeserializer<Integer> {
+
+    protected LimitDeserializer() {
+      super(Integer.class);
+    }
+
+    @Override
+    public Integer deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
+        throws IOException {
+      return integerLimit(jsonParser, deserializationContext.readTree(jsonParser), "options.limit");
+    }
+  }
+
+  // Validate the JSON integer before converting it. Positivity and configured hybrid bounds
+  // are checked later by Bean Validation and FindAndRerankPlanner, respectively.
+  private static int integerLimit(JsonParser jsonParser, JsonNode value, String path)
+      throws JsonMappingException {
+    if (!value.isIntegralNumber() || !value.canConvertToInt()) {
+      String valueDescription =
+          value.isFloatingPointNumber()
+              ? "%s (floating-point number)".formatted(value)
+              : value.toString();
+      throw new JsonMappingException(
+          jsonParser,
+          "%s must be an integer between %d and %d (inclusive), got %s"
+              .formatted(path, Integer.MIN_VALUE, Integer.MAX_VALUE, valueDescription));
+    }
+    return value.intValue();
+  }
+
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
   @Schema(
       name = HybridLimits.NAME,
@@ -220,9 +252,9 @@ public record FindAndRerankCommand(
     // {"options": {"hybridLimits" : 100}}
     // or, both fields are required
     // {"options": {"hybridLimits" : {"$vector" : 100, "$lexical" : 10}}
-    private static final JsonFieldMatcher<NumericNode> MATCH_LIMIT_FIELDS =
+    private static final JsonFieldMatcher<JsonNode> MATCH_LIMIT_FIELDS =
         new JsonFieldMatcher<>(
-            NumericNode.class, List.of(LEXICAL_CONTENT_FIELD, VECTOR_EMBEDDING_FIELD), List.of());
+            JsonNode.class, List.of(LEXICAL_CONTENT_FIELD, VECTOR_EMBEDDING_FIELD), List.of());
 
     protected HybridLimitsDeserializer() {
       super(HybridLimits.class);
@@ -238,15 +270,16 @@ public record FindAndRerankCommand(
         case JsonNode node ->
             throw new JsonMappingException(
                 jsonParser,
-                "hybridLimits must be an integer or an object, got %s"
+                "options.hybridLimits must be an integer or an object, got %s"
                     .formatted(node.getNodeType()));
       };
     }
 
     // Range validation against dynamic OperationsConfig bounds happens later in
-    // FindAndRerankPlanner.plan(); the deserializer only handles JSON shape.
-    private HybridLimits deserialize(JsonParser jsonParser, NumericNode limitsNumber) {
-      var limit = limitsNumber.asInt();
+    // FindAndRerankPlanner.plan(); only integer representation is checked here.
+    private HybridLimits deserialize(JsonParser jsonParser, NumericNode limitsNumber)
+        throws JsonMappingException {
+      var limit = integerLimit(jsonParser, limitsNumber, "options.hybridLimits");
       return new HybridLimits(
           limit, limit, CommandFeatures.of(CommandFeature.HYBRID_LIMITS_NUMBER));
     }
@@ -257,8 +290,14 @@ public record FindAndRerankCommand(
       var limitMatch = MATCH_LIMIT_FIELDS.matchAndThrow(limitsObject, jsonParser, ERROR_CONTEXT);
 
       return new HybridLimits(
-          limitMatch.matched().get(VECTOR_EMBEDDING_FIELD).asInt(),
-          limitMatch.matched().get(LEXICAL_CONTENT_FIELD).asInt(),
+          integerLimit(
+              jsonParser,
+              limitMatch.matched().get(VECTOR_EMBEDDING_FIELD),
+              "options.hybridLimits." + VECTOR_EMBEDDING_FIELD),
+          integerLimit(
+              jsonParser,
+              limitMatch.matched().get(LEXICAL_CONTENT_FIELD),
+              "options.hybridLimits." + LEXICAL_CONTENT_FIELD),
           CommandFeatures.of(
               CommandFeature.HYBRID_LIMITS_VECTOR, CommandFeature.HYBRID_LIMITS_LEXICAL));
     }
