@@ -7,3 +7,7 @@ This folder contains documentation for the Data API.
 * The [network specification](dataapi-network-spec.md) specifies the HTTP API for the Data API, how clients can communicate with the service.
 * The [query specification](dataapi-spec.md) provides details on data modelling and queries.
 
+
+## MCP
+
+* The [MCP guide](mcp.md) covers the endpoint, request behavior, results, and command validation.
