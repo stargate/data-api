@@ -347,8 +347,13 @@ class McpLoggingTest {
     assertThat(response.statusCode()).isEqualTo(401);
     verifyNoInteractions(commandProcessor);
     assertThat(response.asString()).doesNotContain("synthetic-");
+    // The completion line is written by a response end handler, which can run after the client
+    // has already read the 401, so wait for it rather than reading the log right away.
+    await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertThat(logsSince(start)).contains("status=401"));
     var logs = logsSince(start);
-    assertThat(logs).contains("status=401").doesNotContain("synthetic-");
+    assertThat(logs).doesNotContain("synthetic-");
     traceMetadata(1)
         .values()
         .forEach(
