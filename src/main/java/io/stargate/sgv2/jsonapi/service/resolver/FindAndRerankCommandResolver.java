@@ -55,8 +55,11 @@ public class FindAndRerankCommandResolver implements CommandResolver<FindAndRera
       throw SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED.get();
     }
 
+    var plan = FindAndRerankPlanner.plan(command, commandContext);
+
     return new FindAndRerankOperationBuilder(commandContext)
         .withCommand(command)
+        .withPlan(plan)
         .withFindCommandResolver(findCommandResolver)
         .build();
   }

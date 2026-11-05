@@ -12,6 +12,13 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 
 /**
+ * The sort clause of a findAndRerank command, see {@link FindAndRerankSortClauseDeserializer} for
+ * the forms it can take.
+ *
+ * @param rerankLegMode {@link RerankLegMode#MULTI_LEG} when the sort clause uses $hybrid, otherwise
+ *     {@link RerankLegMode#SINGLE_LEG}.
+ * @param hybridSort If <code>null</code> then the $hybrid field was not text, OR was blank text,
+ *     otherwise it is the trimmed text.
  * @param vectorizeSort If <code>null</code> then the $vectorize field was not present in the sort
  *     clause, OR was present but set to JSON null OR it was blank string, otherwise it is the value
  *     provided.
@@ -50,6 +57,8 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
       """
     })
 public record FindAndRerankSort(
+    @JsonIgnore RerankLegMode rerankLegMode,
+    @JsonIgnore String hybridSort,
     @JsonIgnore String vectorizeSort,
     @JsonIgnore String lexicalSort,
     @JsonIgnore float[] vectorSort,
@@ -102,11 +111,19 @@ public record FindAndRerankSort(
   public static class ConflictingVectorSortSchema {}
 
   public static final FindAndRerankSort NO_ARG_SORT =
-      new FindAndRerankSort(null, null, null, CommandFeatures.EMPTY);
+      new FindAndRerankSort(
+          RerankLegMode.SINGLE_LEG, null, null, null, null, CommandFeatures.EMPTY);
+
+  public FindAndRerankSort {
+    Objects.requireNonNull(rerankLegMode, "rerankLegMode must not be null");
+    Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+  }
 
   @Override
   public DataRecorder recordTo(DataRecorder dataRecorder) {
     return dataRecorder
+        .append("rerankLegMode", rerankLegMode)
+        .append("hybridSort", hybridSort)
         .append("vectorizeSort", vectorizeSort)
         .append("lexicalSort", lexicalSort)
         .append("vectorSort", Arrays.toString(vectorSort))
@@ -122,6 +139,8 @@ public record FindAndRerankSort(
   @Override
   public boolean equals(Object obj) {
     return (obj instanceof FindAndRerankSort other)
+        && rerankLegMode == other.rerankLegMode
+        && Objects.equals(hybridSort, other.hybridSort)
         && Objects.equals(vectorizeSort, other.vectorizeSort)
         && Objects.equals(lexicalSort, other.lexicalSort)
         && Arrays.equals(vectorSort, other.vectorSort)
@@ -131,6 +150,12 @@ public record FindAndRerankSort(
   /** Override to do a value equality hash on the vector */
   @Override
   public int hashCode() {
-    return Objects.hash(vectorizeSort, lexicalSort, Arrays.hashCode(vectorSort), commandFeatures);
+    return Objects.hash(
+        rerankLegMode,
+        hybridSort,
+        vectorizeSort,
+        lexicalSort,
+        Arrays.hashCode(vectorSort),
+        commandFeatures);
   }
 }
