@@ -147,11 +147,8 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
 
   @VisibleForTesting
   protected Optional<ValueT> getIfPresent(KeyT key) {
-    var future = cache.getIfPresent(key);
-    if (future == null) {
-      return Optional.empty();
-    }
-    return Optional.ofNullable(future.join()).map(ValueHolder::value);
+    // Only completed values are cache hits. Pending loads must use the async get() path.
+    return Optional.ofNullable(cache.synchronous().getIfPresent(key)).map(ValueHolder::value);
   }
 
   /**
