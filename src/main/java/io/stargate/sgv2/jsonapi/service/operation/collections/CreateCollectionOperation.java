@@ -28,7 +28,6 @@ import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
@@ -50,22 +49,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public record CreateCollectionOperation(
-    CommandContext<KeyspaceSchemaObject> commandContext,
-    DatabaseLimitsConfig dbLimitsConfig,
-    CQLSessionCache cqlSessionCache,
-    CqlIdentifier collectionName,
-    int ddlDelayMillis,
-    boolean tooManyIndexesRollbackEnabled,
-    // nullable
-    CreateCollectionCommand.Options.DocIdDesc docIdDesc,
-    // nullable
-    CreateCollectionCommand.Options.IndexingDesc indexingDesc,
-    // nullable
-    CreateCollectionCommand.Options.VectorSearchDesc vectorDesc,
-    SchemaHolder<CollectionLexicalDef> lexicalDef,
-    SchemaHolder<CollectionRerankDef> rerankDef)
-    implements Operation<CollectionSchemaObject> {
+/** Creates a new collection in the target keyspace using the SuperShredding table model */
+public class CreateCollectionOperation implements Operation<KeyspaceSchemaObject> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CreateCollectionOperation.class);
 
@@ -73,6 +58,109 @@ public record CreateCollectionOperation(
       new SuperShreddingTablePredicate();
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+  private final CommandContext<KeyspaceSchemaObject> commandContext;
+  private final DatabaseLimitsConfig dbLimitsConfig;
+  private final CqlIdentifier collectionName;
+  private final int ddlDelayMillis;
+  private final boolean tooManyIndexesRollbackEnabled;
+  // nullable
+  private final CreateCollectionCommand.Options.DocIdDesc docIdDesc;
+  // nullable
+  private final CreateCollectionCommand.Options.IndexingDesc indexingDesc;
+  // nullable
+  private final CreateCollectionCommand.Options.VectorSearchDesc vectorDesc;
+  private final SchemaHolder<CollectionLexicalDef> lexicalDef;
+  private final SchemaHolder<CollectionRerankDef> rerankDef;
+
+  public CreateCollectionOperation(
+      CommandContext<KeyspaceSchemaObject> commandContext,
+      DatabaseLimitsConfig dbLimitsConfig,
+      CqlIdentifier collectionName,
+      int ddlDelayMillis,
+      boolean tooManyIndexesRollbackEnabled,
+      // nullable
+      CreateCollectionCommand.Options.DocIdDesc docIdDesc,
+      // nullable
+      CreateCollectionCommand.Options.IndexingDesc indexingDesc,
+      // nullable
+      CreateCollectionCommand.Options.VectorSearchDesc vectorDesc,
+      SchemaHolder<CollectionLexicalDef> lexicalDef,
+      SchemaHolder<CollectionRerankDef> rerankDef) {
+    this.commandContext = commandContext;
+    this.dbLimitsConfig = dbLimitsConfig;
+    this.collectionName = collectionName;
+    this.ddlDelayMillis = ddlDelayMillis;
+    this.tooManyIndexesRollbackEnabled = tooManyIndexesRollbackEnabled;
+    this.docIdDesc = docIdDesc;
+    this.indexingDesc = indexingDesc;
+    this.vectorDesc = vectorDesc;
+    this.lexicalDef = lexicalDef;
+    this.rerankDef = rerankDef;
+  }
+
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
+  @VisibleForTesting
+  public CqlIdentifier collectionName() {
+    return collectionName;
+  }
+
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
+  @VisibleForTesting
+  public CommandContext<KeyspaceSchemaObject> commandContext() {
+    return commandContext;
+  }
+
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
+  @VisibleForTesting
+  public CreateCollectionCommand.Options.DocIdDesc docIdDesc() {
+    return docIdDesc;
+  }
+
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
+  @VisibleForTesting
+  public CreateCollectionCommand.Options.IndexingDesc indexingDesc() {
+    return indexingDesc;
+  }
+
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
+  @VisibleForTesting
+  public CreateCollectionCommand.Options.VectorSearchDesc vectorDesc() {
+    return vectorDesc;
+  }
+
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
+  @VisibleForTesting
+  public SchemaHolder<CollectionLexicalDef> lexicalDef() {
+    return lexicalDef;
+  }
+
+  /**
+   * Present and visible because the old testing relied on this being a record, keeping until we
+   * review the testing in more detail and determine if needed.
+   */
+  @VisibleForTesting
+  public SchemaHolder<CollectionRerankDef> rerankDef() {
+    return rerankDef;
+  }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
@@ -113,7 +201,7 @@ public record CreateCollectionOperation(
                     requestContext,
                     queryExecutor,
                     initialTableComment,
-                    lexicalDef().runningValue(),
+                    lexicalDef.runningValue(),
                     false);
               }
 
@@ -159,11 +247,11 @@ public record CreateCollectionOperation(
               // NOTE: FROM NOW ON WE NEED TO USE THE OVERRIDEN VALUE, (which may or may not be
               // actually overidden)
               var overrideLexicalDef =
-                  lexicalDef()
+                  lexicalDef
                       .replaceIfMissing(existingCollectionSettings.lexicalDefSchemaValue())
                       .value();
               var overrideRerankDef =
-                  rerankDef()
+                  rerankDef
                       .replaceIfMissing(existingCollectionSettings.rerankDefSchemaValue())
                       .value();
 
@@ -213,7 +301,7 @@ public record CreateCollectionOperation(
 
   @VisibleForTesting
   String generateTableComment() {
-    return generateTableComment(lexicalDef(), rerankDef());
+    return generateTableComment(lexicalDef, rerankDef);
   }
 
   @VisibleForTesting
