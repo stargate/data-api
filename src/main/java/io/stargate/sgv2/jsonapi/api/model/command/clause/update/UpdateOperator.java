@@ -7,83 +7,83 @@ import java.util.Map;
 
 /** List of update operator that's supported in update. */
 public enum UpdateOperator {
-  ADD_TO_SET("$addToSet") {
+  ADD_TO_SET(Names.ADD_TO_SET) {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
       return AddToSetOperation.construct(arguments);
     }
   },
 
-  CURRENT_DATE("$currentDate") {
+  CURRENT_DATE(Names.CURRENT_DATE) {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
       return CurrentDateOperation.construct(arguments);
     }
   },
 
-  INC("$inc") {
+  INC(Names.INC) {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
       return IncOperation.construct(arguments);
     }
   },
 
-  MAX("$max") {
+  MAX(Names.MAX) {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
       return MinMaxOperation.constructMax(arguments);
     }
   },
 
-  MIN("$min") {
+  MIN(Names.MIN) {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
       return MinMaxOperation.constructMin(arguments);
     }
   },
 
-  MUL("$mul") {
+  MUL(Names.MUL) {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
       return MulOperation.construct(arguments);
     }
   },
 
-  POP("$pop") {
+  POP(Names.POP) {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
       return PopOperation.construct(arguments);
     }
   },
 
-  PUSH("$push") {
+  PUSH(Names.PUSH) {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
       return PushOperation.construct(arguments);
     }
   },
 
-  RENAME("$rename") {
+  RENAME(Names.RENAME) {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
       return RenameOperation.construct(arguments);
     }
   },
 
-  SET("$set") {
+  SET(Names.SET) {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
       return SetOperation.constructSet(arguments);
     }
   },
-  SET_ON_INSERT("$setOnInsert") {
+  SET_ON_INSERT(Names.SET_ON_INSERT) {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
       return SetOperation.constructSetOnInsert(arguments);
     }
   },
 
-  UNSET("$unset") {
+  UNSET(Names.UNSET) {
     @Override
     public UpdateOperation resolveOperation(ObjectNode arguments) {
       return UnsetOperation.construct(arguments);
@@ -92,7 +92,23 @@ public enum UpdateOperator {
 
   // Then operators that we recognize but do not (yet) support
 
-  PULL_ALL("$pullAll");
+  PULL_ALL(Names.PULL_ALL);
+
+  public interface Names {
+    String ADD_TO_SET = "$addToSet";
+    String CURRENT_DATE = "$currentDate";
+    String INC = "$inc";
+    String MAX = "$max";
+    String MIN = "$min";
+    String MUL = "$mul";
+    String POP = "$pop";
+    String PUSH = "$push";
+    String RENAME = "$rename";
+    String SET = "$set";
+    String SET_ON_INSERT = "$setOnInsert";
+    String UNSET = "$unset";
+    String PULL_ALL = "$pullAll";
+  }
 
   private String apiName;
 
