@@ -85,6 +85,30 @@ class GeneralCommandToolsMcpIntegrationTest extends McpIntegrationTestBase {
   }
 
   @Test
+  void successfulToolCallIsTaggedCompleteOverRawHttp() {
+    var response = rawToolCall(1, CommandName.Names.FIND_KEYSPACES, Map.of());
+
+    var result = McpHttpTestSupport.assertResponseComplete(response, 1);
+    assertFalse(result.getBoolean("isError", false));
+    assertNull(response.header("Mcp-Session-Id"));
+    assertNotNull(result.getJsonObject("_meta").getJsonObject(McpHttpTestSupport.SERVER_INFO));
+  }
+
+  @Test
+  void packagedServerDoesNotAdvertiseToolListChanges() {
+    // The tool list never changes at runtime, and subscriptions are not part of this launch.
+    var response =
+        rawRequest("server/discover")
+            .body(McpHttpTestSupport.rpcPayload(1, "server/discover", Map.of()))
+            .post(MCP_PATH);
+
+    var result = McpHttpTestSupport.assertResponseComplete(response, 1);
+    var tools = result.getJsonObject("capabilities").getJsonObject("tools");
+    assertNotNull(tools);
+    assertFalse(tools.containsKey("listChanged"));
+  }
+
+  @Test
   void findRerankingProvidersToolCall() {
     callToolAndAssert(
         CommandName.Names.FIND_RERANKING_PROVIDERS,
