@@ -131,7 +131,7 @@ public class McpResource {
                 contextBuilderSupplier
                     .getBuilder(keyspaceSchemaObject)
                     .withCommandName(command.getClass().getSimpleName())
-                    .withRequestContext(createRequestContext())
+                    .withRequestContext(requestContext)
                     .build());
   }
 
@@ -211,20 +211,24 @@ public class McpResource {
   }
 
   /**
-   * Process a general or keyspace command and return the CommandResult directly.
+   * Process a command and map its result to an MCP tool response.
    *
-   * <p>The Quarkus MCP Server framework automatically encodes the {@link CommandResult} to JSON via
-   * its built-in encoder (Jackson), so no manual serialization is needed.
-   *
-   * @param contextUni The command context (from buildGeneralContext or buildKeyspaceContext)
+   * @param contextUni The command context
    * @param command The command to execute
-   * @return Uni of CommandResult
+   * @return Uni of ToolResponse
    */
   public Uni<ToolResponse> processCommand(Uni<CommandContext<?>> contextUni, Command command) {
 
     return contextUni
-        .flatMap(
-            context -> {
+        .flatMap(context -> executeCommand(context, command))
+        .map(CommandResult::toToolResponse);
+  }
+
+  private Uni<CommandResult> executeCommand(CommandContext<?> context, Command command) {
+    // Defer the feature check and processor call so synchronous failures still close the context.
+    return Uni.createFrom()
+        .deferred(
+            () -> {
               if (!context.apiFeatures().isFeatureEnabled(ApiFeature.MCP)) {
                 return Uni.createFrom()
                     .item(
@@ -234,7 +238,18 @@ public class McpResource {
               }
               return meteredCommandProcessor.processCommand(context, command);
             })
-        .map(CommandResult::toToolResponse);
+        .onTermination()
+        .invoke(
+            () -> {
+              try {
+                context.close();
+              } catch (Exception e) {
+                LOGGER.error(
+                    "Error closing the command context for requestContext={}",
+                    context.requestContext(),
+                    e);
+              }
+            });
   }
 
   /**
