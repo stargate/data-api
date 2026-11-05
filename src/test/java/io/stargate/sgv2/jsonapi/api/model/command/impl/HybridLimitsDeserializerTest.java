@@ -152,7 +152,7 @@ public class HybridLimitsDeserializerTest {
   }
 
   private static Stream<Arguments> invalidLimitsTestCases() {
-    // Range validation (negative / above-max) lives in FindAndRerankOperationBuilder now —
+    // Range validation (negative / above-max) lives in FindAndRerankPlanner now —
     // this deserializer test only covers JSON-shape errors.
     return Stream.of(
         // ----
