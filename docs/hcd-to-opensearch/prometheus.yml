@@ -1,0 +1,21 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "opensearch"
+    metrics_path: /_prometheus/metrics
+    static_configs:
+      - targets: ["opensearch:9200"]
+  - job_name: "hcd"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["hcd:9000"]
+    # The HCD metrics exposition already carries an `instance` label (the node IP).
+    # Honor it instead of overwriting it with the scrape target address.
+    metric_relabel_configs:
+      - source_labels: [exported_instance]
+        regex: (.+)
+        target_label: instance
+        action: replace
+      - regex: exported_instance
+        action: labeldrop

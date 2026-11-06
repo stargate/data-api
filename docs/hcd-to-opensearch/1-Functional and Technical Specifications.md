@@ -97,7 +97,8 @@
   - [6.3 Error codes](#63-error-codes)
   - [6.4 `CollectionSchemaVersion`](#64-collectionschemaversion)
   - [6.5 `isSupported()` check in `IndexFactoryFromCql`](#65-issupported-check-in-indexfactoryfromcql)
-  - [6.6 HCD feature flag](#66-hcd-feature-flag)
+  - [6.6 Feature flag — `open-search`](#66-feature-flag--open-search-implemented)
+  - [6.6b Constants](#66b-constants)
   - [6.7 Testing](#67-testing)
   - [6.8 Write consistency and read-after-write guarantees](#68-write-consistency-and-read-after-write-guarantees)
 - [7. Appendix — `OpenSearchQueryBuilder` API Reference](#7-appendix--opensearchquerybuilder-api-reference)
@@ -130,6 +131,9 @@
 5. **`searchAggregate`** — a new command that passes OpenSearch aggregation DSL (`aggs`) through `expr(...)` and returns structured facet / metric results.
 6. **`countDocuments` with `$openSearch`** — the existing `countDocuments` command is extended to accept a `$openSearch` filter and return the OpenSearch `numFound` count.
 7. **`deleteCollection`** — must also drop the OpenSearch custom index before dropping the table; same API signature, new implementation step.
+
+
+> **Feature flag.** All OpenSearch functionality is gated by the `open-search` feature flag (`stargate.feature.flags.open-search`, set with `-Dstargate.feature.flags.open-search=true`; per-request header `Feature-Flag-open-search`), which is **disabled by default**. When it is off, any attempt to enable OpenSearch (`createCollection` with `openSearch.enabled: true`, `alterCollection addOpenSearch`, `createOpenSearchIndex`) fails with `OPEN_SEARCH_FEATURE_NOT_ENABLED`. See §6.6.
 
 **Tables (§5):**
 8. **`createOpenSearchIndex`** — a dedicated DDL command (parallel to `createTextIndex` / `createVectorIndex`) that creates an OpenSearch custom index on a user-defined table.
@@ -226,10 +230,10 @@ The following four `WITH OPTIONS` keys are **always required** for collections �
 
 1. **`unpackJsonFields: 'doc_json'`** — HCD must parse the JSON blob and merge properties at the OS document root.
 2. **`propertiesFromJsonFields: '<fields>'`** — acts as the allow-list of fields to extract. Must **never** include `_id` — OpenSearch permanently rejects `_id` as a body field (`mapper_parsing_exception`), no mapping can override this.
-3. **`applyCustomSchema: 'true'` + `customMappingsJson: '<json>'`** — required because the Cassandra column is `doc_json TEXT` with no typed schema; `applyDefaultSchema: 'true'` has no schema to work from. The `customMappingsJson` must cover the same fields listed in `propertiesFromJsonFields` and must **not** include an `_id` entry (that field is injected by the Data API automatically as `{"type":"keyword"}`).
+3. **`applyCustomSchema: 'true'` + `customMappingsJson: '<json>'`** — required because the Cassandra column is `doc_json TEXT` with no typed schema; `applyDefaultSchema: 'true'` has no schema to work from. The `customMappingsJson` must cover the same fields listed in `propertiesFromJsonFields` and must **not** include an `_id` entry (rejected at request time with `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`; the Data API does **not** inject one).
 4. **`applyDefaultSchema: 'false'`** — must accompany `applyCustomSchema: 'true'`.
 
-- The feature is configured at **collection creation time** and is **immutable** afterward (same as `lexical` and `rerank`), because OpenSearch mappings cannot be changed after index creation.
+- The feature is configured at **collection creation time** (`createCollection`) or added/removed later via `alterCollection` (`addOpenSearch` / `dropOpenSearch`, §4.3). The mappings of an existing OpenSearch index cannot be edited in place: to change them, `dropOpenSearch` then `addOpenSearch` again.
 - Consistency level for writes to OS-indexed tables is automatically upgraded by HCD (ANY/ONE/LOCAL_ONE → QUORUM).
 
 > **`_id` handling in OpenSearch documents:** Every Data API document carries an `_id` field in `doc_json` (e.g. `{"_id":"p1","firstName":"Alice",...}`). When HCD unpacks `doc_json` it sends all fields — including `_id` — into the OpenSearch document body. OpenSearch **always rejects** `_id` as a body field because it is a reserved metadata field handled at the transport layer; no mapping can override this. The workaround is `propertiesFromJsonFields`, which acts as an allow-list that excludes `_id`. The resulting OpenSearch document shape is therefore:
@@ -299,7 +303,7 @@ When document property names contain special characters, the interaction between
        "author&co": { "type": "text", "analyzer": "english" }
      }
      ```
-   - **CQL Serialisation:** In the emitted CQL, `propertiesFromJsonFields` comma-separates them (`'title,r&d,author&co'`) and `customMappingsJson` safely JSON-encodes them (`'{"properties":{"_id":{"type":"keyword"},"r&d":{"type":"keyword"},"author&co":{"type":"text"}}}'`).
+   - **CQL Serialisation:** In the emitted CQL, `propertiesFromJsonFields` comma-separates them (`'title,r&d,author&co'`) and `customMappingsJson` safely JSON-encodes them (`'{"properties":{"r&d":{"type":"keyword"},"author&co":{"type":"text"}}}'`).
    - **Full-Text Analysis Note:** In OpenSearch, standard text analyzers (e.g. `standard`, `english`) treat `&` and punctuation as word delimiters. If exact string matching is required for strings like `"R&D"` or `"AT&T"`, use `type: "keyword"` or multi-fields.
 
 2. **Dot (`.`) in Property Names vs. Nested Paths:**
@@ -402,7 +406,7 @@ sequenceDiagram
 
 #### 4.1.3 OpenSearch fields in the Data API Payload
 
-> **Why `mappings` is always required for collections.** The HCD connector always needs three things: (1) `propertiesFromJsonFields` — the allow-list of top-level fields to extract from `doc_json`, critically **excluding `_id`**; (2) `customMappingsJson` — the explicit OS field mapping, because `applyDefaultSchema: 'true'` cannot work (the only Cassandra column is `doc_json TEXT` — no typed schema to derive from); (3) `applyCustomSchema: 'true'` + `applyDefaultSchema: 'false'`. The Data API derives both `propertiesFromJsonFields` (the top-level keys of `mappings`) and `customMappingsJson` from the single `mappings` field. `customMappingsJson` is built by wrapping `mappings` under `{"properties":{...}}` and prepending `"_id":{"type":"keyword"}` as the first property, then serialising the whole object to a JSON string. Omitting `mappings` returns `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`.
+> **Why `mappings` is always required for collections.** The HCD connector always needs three things: (1) `propertiesFromJsonFields` — the allow-list of top-level fields to extract from `doc_json`, critically **excluding `_id`**; (2) `customMappingsJson` — the explicit OS field mapping, because `applyDefaultSchema: 'true'` cannot work (the only Cassandra column is `doc_json TEXT` — no typed schema to derive from); (3) `applyCustomSchema: 'true'` + `applyDefaultSchema: 'false'`. The Data API derives both `propertiesFromJsonFields` (the top-level keys of `mappings`) and `customMappingsJson` from the single `mappings` field. `customMappingsJson` is built by wrapping `mappings` under `{"properties":{...}}` verbatim (no `_id` entry is added), then serialising the whole object to a JSON string. Omitting `mappings` returns `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`.
 
 | Field | Required | Default | Description |
 |---|---|---|---|
@@ -410,7 +414,7 @@ sequenceDiagram
 | `indexName` | no | `hcd_<keyspace>_<collectionName>` | **OS index name** — the name of the OpenSearch index (passed as `'indexName'` in `WITH OPTIONS`). Leave unset to use the auto-generated default. Note: the **SAI index name** (the Cassandra custom index identifier used in `expr(...)`) is always auto-generated as `hcd_<keyspace>_<collectionName>` and cannot be configured here. |
 | `numShards` | no | *(HCD default)* | Number of primary shards for the OS index. When omitted, HCD uses its own default (currently `1`). |
 | `numReplicas` | no | *(HCD default)* | Number of replicas for the OS index (analogous to Cassandra replication factor). When omitted, HCD uses its own default. |
-| `mappings` | **yes** | — | Map of **top-level** document field name → OpenSearch field definition. The Data API derives `propertiesFromJsonFields` (the key set) and `customMappingsJson` (built as `{"properties":{"_id":{"type":"keyword"}, ...mappings}}` serialised to a JSON string) from this single field. **`_id` must never appear as a key** — it is a reserved OpenSearch metadata field and is injected automatically. For nested objects, use `{"type":"object"}` or a `{"properties":{...}}` block (HCD passes `customMappingsJson` verbatim to the OpenSearch Create Index API — confirmed). See the type reference below. |
+| `mappings` | **yes** | — | Map of **top-level** document field name → OpenSearch field definition. The Data API derives `propertiesFromJsonFields` (the key set) and `customMappingsJson` (built as `{"properties":{...mappings}}` serialised to a JSON string) from this single field. **`_id` and any key starting with `$` (e.g. `$vector`, `$lexical`, `$openSearch`) must never appear as top-level keys** — `_id` is a reserved OpenSearch metadata field and `$`-prefixed names are Data API internal fields that are not part of the `doc_json` OpenSearch indexes. Violations return `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`. For nested objects, use `{"type":"object"}` or a `{"properties":{...}}` block (HCD passes `customMappingsJson` verbatim to the OpenSearch Create Index API — confirmed). See the type reference below. |
 
 **OpenSearch field type reference for collections**
 
@@ -441,10 +445,13 @@ sequenceDiagram
 > **Constraint — `indexing.deny` is rejected:** `openSearch.enabled: true` cannot be combined with `indexing.deny`. This is a **technical constraint** — `propertiesFromJsonFields` is inherently an allow-list with no deny-list equivalent. Use `indexing.allow` or `openSearch.mappings` to control replication scope. Violating this rule returns `OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST`.
 
 > **Constraint — `indexing.allow` filters the OpenSearch mapping:** When `indexing.allow` is also present, the Data API automatically filters `propertiesFromJsonFields` and `customMappingsJson` to the **intersection** of the `openSearch.mappings` keys and the `indexing.allow` field list. Fields listed in `openSearch.mappings` that are NOT in `indexing.allow` are silently dropped from the OpenSearch replication. This ensures that a field excluded from SAI indexing is also excluded from OpenSearch replication. If the intersection is empty (no mapping key survives the allow-list), the request is rejected with `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`.
+>
+> **Implementation status (as of the current branch):** the `indexing.allow` ∩ `openSearch.mappings` filtering described here and in §4.1.4 / §4.1.5 is **not implemented yet**. `CreateCollectionOperation` and `AlterCollectionCommandResolver` currently emit `propertiesFromJsonFields` and `customMappingsJson` from **all** `openSearch.mappings` keys, regardless of `indexing.allow`, and no empty-intersection check exists. Only the `indexing.deny` rejection (`OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST`) is enforced. Treat the intersection behaviour as the target design.
+
 
 **Relationship to other search capabilities**
 
-The `openSearch` block is a deliberate, explicit gate — the same model as hybrid, not lexical. It must be declared at creation time; using `$openSearch` on a collection that was not created with `openSearch.enabled: true` returns `OPEN_SEARCH_NOT_ENABLED`.
+The `openSearch` block is a deliberate, explicit gate — the same model as hybrid, not lexical. It must be declared at creation time; using `$openSearch` on a collection that was not created with `openSearch.enabled: true` returns `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION`.
 
 | Capability | Declared at creation | Search operator | Gated |
 |---|---|---|---|
@@ -490,7 +497,7 @@ WITH OPTIONS = {
   'unpackJsonFields':        'doc_json',
   'applyDefaultSchema':      'false',
   'applyCustomSchema':       'true',
-  'customMappingsJson':      '{"properties":{"_id":{"type":"keyword"},"firstName":{"type":"text"},"lastName":{"type":"text"},"city":{"type":"text"},"age":{"type":"integer"}}}',
+  'customMappingsJson':      '{"properties":{"firstName":{"type":"text"},"lastName":{"type":"text"},"city":{"type":"text"},"age":{"type":"integer"}}}',
   'propertiesFromJsonFields':'firstName,lastName,city,age'
 };
 ```
@@ -556,7 +563,7 @@ WITH OPTIONS = {
 >   'unpackJsonFields':        'doc_json',
 >   'applyDefaultSchema':      'false',
 >   'applyCustomSchema':       'true',
->   'customMappingsJson':      '{"properties":{"_id":{"type":"keyword"},"title":{"type":"text","analyzer":"english"},"author":{"type":"keyword"}}}',
+>   'customMappingsJson':      '{"properties":{"title":{"type":"text","analyzer":"english"},"author":{"type":"keyword"}}}',
 >   'propertiesFromJsonFields':'title,author'
 > };
 > ```
@@ -692,7 +699,7 @@ Response:
 ```json
 {
   "errors": [{
-    "message": "'_id' must not appear as a key in openSearch.mappings. It is a reserved OpenSearch metadata field and is injected automatically.",
+    "message": "'openSearch.mappings' is required, must be a non-empty object, and must not contain reserved field names ('_id' or any field starting with '$').",
     "errorCode": "OPEN_SEARCH_MISSING_FIELD_MAPPINGS"
   }]
 }
@@ -827,7 +834,7 @@ Response:
 When `openSearch.enabled: true` the Data API executes a second CQL statement immediately after `CREATE TABLE`. The same five `WITH OPTIONS` keys are **always present** for every collection OpenSearch index — they are not conditional:
 
 - `applyDefaultSchema: 'false'` — always. The only Cassandra column is `doc_json TEXT`; there is no typed schema to derive a mapping from.
-- `applyCustomSchema: 'true'` + `customMappingsJson` — always. The Data API builds `customMappingsJson` by constructing `{"properties":{"_id":{"type":"keyword"}, <mappings entries>}}` and serialising the result to a JSON string. The `_id` entry is injected automatically as the first property — it must not appear in `mappings`.
+- `applyCustomSchema: 'true'` + `customMappingsJson` — always. The Data API builds `customMappingsJson` by constructing `{"properties":{<mappings entries>}}` and serialising the result to a JSON string. No `_id` entry is added — `_id` must not appear in `mappings`.
 - `propertiesFromJsonFields` — always. Built from the **effective field set** as a comma-separated string. When `indexing.allow` is also present, this is the **intersection** of `openSearch.mappings` top-level keys and the `indexing.allow` field list; when `indexing.allow` is absent it is simply the top-level keys of `openSearch.mappings`. `_id` is always excluded (validated at request time). An empty intersection is rejected with `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`.
 - `unpackJsonFields: 'doc_json'` — always. Required so HCD parses the JSON blob.
 
@@ -844,7 +851,7 @@ WITH OPTIONS = {
   'unpackJsonFields':        'doc_json',
   'applyDefaultSchema':      'false',
   'applyCustomSchema':       'true',
-  'customMappingsJson':      '{"properties":{"_id":{"type":"keyword"},"firstName":{"type":"text"},"lastName":{"type":"text"},"city":{"type":"text"},"age":{"type":"integer"}}}',
+  'customMappingsJson':      '{"properties":{"firstName":{"type":"text"},"lastName":{"type":"text"},"city":{"type":"text"},"age":{"type":"integer"}}}',
   'propertiesFromJsonFields':'firstName,lastName,city,age'
 };
 ```
@@ -862,7 +869,7 @@ WITH OPTIONS = {
   'unpackJsonFields':        'doc_json',
   'applyDefaultSchema':      'false',
   'applyCustomSchema':       'true',
-  'customMappingsJson':      '{"properties":{"_id":{"type":"keyword"},"title":{"type":"text","analyzer":"english"},"body":{"type":"text","analyzer":"english"},"author":{"type":"keyword"},"publishedAt":{"properties":{"$date":{"type":"date"}}}}}',
+  'customMappingsJson':      '{"properties":{"title":{"type":"text","analyzer":"english"},"body":{"type":"text","analyzer":"english"},"author":{"type":"keyword"},"publishedAt":{"properties":{"$date":{"type":"date"}}}}}',
   'propertiesFromJsonFields':'title,body,author,publishedAt'
 };
 ```
@@ -877,7 +884,7 @@ WITH OPTIONS = {
 | `openSearch.numShards` set by user | `numShards: '<value>'` |
 | `openSearch.numReplicas` set by user | `numReplicas: '<value>'` |
 
-> ¹ `customMappingsJson` is always present. The Data API constructs `{"properties":{"_id":{"type":"keyword"}, <mappings entries>}}` and serialises it to a JSON string. The `{"properties":{...}}` wrapper is the OpenSearch index mapping envelope; `_id` is injected automatically as the first entry. The option ordering in the emitted CQL is: `indexName`, `createIndexIfNotExists`, `unpackJsonFields`, `applyDefaultSchema`, `applyCustomSchema`, `customMappingsJson`, `propertiesFromJsonFields`.
+> ¹ `customMappingsJson` is always present. The Data API constructs `{"properties":{<mappings entries>}}` and serialises it to a JSON string. The `{"properties":{...}}` wrapper is the OpenSearch index mapping envelope; no `_id` entry is injected. The option ordering in the emitted CQL is: `indexName`, `createIndexIfNotExists`, `unpackJsonFields`, `applyDefaultSchema`, `applyCustomSchema`, `customMappingsJson`, `propertiesFromJsonFields`.
 
 > ² `propertiesFromJsonFields` is always present. When `indexing.allow` is absent it equals the top-level keys of `mappings` (i.e. `Object.keys(mappings)`). When `indexing.allow` is present it equals `Object.keys(mappings).filter(k => indexing.allow.includes(k))` — the intersection. `_id` must never appear in either input — validated at request time. An empty intersection is rejected with `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`. For **tables** (§4.3) the equivalent options are optional (HCD can use `applyDefaultSchema: 'true'`); for **collections** they are mandatory.
 
@@ -889,7 +896,7 @@ WITH OPTIONS = {
 5. Add `CollectionSchemaVersion.V_3`; add `CollectionSettingsV3Reader` (extends V2Reader).
 6. Update V1/V2 readers to return `SchemaDefaults.forPreRelease()` when `openSearch` key is absent.
 7. Update `CreateCollectionCommandResolver` to: (a) reject `indexing.deny` + `openSearch.enabled: true` with `OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST`; (b) validate that `mappings` is present and non-empty (throw `OPEN_SEARCH_MISSING_FIELD_MAPPINGS` if absent); (c) validate that `_id` does not appear as a key in `mappings`; (d) when `indexing.allow` is present, compute the **effective field set** as `Object.keys(mappings).filter(k => indexing.allow.includes(k))` and reject with `OPEN_SEARCH_MISSING_FIELD_MAPPINGS` if the result is empty; (e) resolve `indexName` default; persist resolved values in comment JSON. — In `CollectionOpenSearchDef.fromApiDesc()`, when `enabled: false`, check each of `indexName`, `numShards`, `numReplicas`, and `mappings` individually and throw `INVALID_CREATE_COLLECTION_OPTIONS` naming the specific field (mirrors `lexical.enabled: false` + `analyzer` pattern).
-8. Update `CreateCollectionOperation` to emit `CREATE CUSTOM INDEX … USING 'OpenSearchIndex'` after table creation: build `propertiesFromJsonFields` from the **effective field set** (intersection when `indexing.allow` is present, full `mappings` key set otherwise); build `customMappingsJson` by constructing `{"properties":{"_id":{"type":"keyword"}, ...<effective mappings entries>}}` and serialising to a JSON string; include all five mandatory options.
+8. Update `CreateCollectionOperation` to emit `CREATE CUSTOM INDEX … USING 'OpenSearchIndex'` after table creation: build `propertiesFromJsonFields` from the **effective field set** (intersection when `indexing.allow` is present, full `mappings` key set otherwise); build `customMappingsJson` by constructing `{"properties":{...<effective mappings entries>}}` and serialising to a JSON string; include all five mandatory options.
 9. Update `CollectionSchemaFactory` to read/write the `openSearch` key in the comment JSON.
 
 **Relevant context**
@@ -1332,7 +1339,7 @@ sequenceDiagram
 | `operation.addOpenSearch.indexName` | no | `hcd_<keyspace>_<collectionName>` | **OS index name** — the OpenSearch index name. Defaults to `hcd_<keyspace>_<collectionName>` when absent. |
 | `operation.addOpenSearch.numShards` | no | *(HCD default)* | Number of primary shards. |
 | `operation.addOpenSearch.numReplicas` | no | *(HCD default)* | Number of replicas. |
-| `operation.addOpenSearch.mappings` | **yes** | — | Flat field-name → OpenSearch field definition map. Required (same constraint as `createCollection`). Must be a non-empty object and must not contain `_id`. |
+| `operation.addOpenSearch.mappings` | **yes** | — | Flat field-name → OpenSearch field definition map. Required (same constraint as `createCollection`). Must be a non-empty object and must not contain `_id` or any `$`-prefixed key. |
 
 **`dropOpenSearch` operation fields:**
 
@@ -2463,7 +2470,7 @@ Response:
 {
   "errors": [{
     "message": "The collection 'products' does not have an OpenSearch index. Enable openSearch at collection creation time to use the $openSearch filter.",
-    "errorCode": "OPEN_SEARCH_NOT_ENABLED"
+    "errorCode": "OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION"
   }]
 }
 ```
@@ -2496,7 +2503,7 @@ Response includes `nextPageState` when more results exist. Pass it back verbatim
 
 **Behaviour rules**
 - `$openSearch` is detected in [`CollectionFilterResolver`](src/main/java/io/stargate/sgv2/jsonapi/service/resolver/matcher/CollectionFilterResolver.java) when the filter object has `"$openSearch"` as its sole key. Detection must happen **before** the standard filter capture group matching, because `$openSearch`'s value is an arbitrary JSON object — not a primitive or a document-level comparison — and the existing match rules cannot handle it.
-- When `$openSearch` is detected, the resolver first checks `collectionSchemaObject.openSearchDef().enabled()`. If `false` (or no OpenSearch def), throw `OPEN_SEARCH_NOT_ENABLED`.
+- When `$openSearch` is detected, the resolver first checks `collectionSchemaObject.openSearchDef().enabled()`. If `false` (or no OpenSearch def), throw `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION`.
 - If any other key coexists with `"$openSearch"` in the filter object, throw `INVALID_OPEN_SEARCH_FILTER` before any index lookup.
 - The `$openSearch` DSL JSON node is **rewritten** before serialisation (see the `_id` rewriting step below) and then serialised into `expr(<saiIndexName>, '<dsl>')`. Here `<saiIndexName>` is the **SAI index name** — the Cassandra custom index identifier stored in `collectionOpenSearchDef.saiIndexName` (auto-generated as `hcd_<keyspace>_<collectionName>`).
 - A new `OpenSearchCollectionFilter` class is created (following [`MatchCollectionFilter`](src/main/java/io/stargate/sgv2/jsonapi/service/operation/filters/collection/MatchCollectionFilter.java)). Its `get()` method returns a `BuiltCondition` using a new `BuiltConditionPredicate.EXPR` predicate that renders as `expr(<saiIndexName>, '<dslJson>')`.
@@ -2536,17 +2543,17 @@ To fix this transparently, a new `OpenSearchDslIdRewriter` (or equivalent utilit
 
 > **Risk:** `FindAndRerankCommand` constructs an inner `FindCommand` using the user-supplied `filterDefinition` verbatim (via `FindAndRerankOperationBuilder.buildBm25Read()` / `buildVectorRead()`). If a user passes `$openSearch` as the outer filter to `findAndRerank`, it flows into the inner `FindCommand` unchecked, reaches `CollectionFilterResolver`, and either fails to match any capture group (producing empty results or an error) or — if the early-intercept is added — routes to `OpenSearchCollectionFilter` inside a rerank context for which no result handler exists. Both outcomes are wrong.
 >
-> **Required guard:** in `FindAndRerankCommandResolver`, **before** delegating to `FindAndRerankOperationBuilder`, check whether `command.filterDefinition()` contains a `"$openSearch"` key. If present, throw `RERANK_NOT_SUPPORTED_WITH_OPEN_SEARCH` immediately. This block must live at the **outer** command level — not inside `FindCommandResolver` — because `FindAndRerankOperationBuilder` builds the inner `FindCommand` before `FindCommandResolver` ever sees it.
+> **Required guard (implemented):** in `FindAndRerankCommandResolver`, **before** delegating to `FindAndRerankOperationBuilder`, check whether `command.filterDefinition()` contains the `DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD` (`"$openSearch"`) key. If present, throw the existing `UNSUPPORTED_RERANKING_COMMAND` immediately. This block must live at the **outer** command level — not inside `FindCommandResolver` — because `FindAndRerankOperationBuilder` builds the inner `FindCommand` before `FindCommandResolver` ever sees it.
 
 **Todo list**
 1. Create `OpenSearchCollectionFilter` in `service/operation/filters/collection` — constructor takes `String saiIndexName` (the Cassandra custom index identifier, e.g. `hcd_mykeyspace_products`) and `JsonNode queryDsl`; `get()` builds `expr(saiIndexName, dslJson)` using a new `EXPR` predicate.
 2. Add `EXPR` to `BuiltConditionPredicate` (or reuse a suitable existing predicate) to emit the `expr(...)` CQL form.
 3. Intercept before `buildMatchRules` executes in [`CollectionFilterResolver`](src/main/java/io/stargate/sgv2/jsonapi/service/resolver/matcher/CollectionFilterResolver.java) — check `filter.fields()` for `"$openSearch"` and return early with an `OpenSearchCollectionFilter` if found. This single intercept point covers `find`, `findOne`, `findOneAndUpdate`, `findOneAndReplace`, `findOneAndDelete`, `updateOne`, `updateMany`, `deleteOne`, `deleteMany` automatically — all of them use `CollectionFilterResolver`.
-4. Add validation: if `$openSearch` key present with other keys → `INVALID_OPEN_SEARCH_FILTER`; if `openSearchDef.enabled == false` → `OPEN_SEARCH_NOT_ENABLED`.
+4. Add validation: if `$openSearch` key present with other keys → `INVALID_OPEN_SEARCH_FILTER`; if `openSearchDef.enabled == false` → `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION`.
 5. Create `OpenSearchDslIdRewriter` utility class (or static method on `OpenSearchCollectionFilter`) — performs a recursive `JsonNode` walk of the DSL before serialisation: for `term._id`, `terms._id`, and `ids.values`, replace each string value with `OpenSearchIdEncoder.encode(value)`. Create `OpenSearchIdEncoder` with a single `encode(String dataApiId)` method that produces `"{_0=1, _1=<dataApiId>}"`. The rewriter must handle these clauses at any depth inside `bool.must`, `bool.should`, `bool.must_not`, and `bool.filter` arrays. **Do not rewrite `search_after` array values.**
 6. Update [`FindCommandResolver.resolveCollectionCommand()`](src/main/java/io/stargate/sgv2/jsonapi/service/resolver/FindCommandResolver.java) to detect the `OpenSearchCollectionFilter` in the resolved expression and route to `FindCollectionOperation.openSearch(...)` factory method (or reuse `unsortedSingle` / `unsorted` with a flag).
-7. Block rerank + `$openSearch` at the **outer command level**: in `FindAndRerankCommandResolver`, check `command.filterDefinition()` for `"$openSearch"` before delegating to `FindAndRerankOperationBuilder`. Throw `RERANK_NOT_SUPPORTED_WITH_OPEN_SEARCH`. This must NOT be inside `FindCommandResolver` — the inner `FindCommand` is already built by the time `FindCommandResolver` is called.
-8. Add `RERANK_NOT_SUPPORTED_WITH_OPEN_SEARCH` to the error code enum.
+7. Block rerank + `$openSearch` at the **outer command level**: in `FindAndRerankCommandResolver`, check `command.filterDefinition()` for `"$openSearch"` before delegating to `FindAndRerankOperationBuilder`. Throw `UNSUPPORTED_RERANKING_COMMAND`. This must NOT be inside `FindCommandResolver` — the inner `FindCommand` is already built by the time `FindCommandResolver` is called.
+8. No new error code is needed — the existing `UNSUPPORTED_RERANKING_COMMAND` is reused.
 
 **Relevant context**
 - Filter pattern: [`MatchCollectionFilter`](src/main/java/io/stargate/sgv2/jsonapi/service/operation/filters/collection/MatchCollectionFilter.java)
@@ -3089,7 +3096,7 @@ Response:
 {
   "errors": [{
     "message": "Table 'articles' has no OpenSearch index. Use createOpenSearchIndex to create one before using the $openSearch filter.",
-    "errorCode": "OPEN_SEARCH_NOT_ENABLED"
+    "errorCode": "OPEN_SEARCH_NOT_ENABLED_FOR_TABLE"
   }]
 }
 ```
@@ -3099,7 +3106,7 @@ Response:
 **Behaviour rules**
 - `$openSearch` detection for tables follows the same pre-validation pattern as for collections, but occurs inside [`TableFilterResolver`](src/main/java/io/stargate/sgv2/jsonapi/service/resolver/matcher/TableFilterResolver.java) rather than `CollectionFilterResolver`.
 - Before any column-level filter resolution, check whether the filter has `"$openSearch"` as its sole key. If other keys coexist, throw `INVALID_OPEN_SEARCH_FILTER`.
-- Look up `ApiOpenSearchIndex` from `tableSchemaObject.apiTableDef().indexes()` by type `OPEN_SEARCH`. If none exists, throw `OPEN_SEARCH_NOT_ENABLED`.
+- Look up `ApiOpenSearchIndex` from `tableSchemaObject.apiTableDef().indexes()` by type `OPEN_SEARCH`. If none exists, throw `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE`.
 - Build a new `OpenSearchTableFilter` (analogous to `OpenSearchCollectionFilter` but implementing `TableFilter` / `WhereCQLClause<Select>`) that wraps the DSL JSON and the **SAI index name** recovered from `ApiOpenSearchIndex.saiIndexName()`.
 - `OpenSearchTableFilter.buildStatement()` renders `WHERE expr(<saiIndexName>, '<dslJson>')` using the QueryBuilder `raw()` literal or a custom `ExpressionCQLClause`.
 - Pass the `OpenSearchTableFilter` as the sole where clause to [`TableReadDBTaskBuilder.build()`](src/main/java/io/stargate/sgv2/jsonapi/service/operation/tables/TableReadDBTaskBuilder.java). No `WhereCQLClauseAnalyzer` validation runs for `$openSearch` — the analyzer's checks (PK presence, ALLOW FILTERING warnings) are not relevant for an `expr(...)` predicate.
@@ -3110,7 +3117,7 @@ Response:
 2. Add `$openSearch` interception logic to [`TableFilterResolver`](src/main/java/io/stargate/sgv2/jsonapi/service/resolver/matcher/TableFilterResolver.java) (this runs inside `resolve(...)`, so `find`, `findOne`, `updateOne`, `deleteOne` and `deleteMany` all share it) — check for `"$openSearch"` in the filter before standard column matching; validate exclusivity; look up `ApiOpenSearchIndex`; construct `OpenSearchTableFilter`.
 3. Update [`WhereCQLClauseAnalyzer.StatementType.SELECT`](src/main/java/io/stargate/sgv2/jsonapi/service/operation/tables/WhereCQLClauseAnalyzer.java) strategy to short-circuit all validation rules when the where clause contains an `OpenSearchTableFilter` — the standard PK and indexing checks do not apply.
 4. Update `TableReadDBOperationBuilder` to bypass the `WhereCQLClauseAnalyzer` (or pass through a no-op strategy) when an `OpenSearchTableFilter` is detected.
-5. Add `OPEN_SEARCH_NOT_ENABLED` and `INVALID_OPEN_SEARCH_FILTER` to table-path error code enum if not already shared with the collection path.
+5. Add `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION` / `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE` and `INVALID_OPEN_SEARCH_FILTER` to table-path error code enum if not already shared with the collection path.
 
 **Relevant context**
 - Collection parallel: `OpenSearchCollectionFilter` (new, see §4.4.5)
@@ -3218,7 +3225,7 @@ await table.find(
 
 The aggregation DSL is passed verbatim to `expr(...)` as a full OpenSearch search request body containing `aggs`. An optional `query` key scopes the aggregation to a matching subset of documents.
 
-The command throws `OPEN_SEARCH_NOT_ENABLED` if the collection or table does not have an OpenSearch index. The response shape is **not** a document list — it is a flat map of aggregation-name → JSON result, matching exactly what OpenSearch returns.
+The command throws `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION` / `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE` if the collection or table does not have an OpenSearch index. The response shape is **not** a document list — it is a flat map of aggregation-name → JSON result, matching exactly what OpenSearch returns.
 
 #### 4.6.2 How it works
 
@@ -3259,7 +3266,7 @@ sequenceDiagram
 | `status.aggregations.<name>.buckets` | Array | For bucket aggregations (`terms`, `date_histogram`, `range`). Each bucket has `key`, `doc_count`, and any nested aggregation results. |
 | `status.aggregations.<name>.value` | Number | For metric aggregations (`avg`, `sum`, `min`, `max`, `cardinality`). |
 
-> **`OPEN_SEARCH_NOT_ENABLED`**: thrown when `searchAggregate` is called on a collection that was not created with `openSearch.enabled: true`, or on a table with no `createOpenSearchIndex`. Error message identifies whether the resource is a collection or table.
+> **`OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION` / `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE`**: thrown when `searchAggregate` is called on a collection that was not created with `openSearch.enabled: true`, or on a table with no `createOpenSearchIndex`. Error message identifies whether the resource is a collection or table.
 
 > **`OPEN_SEARCH_AGGREGATION_TOO_LARGE`**: thrown when the OpenSearch response for a single aggregation exceeds the `max_agg_json_bytes` limit (default 1 MiB) or the full response exceeds `max_agg_response_bytes` (default 16 MiB). These bounds are enforced by `OpenSearchQueryHandler` before the result reaches the Data API. Reduce aggregation scope (e.g. lower `size` on `terms`) or add a `query` to narrow the dataset.
 
@@ -3400,7 +3407,7 @@ Response:
 {
   "errors": [{
     "message": "The collection 'products' does not have an OpenSearch index. Enable openSearch at collection creation time to use searchAggregate.",
-    "errorCode": "OPEN_SEARCH_NOT_ENABLED"
+    "errorCode": "OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION"
   }]
 }
 ```
@@ -3421,8 +3428,8 @@ Response:
 
 **Behaviour rules**
 - `searchAggregate` is a new collection-level and table-level command, registered in the command router alongside `find` and `countDocuments`.
-- On collections: validate `collectionSchemaObject.openSearchDef().enabled()`. If `false`, throw `OPEN_SEARCH_NOT_ENABLED` with a message naming the collection.
-- On tables: look up `ApiOpenSearchIndex` from `tableSchemaObject.apiTableDef().indexes()`. If absent, throw `OPEN_SEARCH_NOT_ENABLED` with a message naming the table.
+- On collections: validate `collectionSchemaObject.openSearchDef().enabled()`. If `false`, throw `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION` with a message naming the collection.
+- On tables: look up `ApiOpenSearchIndex` from `tableSchemaObject.apiTableDef().indexes()`. If absent, throw `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE` with a message naming the table.
 - Build the OpenSearch search request body: `{ "query": <optional>, "aggs": <required> }` and serialise to JSON string.
 - Emit: `SELECT * FROM <table> WHERE expr(<saiIndexName>, '<aggs-body>')`, where `<saiIndexName>` is the **SAI index name** (auto-generated for collections; user-supplied for tables).
 - `OpenSearchQueryHandler` switches to aggregation mode when it sees an `aggs` key. It returns **one CQL row** with one `text` column per top-level aggregation name.
@@ -3443,14 +3450,14 @@ WHERE expr(hcd_mykeyspace_products,
 1. Create `SearchAggregateCommand` record in `api/model/command/impl` — fields: `JsonNode aggregations` (required), `JsonNode query` (optional).
 2. Create `SearchAggregateCommandResolver` in `service/resolver` — validates OpenSearch enabled, builds `expr(...)` body from `aggregations` + optional `query`, dispatches to new `SearchAggregateOperation`.
 3. Create `SearchAggregateOperation` in `service/operation` — emits `SELECT * FROM … WHERE expr(...)`, reads the one-row result, maps columns to `status.aggregations`.
-4. Add `OPEN_SEARCH_NOT_ENABLED` guard (reuse existing code); add `OPEN_SEARCH_AGGREGATION_TOO_LARGE` error code mapped from HCD's `InvalidRequestException`.
+4. Add `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION` / `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE` guard (reuse existing code); add `OPEN_SEARCH_AGGREGATION_TOO_LARGE` error code mapped from HCD's `InvalidRequestException`.
 5. Register the command in the command router for both collection-level and table-level namespaces.
 6. Unit tests: aggs-only body, aggs + query body, missing OpenSearch index → error, oversized response → error.
 
 **Relevant context**
 - Command pattern: [`CountDocumentsCommand`](src/main/java/io/stargate/sgv2/jsonapi/api/model/command/impl/CountDocumentsCommand.java)
 - Operation pattern: [`CountCollectionOperation`](src/main/java/io/stargate/sgv2/jsonapi/service/operation/collections/CountCollectionOperation.java)
-- Error mapping: existing `OPEN_SEARCH_NOT_ENABLED` guard in `CollectionFilterResolver`
+- Error mapping: `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION` guard in `CollectionFilterClauseBuilder`
 
 #### 4.6.6 Implementation Tips (clients)
 
@@ -3556,7 +3563,7 @@ This is distinct from a standard `countDocuments` with a normal filter (which us
 
 > **Tables:** `countDocuments` is currently **not supported for Tables** in the Data API. This section applies to **Collections only**. Table support for `countDocuments` (with or without `$openSearch`) is out of scope for this version.
 
-`OPEN_SEARCH_NOT_ENABLED` is thrown if the collection has no OpenSearch index, regardless of whether the query would have matched documents.
+`OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION` / `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE` is thrown if the collection has no OpenSearch index, regardless of whether the query would have matched documents.
 
 #### 4.7.2 How it works
 
@@ -3593,7 +3600,7 @@ The `filter.$openSearch` value is identical to its use in `find` — a verbatim 
 |---|---|---|
 | `status.count` | Integer | Number of documents matching the OpenSearch query according to OpenSearch's `numFound`. |
 
-> **`OPEN_SEARCH_NOT_ENABLED`**: thrown when the collection was not created with `openSearch.enabled: true` (collections) or has no `createOpenSearchIndex` (tables). Error message identifies the resource by name.
+> **`OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION` / `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE`**: thrown when the collection was not created with `openSearch.enabled: true` (collections) or has no `createOpenSearchIndex` (tables). Error message identifies the resource by name.
 
 #### 4.7.4 Sample payloads
 
@@ -3660,7 +3667,7 @@ Response:
 {
   "errors": [{
     "message": "The collection 'articles' does not have an OpenSearch index. Enable openSearch at collection creation time to use $openSearch with countDocuments.",
-    "errorCode": "OPEN_SEARCH_NOT_ENABLED"
+    "errorCode": "OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION"
   }]
 }
 ```
@@ -3692,8 +3699,8 @@ Response:
 
 **Behaviour rules**
 - Detect `$openSearch` in the filter inside the `countDocuments` resolver, before the standard filter path — same early intercept pattern as in `CollectionFilterResolver`.
-- On collections: validate `collectionSchemaObject.openSearchDef().enabled()`. If `false`, throw `OPEN_SEARCH_NOT_ENABLED` naming the collection.
-- On tables: look up `ApiOpenSearchIndex`. If absent, throw `OPEN_SEARCH_NOT_ENABLED` naming the table.
+- On collections: validate `collectionSchemaObject.openSearchDef().enabled()`. If `false`, throw `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION` naming the collection.
+- On tables: look up `ApiOpenSearchIndex`. If absent, throw `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE` naming the table.
 - Build `OpenSearchCollectionFilter` (or `OpenSearchTableFilter`) from the `$openSearch` value — the **same filter class** used by the `find` command. Reuse without duplication.
 - Emit `SELECT COUNT(*) FROM <table> WHERE expr(<saiIndexName>, '<dsl>')` instead of the normal count query, where `<saiIndexName>` is the **SAI index name** (auto-generated for collections; user-supplied for tables).
 - The count result comes from `OpenSearchQueryHandler.numFound` (via the custom payload), not from a Cassandra row scan — the value is the OpenSearch hit count, not the Cassandra storage count.
@@ -3704,7 +3711,7 @@ Response:
 2. Reuse `OpenSearchCollectionFilter` — no new filter class needed.
 3. Update `CountCollectionOperation` to emit `SELECT COUNT(*) WHERE expr(...)` when an `OpenSearchCollectionFilter` is detected.
 4. The count value is returned via the standard CQL count row — HCD's `OpenSearchQueryHandler` intercepts `SELECT COUNT(*)` with an `expr(...)` predicate and returns the OpenSearch `numFound` value as a CQL long column, same as a normal Cassandra count. No special payload channel is required.
-5. Extend error handling: `OPEN_SEARCH_NOT_ENABLED` (reuse existing), `INVALID_OPEN_SEARCH_FILTER` (reuse existing).
+5. Extend error handling: `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION` / `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE` (reuse existing), `INVALID_OPEN_SEARCH_FILTER` (reuse existing).
 
 **Relevant context**
 - Command: [`CountDocumentsCommand`](src/main/java/io/stargate/sgv2/jsonapi/api/model/command/impl/CountDocumentsCommand.java)
@@ -4030,7 +4037,7 @@ The existing `dropIndex` command (which drops SAI, text, and vector indexes from
 
 > **HCD side-effect.** As with `deleteCollection`, when HCD processes a `DROP INDEX` on an OpenSearch custom index it automatically deletes the corresponding OS index from the OpenSearch cluster. The Data API does not need to call OpenSearch directly.
 
-> **Scope.** `dropIndex` drops only the index — not the table. After `dropIndex`, the table remains intact and writable; it simply no longer replicates to OpenSearch and `$openSearch` queries on it will return `OPEN_SEARCH_NOT_ENABLED`.
+> **Scope.** `dropIndex` drops only the index — not the table. After `dropIndex`, the table remains intact and writable; it simply no longer replicates to OpenSearch and `$openSearch` queries on it will return `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE`.
 
 #### 5.4.2 How it works
 
@@ -4073,7 +4080,7 @@ DROP INDEX articles_search;
 **Todo list**
 1. Confirm `IndexFactoryFromCql.isSupported()` returns `true` for `class_name = 'OpenSearchIndex'` (§5.5 todo). If not, `dropIndex` will silently treat the index as `UnsupportedIndex` and may refuse the operation.
 2. Verify `DropIndexCommandResolver` (or `DropIndexDBTask`) accepts `ApiIndexType.OPEN_SEARCH` indexes — no special-casing should be needed since the CQL `DROP INDEX` statement is type-agnostic, but confirm no guard blocks non-SAI types.
-3. Integration test: create a table, call `createOpenSearchIndex`, call `dropIndex`, verify `listIndexes` returns empty and `$openSearch` returns `OPEN_SEARCH_NOT_ENABLED`.
+3. Integration test: create a table, call `createOpenSearchIndex`, call `dropIndex`, verify `listIndexes` returns empty and `$openSearch` returns `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE`.
 
 **Relevant context**
 - Command: `DropIndexCommand` (existing)
@@ -4402,19 +4409,24 @@ flowchart LR
 ---
 
 ### 6.3 Error codes
-New `SchemaException.Code` (or `FilterException.Code`) values to add:
+Codes below are implemented in `SchemaException.Code` / `FilterException.Code` and `errors.yaml`:
 
 | Code | When thrown |
 |------|-------------|
-| `OPEN_SEARCH_NOT_ENABLED` | Any OpenSearch command (`$openSearch`, `searchAggregate`, `countDocuments` with `$openSearch`) used on a collection/table that has no OpenSearch index configured. Applies to both collections (no `openSearch.enabled: true` at creation) and tables (no `createOpenSearchIndex` run). |
-| `INVALID_OPEN_SEARCH_FILTER` | `$openSearch` combined with any other filter operator in the same filter object, or `options.limit` set alongside a `"size"` key in the `$openSearch` DSL (HCD rejects a CQL `LIMIT` combined with a DSL `size`). |
-| `OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST` | `openSearch.enabled: true` + `indexing.deny` at collection creation. |
-| `OPEN_SEARCH_INDEX_ALREADY_EXISTS` | Attempting to create a second OpenSearch index on the same table. |
-| `OPEN_SEARCH_AGGREGATION_TOO_LARGE` | An aggregation response from OpenSearch exceeds the `max_agg_json_bytes` or `max_agg_response_bytes` bounds imposed by `OpenSearchQueryHandler`. Mirrors the HCD-level size guard. |
-| `OPEN_SEARCH_COMMAND_NOT_SUPPORTED` | A `searchAggregate` or `countDocuments` with `$openSearch` is attempted on a resource type where the command is not supported (e.g. `searchAggregate` on a single-document endpoint). Reserved for future constraint enforcement. |
-| `OPEN_SEARCH_CORRUPT_SCHEMA` | `CollectionSettingsV3Reader` finds a V3 collection with `openSearch.enabled: true` but a null `indexName` in the stored comment. This indicates the comment was written incorrectly at creation time. Thrown instead of silently recomputing a default, which could return wrong information and later cause `expr(...)` queries against a non-existent SAI index. |
-| `OPEN_SEARCH_MISSING_FIELD_MAPPINGS` | `createCollection` with `openSearch.enabled: true` is missing `mappings`, or `mappings` is empty, or `_id` appears as a key in `mappings`. There is no auto-inference path for collections. |
-| `RERANK_NOT_SUPPORTED_WITH_OPEN_SEARCH` | `findAndRerank` called with a `$openSearch` filter. The rerank pipeline does not support OpenSearch-backed result sets — block at `FindAndRerankCommandResolver` before `FindAndRerankOperationBuilder` constructs the inner `FindCommand`. |
+| `OPEN_SEARCH_FEATURE_NOT_ENABLED` | The `open-search` feature flag (§6.6) is off and the command tries to use OpenSearch: `createCollection` with `openSearch.enabled: true`, `alterCollection addOpenSearch`, or `createOpenSearchIndex`. Also thrown by `CollectionOpenSearchDefSchemaFactory` when an enabled definition is validated while the flag is off. |
+| `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION` | `$openSearch` filter, `searchAggregate`, `countDocuments` with `$openSearch`, or `alterCollection dropOpenSearch` used on a collection without `openSearch.enabled: true`. |
+| `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE` | `$openSearch` filter or `searchAggregate` used on a table that has no OpenSearch index (no `createOpenSearchIndex` run). |
+| `INVALID_OPEN_SEARCH_FILTER` (`FilterException`) | `$openSearch` combined with any other filter operator in the same filter object (`CollectionFilterClauseBuilder`, `TableFilterClauseBuilder`, `TableFilterResolver`). |
+| `OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST` | `openSearch.enabled: true` + `indexing.deny` at collection creation (`CreateCollectionCommandResolver`). |
+| `OPEN_SEARCH_INDEX_ALREADY_EXISTS` | Attempting to create a second OpenSearch index on the same table or collection (`createOpenSearchIndex`, `alterCollection addOpenSearch`). |
+| `OPEN_SEARCH_AGGREGATION_TOO_LARGE` | An aggregation response exceeds the `max_agg_json_bytes` / `max_agg_response_bytes` bounds imposed by `OpenSearchQueryHandler` (detected from the error message in `SearchAggregateCollectionOperation` / `SearchAggregateTableOperation`). |
+| `OPEN_SEARCH_CORRUPT_SCHEMA` | A persisted OpenSearch definition (table-comment JSON or `OpenSearchIndex` CQL metadata) is incomplete: missing `indexName`, `customMappingsJson` or `mappings`. Thrown instead of silently recomputing a default, which could later cause `expr(...)` queries against a non-existent SAI index. |
+| `OPEN_SEARCH_MISSING_FIELD_MAPPINGS` | `createCollection` / `addOpenSearch` with `openSearch.enabled: true` has missing or empty `mappings`, `mappings` that is not an object, an `_id` key, or any key starting with `$`. There is no auto-inference path for collections. |
+
+**Proposed in earlier drafts but NOT implemented as dedicated codes:**
+- `OPEN_SEARCH_NOT_ENABLED` — replaced by the `_FOR_COLLECTION` / `_FOR_TABLE` variants above.
+- `OPEN_SEARCH_COMMAND_NOT_SUPPORTED` — not defined.
+- `RERANK_NOT_SUPPORTED_WITH_OPEN_SEARCH` — `FindAndRerankCommandResolver` throws the existing `RequestException.Code.UNSUPPORTED_RERANKING_COMMAND` when the filter contains `$openSearch`.
 
 ### 6.4 `CollectionSchemaVersion`
 The new `openSearch` field in the collection comment JSON requires schema version **V_3**. The existing V1/V2 readers must handle the absent `openSearch` key gracefully by returning `SchemaDefaults.forPreRelease()` (maps to `enabled: false`).
@@ -4422,8 +4434,32 @@ The new `openSearch` field in the collection comment JSON requires schema versio
 ### 6.5 `isSupported()` check in `IndexFactoryFromCql`
 The current `IndexFactoryFromCql.isSupported()` method only accepts SAI indexes (`CQLSAIIndex.isSAIIndex()`). OpenSearch indexes have `class_name = 'OpenSearchIndex'` which will fail that check. The method must be updated to also return `true` for the OpenSearch class name, otherwise existing OpenSearch indexes on a table will be silently represented as `UnsupportedIndex` when the schema is read.
 
-### 6.6 HCD feature flag
-An operator-level feature flag should gate these features (same pattern as `lexical` / `rerank`). Check whether a `FeatureFlagResolver` or equivalent already exists before introducing a new one.
+### 6.6 Feature flag — `open-search` (implemented)
+OpenSearch support is gated by [`ApiFeature.OPEN_SEARCH`](src/main/java/io/stargate/sgv2/jsonapi/config/feature/ApiFeature.java), using the same mechanism as `lexical` / `reranking`:
+
+| Aspect | Value |
+|---|---|
+| Config property | `stargate.feature.flags.open-search` (declared empty in `application.yaml`) |
+| System property (containers) | `-Dstargate.feature.flags.open-search=true`, passed through `JAVA_OPTS_APPEND`. The environment variable `STARGATE_FEATURE_FLAGS_OPEN_SEARCH` **must not be used**: it maps to the key `open.search` and the application fails at startup (`SRCFG00049`). |
+| Default | `false` (**disabled**) so Astra / vanilla Cassandra are unaffected |
+| Per-request HTTP header | `Feature-Flag-open-search: true` or `false` |
+
+Behaviour:
+- `CollectionOpenSearchDefSchemaFactory` is built with `featureDisabled = !isFeatureEnabled(OPEN_SEARCH)` in `SchemaRegistry` and `VersionedSchema.openSearchDef()`.
+- When disabled, `createCollection` with `openSearch.enabled: true` fails with `OPEN_SEARCH_FEATURE_NOT_ENABLED`; collections with no / disabled `openSearch` block keep working (`SchemaDefaults.forDisabledFeature()` returns the disabled definition).
+- `AlterCollectionCommandResolver` (`addOpenSearch`) and `CreateOpenSearchIndexCommandResolver` check the flag first and throw `OPEN_SEARCH_FEATURE_NOT_ENABLED`.
+- Test helpers: `CollectionOpenSearchDefSchemaFactory.FOR_TESTING_ENABLED` / `FOR_TESTING_DISABLED`.
+- Operator documentation: [`DOCKER_BUILD_AND_FEATURE_FLAGS.md`](DOCKER_BUILD_AND_FEATURE_FLAGS.md) and `CONFIGURATION.md`.
+
+### 6.6b Constants
+
+| Constant | Value | Used by |
+|---|---|---|
+| `DocumentConstants.Fields.OPEN_SEARCH_CONTENT_FIELD` | `"$openSearch"` | `CollectionFilterClauseBuilder`, `TableFilterClauseBuilder`, `CollectionFilterResolver`, `TableFilterResolver` (key detection, exclusivity, match rules) and `FindAndRerankCommandResolver` (rerank guard) |
+| `TableCommentConstants.COLLECTION_OPEN_SEARCH_CONFIG_KEY` | `"openSearch"` | Table-comment JSON key written by `CreateCollectionOperation` / `AlterCollectionCommandResolver`, read by `CollectionSettingsV3Reader` |
+| `CQLSAIIndex.OPEN_SEARCH_CLASS_NAME` | `"OpenSearchIndex"` | Recognising OpenSearch custom indexes (`CQLSAIIndex.isOpenSearchIndex()`, `IndexFactoryFromCql.isSupported()`) |
+| `ApiIndexType.Constants.OPEN_SEARCH` | `"openSearch"` | `indexType` value in `listIndexes` / `dropIndex` |
+| `CollectionSchemaVersion.CURRENT_VERSION` | `V_3` | Schema version carrying the `openSearch` block |
 
 ### 6.7 Testing
 Each sub-task should include:
@@ -4436,8 +4472,8 @@ Each sub-task should include:
 - `terms` aggregation scoped by a `match` query — verify `status.aggregations.*.buckets` shape.
 - `date_histogram` with nested `avg` — verify bucket key format and nested aggregation value.
 - Multiple metric aggregations (`sum`, `avg`, `cardinality`) — verify all values present in response map.
-- `searchAggregate` on collection without `openSearch.enabled: true` → `OPEN_SEARCH_NOT_ENABLED`.
-- `searchAggregate` on table without `createOpenSearchIndex` → `OPEN_SEARCH_NOT_ENABLED`.
+- `searchAggregate` on collection without `openSearch.enabled: true` → `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION`.
+- `searchAggregate` on table without `createOpenSearchIndex` → `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE`.
 - Oversized aggregation response mock → `OPEN_SEARCH_AGGREGATION_TOO_LARGE`.
 - Aggregation keys are returned verbatim (not lowercased or transformed).
 
@@ -4446,8 +4482,8 @@ Each sub-task should include:
 - `countDocuments` with `bool` query (must + filter) — verify correct count returned.
 - `countDocuments` with `match_all` — verify count equals total indexed document count.
 - `countDocuments` with `$openSearch` + another filter key → `INVALID_OPEN_SEARCH_FILTER`.
-- `countDocuments` with `$openSearch` on collection without OpenSearch → `OPEN_SEARCH_NOT_ENABLED`.
-- `countDocuments` with `$openSearch` on table without OpenSearch index → `OPEN_SEARCH_NOT_ENABLED`.
+- `countDocuments` with `$openSearch` on collection without OpenSearch → `OPEN_SEARCH_NOT_ENABLED_FOR_COLLECTION`.
+- `countDocuments` with `$openSearch` on table without OpenSearch index → `OPEN_SEARCH_NOT_ENABLED_FOR_TABLE`.
 - Verify `OpenSearchCollectionFilter` / `OpenSearchTableFilter` are shared between `find` and `countDocuments` — no duplicated filter class.
 
 **Special property name testing matrix (Dots, Ampersands, Dollar Signs, EJSON):**

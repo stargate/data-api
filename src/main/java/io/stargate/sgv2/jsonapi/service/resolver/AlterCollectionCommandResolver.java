@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.SchemaChangeResult;
 import io.stargate.sgv2.jsonapi.service.schema.CollectionSchemaVersion;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionOpenSearchDef;
-import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionOpenSearchDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.LinkedHashMap;

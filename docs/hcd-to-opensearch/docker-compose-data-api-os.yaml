@@ -1,0 +1,145 @@
+#
+# IBM Confidential
+#
+# PID 5900-BQE
+#
+# Copyright IBM Corp. 2026
+#
+
+# Full local stack for demos, development and testing:
+#   hcd         — HCD node with the OpenSearch replicator plugin (CQL :9042, mgmt API :8080, metrics :9000)
+#   opensearch  — OpenSearch single-node cluster (:9200), security plugin disabled
+#   prometheus  — scrapes HCD (:9000) and OpenSearch (:9200/_prometheus/metrics)
+#   grafana     — Grafana dashboards (:3000)
+
+services:
+
+  # ── HCD ────────────────────────────────────────────────────────────────────
+  hcd:
+    image: ${HCD_LOCATION:-localhost/ibm/hcd}:${HCD_VERSION:-2.0.8}
+    container_name: hcd
+    ports:
+      - "9042:9042"   # CQL
+      - "9000:9000"   # Metrics (Management API Prometheus endpoint)
+      - "8080:8080"   # Management API REST
+    environment:
+      - DS_LICENSE=accept
+      - CLUSTER_NAME=hcd-demo
+      - DC=DC1
+      - JAVA_HOME=/opt/java/openjdk
+      # Heap tuning — default 1G suits a dev laptop; override MAX_HEAP_SIZE env var for production.
+      # Cassandra caps at 8 GB to avoid long GC pauses; HEAP_NEWSIZE is ¼ of MAX per DataStax guidelines.
+      - MAX_HEAP_SIZE=${MAX_HEAP_SIZE:-1G}
+      - HEAP_NEWSIZE=${HEAP_NEWSIZE:-256M}
+      # Enable the Management API sidecar (exposes /metrics on :9000 via the mgmt-api server)
+      - USE_MGMT_API=true
+      # OpenSearch replicator plugin — JVM flags that wire in the HCD interceptors and index implementation
+      # Also override AdvancedAuthenticator: it requires an external IAM/LDAP backend and hangs on a
+      # demo node. AllowAllAuthenticator skips all auth setup, which is safe for local-only stacks.
+      - "JVM_EXTRA_OPTS=-Dcassandra.custom_mutator_class=com.datastax.replicator.ReplicatorMutatorInterceptor -Dcassandra.custom_batchlog_manager_interceptor_class=com.datastax.replicator.ReplicatorBatchlogManagerInterceptor -Dcassandra.trusted_index_implementations=com.datastax.opensearch.OpenSearchIndex -Dcassandra.custom_query_handler_class=com.datastax.opensearch.OpenSearchQueryHandler -Dcassandra.authenticator=AllowAllAuthenticator -Dcassandra.authorizer=AllowAllAuthorizer -Dcassandra.role_manager=CassandraRoleManager -Dcassandra.network_authorizer=AllowAllNetworkAuthorizer"
+      # Point HCD at the opensearch service
+      - CASSANDRA_OPENSEARCH_ADDRESSES=http://opensearch:9200
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/api/v0/probes/readiness || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 20
+      start_period: 120s
+    restart: unless-stopped
+    depends_on:
+      opensearch:
+        condition: service_healthy
+
+  # ── OpenSearch ─────────────────────────────────────────────────────────────
+  opensearch:
+    image: opensearchproject/opensearch:${OPENSEARCH_VERSION:-3.7.0}
+    container_name: opensearch
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - bootstrap.memory_lock=true
+      # 8 GB heap: ≤50% of host RAM and well under the 26 GB compressed-oops threshold.
+      # Remainder is available for the OS page cache that OpenSearch relies on for segment reads.
+      - "OPENSEARCH_JAVA_OPTS=${OPENSEARCH_JAVA_OPTS:--Xms8g -Xmx8g}"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+    restart: unless-stopped
+
+  # ── Prometheus ─────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION:-v3}
+    container_name: prom
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:Z
+    restart: unless-stopped
+    depends_on:
+      - hcd
+      - opensearch
+
+  # ── Grafana ────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:${GRAFANA_VERSION:-13.0}
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana-dashboards:/var/lib/grafana/dashboards:Z
+      - ./dashboard.yaml:/etc/grafana/provisioning/dashboards/dashboard.yaml:Z
+      - ./datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:Z
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # ── Data API ─────────────────────────────────────────────────────────────
+  # Image built with the steps in "2-Build data-api image.md" (default: localhost/data-api-os:latest).
+  # Override with DATAAPIIMAGE / DATAAPITAG (e.g. a pushed multi-arch image).
+  data-api:
+    image: ${DATAAPIIMAGE:-localhost/data-api-os}:${DATAAPITAG:-latest}
+    container_name: data-api
+    ports:
+      - "8181:8181"
+    mem_limit: 2G
+    environment:
+      - JAVA_MAX_MEM_RATIO=75
+      - JAVA_INITIAL_MEM_RATIO=50
+      - GC_CONTAINER_OPTIONS=-XX:+UseG1GC
+      # Backend database: the HCD node of this stack (type CASSANDRA is the default)
+      - STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_TYPE=cassandra
+      - STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_CASSANDRA_END_POINTS=hcd
+      - STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_CASSANDRA_PORT=9042
+      # Must match the DC value of the hcd service
+      - STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_LOCAL_DATACENTER=DC1
+      # Feature flags (stargate.feature.flags.*)
+      # NOTE: the OpenSearch flag (stargate.feature.flags.open-search) can NOT be set with the
+      # STARGATE_FEATURE_FLAGS_OPEN_SEARCH env var: it is mapped to the key "open.search" and the
+      # application fails at startup. It is set as a system property in JAVA_OPTS_APPEND below.
+      - STARGATE_FEATURE_FLAGS_TABLES=true
+      - STARGATE_FEATURE_FLAGS_RERANKING=true
+      - QUARKUS_HTTP_ACCESS_LOG_ENABLED=${REQUESTLOG:-false}
+      - QUARKUS_LOG_LEVEL=${LOGLEVEL:-INFO}
+      - STARGATE_JSONAPI_OPERATIONS_VECTORIZE_ENABLED=true
+      - JAVA_OPTS_APPEND=-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -Dstargate.feature.flags.open-search=true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8181/stargate/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    depends_on:
+      hcd:
+        condition: service_healthy

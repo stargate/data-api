@@ -1,4 +1,4 @@
-# Data API → HCD → OpenSearch (cURL-only) Test Plan
+# 5 — Test Data API with OpenSearch (curl)
 
 Smoke test that verifies the full Data API and OpenSearch integration exclusively using **cURL commands** (no CQL statements).
 
@@ -44,9 +44,9 @@ Smoke test that verifies the full Data API and OpenSearch integration exclusivel
 
 ## Prerequisites
 
-### 1 — HCD & OpenSearch stack running
+### 1 — Stack running (HCD, OpenSearch, Data API)
 
-Ensure HCD and OpenSearch containers are up and healthy:
+The whole stack, including the Data API, is started by [3-Start everything.md](3-Start%20everything.md). Check that the containers are up and healthy:
 
 ```bash
 podman ps --format 'table {{.Names}}\t{{.Status}}'
@@ -58,31 +58,19 @@ Expected — all rows `healthy` or `Up`:
 NAMES       STATUS
 opensearch  Up ... (healthy)
 hcd         Up ... (healthy)
+data-api    Up ... (healthy)
 prom        Up ...
 grafana     Up ...
 ```
 
-If not the process is to 
+If not:
 
-- Start Podman
-```asciidoc
-podman machine start
-```
+- Start the Podman machine (macOS/Windows): `podman machine start`
+- Start the stack: `./start.sh`
 
-- Run `start.sh`
+### 2 — Data API responding
 
-```
-./scripts/start.sh
-```
-
-- Start DATA API
-```
-./scripts/start_data_api_local.sh
-```
-
-### 2 — Data API running
-
-Ensure Data API is running and listening on `http://localhost:8181`:
+Ensure the Data API is listening on `http://localhost:8181`:
 
 ```bash
 curl -s -X POST http://localhost:8181/v1 \
