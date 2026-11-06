@@ -22,10 +22,10 @@ class FindAndRerankRequestTest {
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "{ \"$vectorize\" : \"cheese\", \"$lexical\" : \"cows\" }",
+        "{ \"$hybrid\" : \"cheese\", \"$lexical\" : \"cows\" }",
         "{ \"$hybrid\" : \"cheese\", \"$vectorize\" : \"cheese\" }"
       })
-  void failOnMultipleTopLevelSortFields(String sort) {
+  void failOnHybridSortWithOtherTopLevelFields(String sort) {
     // The request fails during deserialization before any database access.
     given()
         .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, "test-token")

@@ -3,7 +3,9 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.NullNode;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
@@ -11,23 +13,7 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 
-/**
- * The sort clause of a findAndRerank command, see {@link FindAndRerankSortClauseDeserializer} for
- * the forms it can take.
- *
- * @param rerankLegMode {@link RerankLegMode#MULTI_LEG} when the sort clause uses $hybrid, otherwise
- *     {@link RerankLegMode#SINGLE_LEG}.
- * @param hybridSort If <code>null</code> then the $hybrid field was not text, OR was blank text,
- *     otherwise it is the trimmed text.
- * @param vectorizeSort If <code>null</code> then the $vectorize field was not present in the sort
- *     clause, OR was present but set to JSON null OR it was blank string, otherwise it is the value
- *     provided.
- * @param lexicalSort If <code>null</code> then the $lexical field was not present in the sort
- *     clause, OR was present but set to JSON null OR it was blank string, otherwise it is the value
- *     provided.
- * @param vectorSort If <code>null</code> then the vector field was not present in the sort clause,
- *     or present and JSON null, otherwise it is the value provided.
- */
+/** The sort clause of a findAndRerank command. */
 @JsonDeserialize(using = FindAndRerankSortClauseDeserializer.class)
 @Schema(
     name = "FindAndRerankSort",
@@ -56,14 +42,106 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
       {"$hybrid": {"$vector": {"$binary": "P4AAAEAAAABAQAAA"}, "$lexical": "lexical query"}}
       """
     })
-public record FindAndRerankSort(
-    @JsonIgnore RerankLegMode rerankLegMode,
-    @JsonIgnore String hybridSort,
-    @JsonIgnore String vectorizeSort,
-    @JsonIgnore String lexicalSort,
-    @JsonIgnore float[] vectorSort,
-    @JsonIgnore CommandFeatures commandFeatures)
-    implements Recordable {
+public sealed interface FindAndRerankSort extends Recordable
+    permits FindAndRerankSort.MultiLeg, FindAndRerankSort.SingleLeg {
+
+  @JsonIgnore
+  CommandFeatures commandFeatures();
+
+  sealed interface MultiLeg extends FindAndRerankSort permits HybridText, HybridObject {}
+
+  record HybridText(@JsonIgnore String text, @JsonIgnore CommandFeatures commandFeatures)
+      implements MultiLeg {
+    public HybridText {
+      Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+    }
+  }
+
+  record HybridObject(
+      @JsonIgnore String vectorize,
+      @JsonIgnore String lexical,
+      @JsonIgnore float[] vector,
+      @JsonIgnore CommandFeatures commandFeatures)
+      implements MultiLeg {
+    public HybridObject {
+      Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+      vector = vector == null ? null : vector.clone();
+    }
+
+    @Override
+    public float[] vector() {
+      return vector == null ? null : vector.clone();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return obj instanceof HybridObject other
+          && Objects.equals(vectorize, other.vectorize)
+          && Objects.equals(lexical, other.lexical)
+          && Arrays.equals(vector, other.vector)
+          && Objects.equals(commandFeatures, other.commandFeatures);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(vectorize, lexical, Arrays.hashCode(vector), commandFeatures);
+    }
+  }
+
+  sealed interface SingleLeg extends FindAndRerankSort
+      permits UnresolvedSingleLeg, LexicalLeg, VectorLeg, FilterLeg {}
+
+  /** Values remain raw until the planner validates them with find's sort builder. */
+  record UnresolvedSingleLeg(@JsonIgnore JsonNode sort, @JsonIgnore CommandFeatures commandFeatures)
+      implements SingleLeg {
+    public UnresolvedSingleLeg {
+      Objects.requireNonNull(sort, "sort must not be null");
+      Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+    }
+  }
+
+  record LexicalLeg(
+      @JsonIgnore List<SortExpression2> sortExpressions,
+      @JsonIgnore CommandFeatures commandFeatures)
+      implements SingleLeg {
+    public LexicalLeg {
+      sortExpressions = List.copyOf(sortExpressions);
+      Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+      if (sortExpressions.size() != 1
+          || !(sortExpressions.getFirst() instanceof SortExpression2.LexicalSe)) {
+        throw new IllegalArgumentException("LexicalLeg requires one lexical expression");
+      }
+    }
+  }
+
+  record VectorLeg(
+      @JsonIgnore List<SortExpression2> sortExpressions,
+      @JsonIgnore CommandFeatures commandFeatures)
+      implements SingleLeg {
+    public VectorLeg {
+      sortExpressions = List.copyOf(sortExpressions);
+      Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+      if (sortExpressions.size() != 1
+          || !(sortExpressions.getFirst() instanceof SortExpression2.VectorSe
+              || sortExpressions.getFirst() instanceof SortExpression2.VectorizeSe)) {
+        throw new IllegalArgumentException("VectorLeg requires one vector or vectorize expression");
+      }
+    }
+  }
+
+  record FilterLeg(
+      @JsonIgnore List<SortExpression2> sortExpressions,
+      @JsonIgnore CommandFeatures commandFeatures)
+      implements SingleLeg {
+    public FilterLeg {
+      sortExpressions = List.copyOf(sortExpressions);
+      Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+      if (sortExpressions.stream()
+          .anyMatch(expression -> !(expression instanceof SortExpression2.FieldSe))) {
+        throw new IllegalArgumentException("FilterLeg accepts only field expressions");
+      }
+    }
+  }
 
   // Schema-only classes. @SchemaProperty can point at a nested schema only through a class, so
   // these empty classes carry the @Schema for each nested part of the sort. Nothing creates them.
@@ -110,52 +188,23 @@ public record FindAndRerankSort(
       requiredProperties = {VECTOR_EMBEDDING_FIELD, VECTOR_EMBEDDING_TEXT_FIELD})
   public static class ConflictingVectorSortSchema {}
 
-  public static final FindAndRerankSort NO_ARG_SORT =
-      new FindAndRerankSort(
-          RerankLegMode.SINGLE_LEG, null, null, null, null, CommandFeatures.EMPTY);
-
-  public FindAndRerankSort {
-    Objects.requireNonNull(rerankLegMode, "rerankLegMode must not be null");
-    Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
-  }
+  FindAndRerankSort NO_ARG_SORT = new UnresolvedSingleLeg(NullNode.instance, CommandFeatures.EMPTY);
 
   @Override
-  public DataRecorder recordTo(DataRecorder dataRecorder) {
-    return dataRecorder
-        .append("rerankLegMode", rerankLegMode)
-        .append("hybridSort", hybridSort)
-        .append("vectorizeSort", vectorizeSort)
-        .append("lexicalSort", lexicalSort)
-        .append("vectorSort", Arrays.toString(vectorSort))
-        .append("commandFeatures", commandFeatures);
-  }
-
-  /**
-   * Override to do a value equality check on the vector
-   *
-   * @param obj the reference object with which to compare.
-   * @return
-   */
-  @Override
-  public boolean equals(Object obj) {
-    return (obj instanceof FindAndRerankSort other)
-        && rerankLegMode == other.rerankLegMode
-        && Objects.equals(hybridSort, other.hybridSort)
-        && Objects.equals(vectorizeSort, other.vectorizeSort)
-        && Objects.equals(lexicalSort, other.lexicalSort)
-        && Arrays.equals(vectorSort, other.vectorSort)
-        && Objects.equals(commandFeatures, other.commandFeatures);
-  }
-
-  /** Override to do a value equality hash on the vector */
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        rerankLegMode,
-        hybridSort,
-        vectorizeSort,
-        lexicalSort,
-        Arrays.hashCode(vectorSort),
-        commandFeatures);
+  default DataRecorder recordTo(DataRecorder dataRecorder) {
+    dataRecorder.append("sortType", getClass().getSimpleName());
+    switch (this) {
+      case HybridText sort -> dataRecorder.append("text", sort.text());
+      case HybridObject sort ->
+          dataRecorder
+              .append("vectorize", sort.vectorize())
+              .append("lexical", sort.lexical())
+              .append("vector", Arrays.toString(sort.vector()));
+      case UnresolvedSingleLeg sort -> dataRecorder.append("sort", sort.sort());
+      case LexicalLeg sort -> dataRecorder.append("sortExpressions", sort.sortExpressions());
+      case VectorLeg sort -> dataRecorder.append("sortExpressions", sort.sortExpressions());
+      case FilterLeg sort -> dataRecorder.append("sortExpressions", sort.sortExpressions());
+    }
+    return dataRecorder.append("commandFeatures", commandFeatures());
   }
 }

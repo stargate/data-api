@@ -5,7 +5,11 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.builders.CollectionSortClauseBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort.*;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.config.IntConfigWithBounds;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -45,8 +49,11 @@ class FindAndRerankPlanner {
     Objects.requireNonNull(command, "command must not be null");
     Objects.requireNonNull(commandContext, "commandContext must not be null");
 
-    var sort = command.sortClause();
     var schemaObject = commandContext.schemaObject();
+    var sort =
+        command.sortClause() instanceof UnresolvedSingleLeg unresolved
+            ? resolveSingleLeg(unresolved, schemaObject)
+            : command.sortClause();
     var operationsConfig = commandContext.config().get(OperationsConfig.class);
 
     checkSortSupported(sort, schemaObject);
@@ -56,7 +63,7 @@ class FindAndRerankPlanner {
         RerankingQuery.create(
             getOrDefault(command.options(), FindAndRerankCommand.Options::rerankQuery, null),
             vectorizeText(sort));
-    var passageLocator = passageLocator(command);
+    var passageLocator = passageLocator(command, sort);
     var projector = command.buildProjector();
 
     // NOTE: the legs are planned after the options and the projection are checked, to keep the
@@ -66,11 +73,15 @@ class FindAndRerankPlanner {
     // NOTE: a sort with no $vector or $vectorize fails here with a SORT error, not later with an
     // UNEXPECTED_SERVER_ERROR, see GH #2577
     var legs =
-        switch (sort.rerankLegMode()) {
-            // TODO: GH #2602, GH #2603 - plan single leg sorts, until then only a command with no
-            // sort is SINGLE_LEG
-          case SINGLE_LEG -> throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
-          case MULTI_LEG -> multiLegs(command, schemaObject);
+        switch (sort) {
+          case MultiLeg multiLeg -> multiLegs(command, multiLeg, schemaObject);
+            // TODO: GH #2602, GH #2603 - execute the validated single-leg sorts.
+          case LexicalLeg ignored ->
+              throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
+          case VectorLeg ignored -> throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
+          case FilterLeg ignored -> throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
+          case UnresolvedSingleLeg ignored ->
+              throw new IllegalStateException("sort was not resolved");
         };
     var vectorizeStep = isVectorizeSort(sort) ? planVectorizeStep(sort, schemaObject) : null;
 
@@ -87,6 +98,31 @@ class FindAndRerankPlanner {
             rerankServiceDef, rerankingQuery, passageLocator, projector, limit),
         getOrDefault(command.options(), FindAndRerankCommand.Options::includeScores, false),
         getOrDefault(command.options(), FindAndRerankCommand.Options::includeSortVector, false));
+  }
+
+  /** Validate single-leg values with find's builder before assigning their typed form. */
+  static SingleLeg resolveSingleLeg(UnresolvedSingleLeg sort, CollectionSchemaObject schemaObject) {
+    var clause = new CollectionSortClauseBuilder(schemaObject).build(sort.sort());
+    clause.validate(schemaObject);
+    var features = sort.commandFeatures();
+    var lexical = clause.lexicalSortExpression();
+    if (lexical != null) {
+      return new LexicalLeg(List.of(new LexicalSe(lexical.getLexicalQuery())), features);
+    }
+    if (clause.hasVsearchClause()) {
+      return new VectorLeg(
+          List.of(new VectorSe(clause.sortExpressions().getFirst().getVector())), features);
+    }
+    if (clause.hasVectorizeSearchClause()) {
+      return new VectorLeg(
+          List.of(new VectorizeSe(clause.sortExpressions().getFirst().getVectorize())), features);
+    }
+    return new FilterLeg(
+        clause.sortExpressions().stream()
+            .<SortExpression2>map(
+                expression -> new FieldSe(expression.getPath(), expression.isAscending()))
+            .toList(),
+        features);
   }
 
   /**
@@ -166,9 +202,8 @@ class FindAndRerankPlanner {
    * vector for the vector leg.
    */
   private static List<FindAndRerankPlan.RerankLeg> multiLegs(
-      FindAndRerankCommand command, CollectionSchemaObject schemaObject) {
+      FindAndRerankCommand command, MultiLeg sort, CollectionSchemaObject schemaObject) {
 
-    var sort = command.sortClause();
     if (!isVectorizeSort(sort) && !isVectorSort(sort)) {
       throw isLexicalSort(sort)
           ? SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT.get()
@@ -189,7 +224,7 @@ class FindAndRerankPlanner {
     legs.add(
         new FindAndRerankPlan.RerankLeg(
             RerankLegType.VECTOR_LEG,
-            isVectorizeSort(sort) ? null : sort.vectorSort(),
+            isVectorizeSort(sort) ? null : vector(sort),
             null,
             hybridLimits.vectorLimit()));
 
@@ -258,14 +293,15 @@ class FindAndRerankPlanner {
     return serviceDef;
   }
 
-  private static PathMatchLocator passageLocator(FindAndRerankCommand command) {
+  private static PathMatchLocator passageLocator(
+      FindAndRerankCommand command, FindAndRerankSort sort) {
 
     var rerankOn = getOrDefault(command.options(), FindAndRerankCommand.Options::rerankOn, null);
     var isRerankOn = rerankOn != null && !rerankOn.isBlank();
 
     String finalRerankField;
 
-    if (isVectorizeSort(command.sortClause())) {
+    if (isVectorizeSort(sort)) {
       // use the vectorize field, unless the user has overridden
       finalRerankField = isRerankOn ? rerankOn : VECTOR_EMBEDDING_TEXT_FIELD;
     } else if (isRerankOn) {
@@ -286,14 +322,36 @@ class FindAndRerankPlanner {
 
   /** The text to vectorize: the $hybrid text, or the $vectorize value, or <code>null</code>. */
   private static String vectorizeText(FindAndRerankSort sort) {
-    return sort.hybridSort() != null ? sort.hybridSort() : sort.vectorizeSort();
+    return switch (sort) {
+      case HybridText text -> text.text();
+      case HybridObject object -> object.vectorize();
+      case VectorLeg leg ->
+          switch (leg.sortExpressions().getFirst()) {
+            case VectorizeSe expression -> expression.vectorizeText();
+            case VectorSe ignored -> null;
+            case LexicalSe ignored ->
+                throw new IllegalStateException("lexical expression in vector leg");
+            case FieldSe ignored ->
+                throw new IllegalStateException("field expression in vector leg");
+          };
+      case LexicalLeg ignored -> null;
+      case FilterLeg ignored -> null;
+      case UnresolvedSingleLeg ignored -> throw new IllegalStateException("sort was not resolved");
+    };
   }
 
   /**
    * The text for the lexical sort: the $hybrid text, or the $lexical value, or <code>null</code>.
    */
   private static String lexicalText(FindAndRerankSort sort) {
-    return sort.hybridSort() != null ? sort.hybridSort() : sort.lexicalSort();
+    return switch (sort) {
+      case HybridText text -> text.text();
+      case HybridObject object -> object.lexical();
+      case LexicalLeg leg -> ((LexicalSe) leg.sortExpressions().getFirst()).lexicalText();
+      case VectorLeg ignored -> null;
+      case FilterLeg ignored -> null;
+      case UnresolvedSingleLeg ignored -> throw new IllegalStateException("sort was not resolved");
+    };
   }
 
   private static boolean isLexicalSort(FindAndRerankSort sort) {
@@ -302,7 +360,14 @@ class FindAndRerankPlanner {
 
   /** The $hybrid object has $lexical text, so the collection must have a lexical index. */
   private static boolean isExplicitLexicalSort(FindAndRerankSort sort) {
-    return sort.lexicalSort() != null;
+    return switch (sort) {
+      case HybridObject object -> object.lexical() != null;
+      case LexicalLeg ignored -> true;
+      case HybridText ignored -> false;
+      case VectorLeg ignored -> false;
+      case FilterLeg ignored -> false;
+      case UnresolvedSingleLeg ignored -> throw new IllegalStateException("sort was not resolved");
+    };
   }
 
   private static boolean isVectorizeSort(FindAndRerankSort sort) {
@@ -310,6 +375,25 @@ class FindAndRerankPlanner {
   }
 
   private static boolean isVectorSort(FindAndRerankSort sort) {
-    return sort.vectorSort() != null;
+    return vector(sort) != null;
+  }
+
+  private static float[] vector(FindAndRerankSort sort) {
+    return switch (sort) {
+      case HybridObject object -> object.vector();
+      case VectorLeg leg ->
+          switch (leg.sortExpressions().getFirst()) {
+            case VectorSe expression -> expression.vector();
+            case VectorizeSe ignored -> null;
+            case LexicalSe ignored ->
+                throw new IllegalStateException("lexical expression in vector leg");
+            case FieldSe ignored ->
+                throw new IllegalStateException("field expression in vector leg");
+          };
+      case HybridText ignored -> null;
+      case LexicalLeg ignored -> null;
+      case FilterLeg ignored -> null;
+      case UnresolvedSingleLeg ignored -> throw new IllegalStateException("sort was not resolved");
+    };
   }
 }

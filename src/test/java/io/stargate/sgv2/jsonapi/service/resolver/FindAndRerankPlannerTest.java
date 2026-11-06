@@ -2,8 +2,12 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.TestConstants.rerankingModelConfig;
 import static io.stargate.sgv2.jsonapi.TestConstants.rerankingProvidersConfig;
+import static io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort.*;
+import static io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.*;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+import static io.stargate.sgv2.jsonapi.metrics.CommandFeature.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -13,6 +17,7 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
+import io.stargate.sgv2.jsonapi.api.model.command.builders.CollectionSortClauseBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.config.IntConfigWithBounds;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -24,6 +29,8 @@ import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.exception.UpdateException;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.RerankingQuery;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
@@ -35,6 +42,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests for {@link FindAndRerankPlanner}: the legs it plans for each kind of sort, and the error
@@ -319,14 +328,22 @@ class FindAndRerankPlannerTest {
         Arguments.of(
             "$vectorize single leg null",
             "{\"$vectorize\": null}",
-            SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
+            SortException.Code.SORT_CLAUSE_VALUE_INVALID),
         Arguments.of(
             "$vector single leg null",
             "{\"$vector\": null}",
-            SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
+            SortException.Code.SORT_CLAUSE_VALUE_INVALID),
         Arguments.of(
             "$lexical single leg null",
             "{\"$lexical\": null}",
+            SortException.Code.SORT_CLAUSE_INVALID),
+        Arguments.of(
+            "single field sort",
+            "{\"age\": -1}",
+            SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
+        Arguments.of(
+            "multiple field sorts",
+            "{\"age\": 1, \"name\": -1}",
             SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
         Arguments.of("no sort", null, SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
         Arguments.of(
@@ -341,6 +358,90 @@ class FindAndRerankPlannerTest {
             null
             """,
             SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT));
+  }
+
+  @ParameterizedTest
+  @MethodSource("resolvedSingleLegCases")
+  void resolvesSingleLegSortWithFindRules(String json, SingleLeg expected) throws Exception {
+    var sort = (UnresolvedSingleLeg) command(json, RERANK_OPTIONS).sortClause();
+
+    var actual = FindAndRerankPlanner.resolveSingleLeg(sort, schema(Collection.VECTORIZE_LEXICAL));
+
+    assertThat(actual).isEqualTo(expected);
+  }
+
+  static Stream<Arguments> resolvedSingleLegCases() {
+    return Stream.of(
+        Arguments.of("{}", new FilterLeg(List.of(), CommandFeatures.EMPTY)),
+        Arguments.of(
+            "{\"age\": -1}",
+            new FilterLeg(List.of(new FieldSe("age", false)), CommandFeatures.EMPTY)),
+        Arguments.of(
+            "{\"age\": 1, \"name\": -1}",
+            new FilterLeg(
+                List.of(new FieldSe("age", true), new FieldSe("name", false)),
+                CommandFeatures.EMPTY)),
+        Arguments.of(
+            "{\"$lexical\": \"  cows  \"}",
+            new LexicalLeg(List.of(new LexicalSe("  cows  ")), CommandFeatures.of(LEXICAL))),
+        Arguments.of(
+            "{\"$lexical\": \"   \"}",
+            new LexicalLeg(List.of(new LexicalSe("   ")), CommandFeatures.of(LEXICAL))),
+        Arguments.of(
+            "{\"$vectorize\": \"  cheese  \"}",
+            new VectorLeg(List.of(new VectorizeSe("  cheese  ")), CommandFeatures.of(VECTORIZE))),
+        Arguments.of(
+            "{\"$vector\": [0.1, 0.2, 0.3]}",
+            new VectorLeg(
+                List.of(new VectorSe(VECTOR)), CommandFeatures.of(CommandFeature.VECTOR))),
+        Arguments.of(
+            "{\"$vector\": {\"$binary\": \"PczMzT5MzM0+mZma\"}}",
+            new VectorLeg(
+                List.of(new VectorSe(VECTOR)), CommandFeatures.of(CommandFeature.VECTOR))));
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "{\"$lexical\": null}",
+        "{\"$lexical\": 1}",
+        "{\"$lexical\": \"cows\", \"age\": -1}",
+        "{\"$vectorize\": null}",
+        "{\"$vectorize\": \" \"}",
+        "{\"$vectorize\": 1}",
+        "{\"$vector\": null}",
+        "{\"$vector\": 1}",
+        "{\"$vector\": []}",
+        "{\"$vector\": [1, \"bad\"]}",
+        "{\"$vector\": {\"$date\": \"2026-01-01\"}}",
+        "{\"$vector\": [1, 2, 3], \"$vectorize\": \"cheese\"}",
+        "{\"$vectorize\": \"cheese\", \"$lexical\": \"cows\"}",
+        "{\"age\": 0}",
+        "{\"age\": 2}",
+        "{\"age\": -2}",
+        "{\"age\": 1.0}",
+        "{\"age\": true}",
+        "{\"age\": null}",
+        "{\"$unknown\": 1}"
+      })
+  void rejectsInvalidSingleLegSortWithFindError(String json) throws Exception {
+    var schema = schema(Collection.VECTORIZE_LEXICAL);
+    var rawSort = objectMapper.readTree(json);
+    var expected =
+        assertThrows(
+            APIException.class, () -> new CollectionSortClauseBuilder(schema).build(rawSort));
+
+    var actual =
+        assertThrows(
+            APIException.class,
+            () ->
+                FindAndRerankPlanner.plan(
+                    command(json, RERANK_OPTIONS), commandContext(Collection.VECTORIZE_LEXICAL)));
+
+    assertThat(actual.getClass()).isEqualTo(expected.getClass());
+    assertThat(actual.code).isEqualTo(expected.code);
+    assertThat(actual.title).isEqualTo(expected.title);
+    assertThat(actual.body).isEqualTo(expected.body);
   }
 
   // ===========================================================================================
@@ -629,6 +730,18 @@ class FindAndRerankPlannerTest {
             """
             {"rerankOn": "body"}
             """),
+        Collection.VECTOR_LEXICAL,
+        RequestException.class,
+        RequestException.Code.MISSING_RERANK_QUERY_TEXT);
+  }
+
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(strings = {"{}", "null"})
+  void reportsMissingRerankQueryWhenSortIsEmptyOrMissing(String sort) throws Exception {
+    assertPlanFails(
+        "no rerank query and no sort expressions",
+        command(sort, null),
         Collection.VECTOR_LEXICAL,
         RequestException.class,
         RequestException.Code.MISSING_RERANK_QUERY_TEXT);

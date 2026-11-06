@@ -26,23 +26,17 @@ import java.util.*;
 /**
  * {@link StdDeserializer} for the {@link FindAndRerankSort}.
  *
- * <p>Checks the JSON structure and value types. A nonempty sort must have exactly one top-level
- * field to select its mode. The planner validates the values against the collection and decides
- * which legs run. For example, the text of <code>{"$hybrid": "text"}</code> is kept as hybrid text
- * for the planner to use.
+ * <p>Checks the shape and value types of $hybrid. Other sorts retain their JSON values for the
+ * planner to validate with find's sort builder.
  */
 public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAndRerankSort> {
 
   private static final String ERROR_CONTEXT = "`sort` clause";
 
-  // top level has exactly one of $hybrid, $vectorize, $vector or $lexical
-  // can be string or object for $hybrid
+  // $hybrid is the only top-level field for a multi-leg sort
   // { "sort" : { "$hybrid" : "i like cheese" } }
   // { "sort" : { "$hybrid" : { "$vectorize" : "i like cheese", "$lexical" : "cows"} } }
   // { "sort" : { "$hybrid" : { "$vector" : [1, 2, 3], "$lexical" : "cows"} } }
-  // { "sort" : { "$vectorize" : "i like cheese" } }
-  // { "sort" : { "$vector" : [1, 2, 3] } }
-  // { "sort" : { "$lexical" : "cows" } }
   private static final JsonFieldMatcher<JsonNode> MATCH_TOP_LEVEL_SORT_FIELDS =
       new JsonFieldMatcher<>(
           JsonNode.class,
@@ -88,21 +82,21 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
   }
 
   /**
-   * Deserialize the sort clause from an object node.
+   * Deserialize the sort clause, retaining non-hybrid values until the collection is available.
    *
    * @param sort The sort clause as an object node, no check for nulls.
-   * @return The {@link FindAndRerankSort} after checking its JSON structure and value types. Inside
-   *     <code>$hybrid</code>, both <code>$vectorize</code> and <code>$vector</code> are kept for
-   *     the planner to validate. A single-leg sort with no value, e.g. <code>
-   *     {"$lexical": null}</code>, is recorded as that mode with no value, the planner rejects it
-   *     (for now every single-leg mode fails with UNSUPPORTED_FIND_AND_RERANK_SORT, GH #2602).
    */
   private static FindAndRerankSort deserialize(JsonParser jsonParser, ObjectNode sort)
       throws JsonMappingException {
 
-    // { "sort" : { } }
-    if (sort.isEmpty()) {
-      return FindAndRerankSort.NO_ARG_SORT;
+    if (!sort.has(HYBRID_FIELD)) {
+      var commandFeatures = CommandFeatures.create();
+      for (var sortField : SortField.values()) {
+        if (sort.has(sortField.sortField())) {
+          commandFeatures.addFeature(sortField.commandFeature());
+        }
+      }
+      return new FindAndRerankSort.UnresolvedSingleLeg(sort, commandFeatures);
     }
 
     var sortMatch = MATCH_TOP_LEVEL_SORT_FIELDS.matchAndThrow(sort, jsonParser, ERROR_CONTEXT);
@@ -114,62 +108,15 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   + String.join(", ", sortMatch.matched().keySet())));
     }
 
-    // the matcher has checked the field name, so fromSortField cannot fail here
-    var topLevelField = sortMatch.matched().entrySet().iterator().next();
-    var sortField = SortField.fromSortField(topLevelField.getKey());
-    var topLevelValue = topLevelField.getValue();
-
-    return switch (sortField) {
-      case HYBRID ->
-          switch (topLevelValue) {
-            case TextNode textNode ->
-                new FindAndRerankSort(
-                    RerankLegMode.MULTI_LEG,
-                    normalizedText(textNode.asText()),
-                    null,
-                    null,
-                    null,
-                    CommandFeatures.of(SortField.HYBRID.commandFeature()));
-            case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
-            case JsonNode node ->
-                throw JsonFieldMatcher.errorForWrongType(
-                    jsonParser,
-                    ERROR_CONTEXT,
-                    SortField.HYBRID.sortField(),
-                    node,
-                    TextNode.class,
-                    ObjectNode.class);
-          };
-      case VECTORIZE -> {
-        var commandFeatures = CommandFeatures.create();
-        yield new FindAndRerankSort(
-            RerankLegMode.SINGLE_LEG,
-            null,
-            textSortValue(jsonParser, sortField, topLevelValue, commandFeatures),
-            null,
-            null,
-            commandFeatures);
-      }
-      case LEXICAL -> {
-        var commandFeatures = CommandFeatures.create();
-        yield new FindAndRerankSort(
-            RerankLegMode.SINGLE_LEG,
-            null,
-            null,
-            textSortValue(jsonParser, sortField, topLevelValue, commandFeatures),
-            null,
-            commandFeatures);
-      }
-      case VECTOR -> {
-        var commandFeatures = CommandFeatures.create();
-        yield new FindAndRerankSort(
-            RerankLegMode.SINGLE_LEG,
-            null,
-            null,
-            null,
-            vectorSortValue(jsonParser, topLevelValue, commandFeatures),
-            commandFeatures);
-      }
+    return switch (sort.get(HYBRID_FIELD)) {
+      case TextNode textNode ->
+          new FindAndRerankSort.HybridText(
+              normalizedText(textNode.asText()),
+              CommandFeatures.of(SortField.HYBRID.commandFeature()));
+      case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
+      case JsonNode node ->
+          throw JsonFieldMatcher.errorForWrongType(
+              jsonParser, ERROR_CONTEXT, HYBRID_FIELD, node, TextNode.class, ObjectNode.class);
     };
   }
 
@@ -179,7 +126,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     var sortMatch =
         MATCH_HYBRID_OBJECT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
     // NOTE: commandFeatures are only for metrics, the FindAndRerankPlanner decides what to run
-    // from the rerankLegMode and the sort values
+    // from the sort values
     CommandFeatures commandFeatures = CommandFeatures.of(SortField.HYBRID.commandFeature());
 
     var vectorizeText =
@@ -198,21 +145,18 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
         vectorSortValue(
             jsonParser, sortMatch.matched().get(SortField.VECTOR.sortField()), commandFeatures);
 
-    return new FindAndRerankSort(
-        RerankLegMode.MULTI_LEG, null, vectorizeText, lexicalText, vector, commandFeatures);
+    return new FindAndRerankSort.HybridObject(vectorizeText, lexicalText, vector, commandFeatures);
   }
 
   /**
-   * A text sort value for {@code sortField}, from inside the {@code $hybrid} object or from a
-   * top-level single-leg sort. The field and its metrics feature both come from {@code sortField},
-   * so they cannot mismatch.
+   * A text sort value from inside the {@code $hybrid} object. The field and its metrics feature
+   * both come from {@code sortField}, so they cannot mismatch.
    *
    * @param sortField {@link SortField#VECTORIZE} or {@link SortField#LEXICAL}.
    * @param node The field value, or {@code null} when the field is missing.
    * @param commandFeatures The mode's feature is added when the field was present, even if null.
-   * @return The trimmed text, or {@code null} when the field is missing, JSON null or blank. Inside
-   *     {@code $hybrid} that skips the leg, at the top level it is a single-leg sort with no value,
-   *     the planner rejects it.
+   * @return The trimmed text, or {@code null} when the field is missing, JSON null or blank. This
+   *     skips the leg inside {@code $hybrid}.
    */
   private static String textSortValue(
       JsonParser jsonParser, SortField sortField, JsonNode node, CommandFeatures commandFeatures)
@@ -225,14 +169,12 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       }
       case NullNode ignored -> {
         // explicit setting to null is allowed
-        // { "sort" : { "$hybrid" : { "$vectorize" : null } } } or { "sort" : { "$lexical" : null }
-        // }
+        // { "sort" : { "$hybrid" : { "$vectorize" : null } } }
         commandFeatures.addFeature(sortField.commandFeature());
         yield null;
       }
       case TextNode textNode -> {
-        // { "sort" : { "$hybrid" : { "$vectorize" : "I like cheese" } } } or
-        // { "sort" : { "$lexical" : "cheese" } }
+        // { "sort" : { "$hybrid" : { "$vectorize" : "I like cheese" } } }
         commandFeatures.addFeature(sortField.commandFeature());
         yield normalizedText(textNode.asText());
       }
@@ -248,8 +190,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
   }
 
   /**
-   * A {@code $vector} sort value, from inside the {@code $hybrid} object or from a top-level
-   * single-leg sort.
+   * A {@code $vector} sort value from inside the {@code $hybrid} object.
    *
    * @param node The field value, or {@code null} when the field is missing.
    * @param commandFeatures The vector feature is added when the field was present, even if null.
@@ -267,12 +208,12 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       }
       case NullNode ignored -> {
         // explicit setting to null is allowed
-        // { "sort" : { "$hybrid" : { "$vector" : null } } } or { "sort" : { "$vector" : null } }
+        // { "sort" : { "$hybrid" : { "$vector" : null } } }
         commandFeatures.addFeature(SortField.VECTOR.commandFeature());
         yield null;
       }
       case ArrayNode arrayNode -> {
-        // { "sort" : { "$hybrid" : { "$vector" : [1,2,3] } } } or { "sort" : { "$vector" : [] } }
+        // { "sort" : { "$hybrid" : { "$vector" : [1,2,3] } } }
         commandFeatures.addFeature(SortField.VECTOR.commandFeature());
         yield arrayNodeToVector(arrayNode);
       }
@@ -329,13 +270,6 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
 
     CommandFeature commandFeature() {
       return commandFeature;
-    }
-
-    static SortField fromSortField(String sortField) {
-      return Arrays.stream(values())
-          .filter(field -> field.sortField.equals(sortField))
-          .findFirst()
-          .orElseThrow(() -> new IllegalArgumentException("unknown sort field: " + sortField));
     }
   }
 
