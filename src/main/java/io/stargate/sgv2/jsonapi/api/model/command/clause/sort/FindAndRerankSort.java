@@ -12,7 +12,7 @@ import java.util.Objects;
 
 /**
  * The sort of a findAndRerank command after {@link FindAndRerankSortParser} parsed it, with one
- * record for each form of sort. The planner works out the legs to read with from it.
+ * record for each form of sort.
  *
  * <ul>
  *   <li>{@link MultiLeg}: a sort with $hybrid, the command may read with the vector leg and the
@@ -20,18 +20,6 @@ import java.util.Objects;
  *   <li>{@link SingleLeg}: any other sort, the command reads with one leg: the vector leg, the
  *       lexical leg or the filter leg.
  * </ul>
- *
- * <p>The command stores the sort as a {@link FindAndRerankSortDefinition}. This type has no form
- * for a sort that is not parsed, so code that gets a FindAndRerankSort never sees the JSON the user
- * sent.
- *
- * <p>NOTE: this is a sealed interface with a record for each form (a sum type), not one record with
- * a leg mode and a nullable field for each value (a tagged class). With nullable fields, forms that
- * mean different things look the same: with single leg sorts added, <code>{"$lexical": null}</code>
- * and <code>{}</code> would both be all nulls. A form with no field of its own does not fit, e.g. a
- * field sort. And every user of the sort must know which fields go with which mode. Here each
- * record has only the values of its form, and a switch over the sort must handle every form or it
- * does not compile.
  */
 public sealed interface FindAndRerankSort extends Recordable
     permits FindAndRerankSort.MultiLeg, FindAndRerankSort.SingleLeg {
@@ -40,11 +28,6 @@ public sealed interface FindAndRerankSort extends Recordable
    * A sort with $hybrid. The command may read with more than one leg, it does not have to: e.g.
    * <code>{"$hybrid": "cheese"}</code> on a collection without a lexical index only reads with the
    * vector leg.
-   *
-   * <p>TODO: {@link FindAndRerankSortClauseDeserializer} still parses $hybrid, so a MultiLeg is
-   * also the {@link FindAndRerankSortDefinition} the command stores, and carries the metrics
-   * features of the sort. When {@link FindAndRerankSortParser} parses $hybrid, a MultiLeg is only a
-   * FindAndRerankSort.
    */
   sealed interface MultiLeg extends FindAndRerankSort, FindAndRerankSortDefinition
       permits HybridText, HybridObject {}
