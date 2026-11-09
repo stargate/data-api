@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSortParser;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
@@ -62,7 +63,19 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
    */
   protected abstract SortClause buildClauseFromDefinition(ObjectNode sortNode);
 
-  protected float[] tryDecodeBinaryVector(String path, JsonNode innerValue) {
+  /**
+   * Decodes a $binary vector such as <code>{"$binary": "P4AAAEAAAABAQAAA"}</code>, throws {@link
+   * SortException.Code#SORT_CLAUSE_VALUE_INVALID} when the value is an object but not a valid
+   * $binary vector.
+   *
+   * <p>Public and static so the findAndRerank sort parser decodes a $binary vector the same way,
+   * see {@link FindAndRerankSortParser}.
+   *
+   * @param path The sort path the value is for, used in the error message.
+   * @param innerValue The value of the sort expression.
+   * @return The vector, or <code>null</code> when the value is not an object.
+   */
+  public static float[] tryDecodeBinaryVector(String path, JsonNode innerValue) {
     if (innerValue instanceof ObjectNode innerObject) {
       var ejsonWrapped = EJSONWrapper.maybeFrom(innerObject);
       if (ejsonWrapped == null || ejsonWrapped.type() != EJSONWrapper.EJSONType.BINARY) {

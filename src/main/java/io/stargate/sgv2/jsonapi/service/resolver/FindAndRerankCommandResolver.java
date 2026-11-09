@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSortParser;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -55,7 +56,10 @@ public class FindAndRerankCommandResolver implements CommandResolver<FindAndRera
       throw SchemaException.Code.RERANKING_FEATURE_NOT_ENABLED.get();
     }
 
-    var plan = FindAndRerankPlanner.plan(command, commandContext);
+    // NOTE: the sort is parsed before the planner runs, so a syntax error in the sort is reported
+    // before the errors the planner finds, such as a missing rerankOn
+    var sort = FindAndRerankSortParser.parse(command.sortClause());
+    var plan = FindAndRerankPlanner.plan(command, sort, commandContext);
 
     return new FindAndRerankOperationBuilder(commandContext)
         .withCommand(command)

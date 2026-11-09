@@ -2338,9 +2338,9 @@ request-errors:
     code: UNSUPPORTED_FIND_AND_RERANK_SORT
     title: Hybrid sort required by findAndRerank
     body: |-
-      The command attempted to run findAndRerank with no sort, or with an empty sort.
+      The command attempted to run findAndRerank without a `$hybrid` sort.
 
-      The findAndRerank command finds the documents to rerank with a `$hybrid` sort, e.g. `{"$hybrid": "query text"}` or `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`. Reranking the documents matched by the filter alone is not supported.
+      The findAndRerank command finds the documents to rerank with a `$hybrid` sort, e.g. `{"$hybrid": "query text"}` or `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`. Sorting by only one of `$vectorize`, `$vector` or `$lexical`, sorting by document fields, and reranking the documents matched by the filter alone are not supported.
 
       Resend the command with a `$hybrid` sort.
 

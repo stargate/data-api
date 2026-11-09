@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
@@ -20,16 +21,26 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * {@link StdDeserializer} for the {@link FindAndRerankSort}.
+ * {@link StdDeserializer} for the {@link FindAndRerankSortDefinition}.
+ *
+ * <p>A sort with $hybrid is a multi leg sort, and its fields are read here. Any other sort is a
+ * single leg sort, e.g. <code>{"$vectorize": "text"}</code> or <code>{"age": -1}</code>. It is read
+ * by field name only and kept as the user sent it.
  *
  * <p>Note: This only checks the shape of the sort clause, the other validation is handled when
  * resolving the command to an operation.
+ *
+ * <p>NOTE: do not check a single leg sort here, {@link FindAndRerankSortParser} checks it when the
+ * command is resolved. An {@link APIException} thrown here does not reach MCP users:
+ * quarkus-mcp-server converts the tool arguments before it calls the tool, and reports any error
+ * other than a Jackson mapping error as "Internal error".
  */
-public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAndRerankSort> {
+public class FindAndRerankSortClauseDeserializer
+    extends StdDeserializer<FindAndRerankSortDefinition> {
 
   private static final String ERROR_CONTEXT = "`sort` clause";
 
-  // the only field we accept at top level is $hybrid
+  // when the sort has $hybrid it must be the only field at top level
   // can be string or object
   // { "sort" : { "$hybrid" : "i like cheese" } }
   // { "sort" : { "$hybrid" : { "$vectorize" : "i like cheese", "$lexical" : "cows"} } }
@@ -49,18 +60,26 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           List.of(),
           List.of(LEXICAL_CONTENT_FIELD, VECTOR_EMBEDDING_TEXT_FIELD, VECTOR_EMBEDDING_FIELD));
 
+  // the metrics feature for the fields of a single leg sort that have one, the same features the
+  // $hybrid object records for these fields
+  private static final Map<String, CommandFeature> SINGLE_LEG_FEATURES =
+      Map.of(
+          VECTOR_EMBEDDING_TEXT_FIELD, CommandFeature.VECTORIZE,
+          VECTOR_EMBEDDING_FIELD, CommandFeature.VECTOR,
+          LEXICAL_CONTENT_FIELD, CommandFeature.LEXICAL);
+
   public FindAndRerankSortClauseDeserializer() {
-    super(FindAndRerankSort.class);
+    super(FindAndRerankSortDefinition.class);
   }
 
   /** {@inheritDoc} */
   @Override
-  public FindAndRerankSort deserialize(
+  public FindAndRerankSortDefinition deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
 
     return switch (deserializationContext.readTree(jsonParser)) {
       case NullNode ignored -> // this is {"sort" : null}
-          FindAndRerankSort.NO_ARG_SORT;
+          FindAndRerankSortDefinition.NO_ARG_SORT;
       case ObjectNode objectNode -> deserialize(jsonParser, objectNode);
       default ->
           throw new JsonMappingException(
@@ -72,28 +91,33 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
    * Deserialize the sort clause from an object node.
    *
    * @param sort The sort clause as an object node, no check for nulls.
-   * @return The {@link FindAndRerankSort} that reflects the request without validation, e.g.
-   *     checking that a vectorize or vector sort is provided but not both.
+   * @return The {@link FindAndRerankSortDefinition} that reflects the request without validation,
+   *     e.g. checking that a vectorize or vector sort is provided but not both.
    */
-  private static FindAndRerankSort deserialize(JsonParser jsonParser, ObjectNode sort)
+  private static FindAndRerankSortDefinition deserialize(JsonParser jsonParser, ObjectNode sort)
       throws JsonMappingException {
 
     // { "sort" : { } }
     if (sort.isEmpty()) {
-      return FindAndRerankSort.NO_ARG_SORT;
+      return FindAndRerankSortDefinition.NO_ARG_SORT;
     }
 
+    // no $hybrid, so a single leg sort that is kept as sent, e.g.
+    // { "sort" : { "$lexical" : "cows" } } or { "sort" : { "age" : -1 } }
+    if (!sort.has(HYBRID_FIELD)) {
+      return new FindAndRerankSortDefinition.SingleLegDefinition(
+          sort, singleLegCommandFeatures(sort));
+    }
+
+    // TODO: $hybrid is parsed here, so MCP users get its errors as "unable to convert value" or
+    // "Internal error", without the error code. Parse it in FindAndRerankSortParser and keep only
+    // the sort as sent here, see FindAndRerankSortDefinition
     var hybridMatch = MATCH_HYBRID_FIELD.matchAndThrow(sort, jsonParser, ERROR_CONTEXT);
 
     return switch (hybridMatch.matched().get(HYBRID_FIELD)) {
       case TextNode textNode ->
-          new FindAndRerankSort(
-              RerankLegMode.MULTI_LEG,
-              normalizedText(textNode.asText()),
-              null,
-              null,
-              null,
-              CommandFeatures.of(CommandFeature.HYBRID));
+          new FindAndRerankSort.HybridText(
+              normalizedText(textNode.asText()), CommandFeatures.of(CommandFeature.HYBRID));
       case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
       case JsonNode node ->
           throw JsonFieldMatcher.errorForWrongType(
@@ -101,7 +125,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     };
   }
 
-  private static FindAndRerankSort deserializeHybridObject(
+  private static FindAndRerankSort.HybridObject deserializeHybridObject(
       JsonParser jsonParser, ObjectNode hybridObject) throws JsonMappingException {
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
@@ -213,8 +237,19 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   ObjectNode.class);
         };
 
-    return new FindAndRerankSort(
-        RerankLegMode.MULTI_LEG, null, vectorizeText, lexicalText, vector, commandFeatures);
+    return new FindAndRerankSort.HybridObject(vectorizeText, lexicalText, vector, commandFeatures);
+  }
+
+  /** The metrics features of a single leg sort, from its field names only. */
+  private static CommandFeatures singleLegCommandFeatures(ObjectNode sort) {
+    var commandFeatures = CommandFeatures.create();
+    SINGLE_LEG_FEATURES.forEach(
+        (field, feature) -> {
+          if (sort.has(field)) {
+            commandFeatures.addFeature(feature);
+          }
+        });
+    return commandFeatures;
   }
 
   /**

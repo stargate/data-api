@@ -1,161 +1,171 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
-import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.FieldSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorLegSortExpression;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
-import java.util.*;
-import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
-import org.eclipse.microprofile.openapi.annotations.media.Schema;
-import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 /**
- * The sort clause of a findAndRerank command, see {@link FindAndRerankSortClauseDeserializer} for
- * the forms it can take.
+ * The sort of a findAndRerank command after {@link FindAndRerankSortParser} parsed it, with one
+ * record for each form of sort. The planner works out the legs to read with from it.
  *
- * @param rerankLegMode {@link RerankLegMode#MULTI_LEG} when the sort clause uses $hybrid, otherwise
- *     {@link RerankLegMode#SINGLE_LEG}.
- * @param hybridSort If <code>null</code> then the $hybrid field was not text, OR was blank text,
- *     otherwise it is the trimmed text.
- * @param vectorizeSort If <code>null</code> then the $vectorize field was not present in the sort
- *     clause, OR was present but set to JSON null OR it was blank string, otherwise it is the value
- *     provided.
- * @param lexicalSort If <code>null</code> then the $lexical field was not present in the sort
- *     clause, OR was present but set to JSON null OR it was blank string, otherwise it is the value
- *     provided.
- * @param vectorSort If <code>null</code> then the vector field was not present in the sort clause,
- *     or present and JSON null, otherwise it is the value provided.
+ * <ul>
+ *   <li>{@link MultiLeg}: a sort with $hybrid, the command may read with the vector leg and the
+ *       lexical leg.
+ *   <li>{@link SingleLeg}: any other sort, the command reads with one leg: the vector leg, the
+ *       lexical leg or the filter leg.
+ * </ul>
+ *
+ * <p>The command stores the sort as a {@link FindAndRerankSortDefinition}. This type has no form
+ * for a sort that is not parsed, so code that gets a FindAndRerankSort never sees the JSON the user
+ * sent.
+ *
+ * <p>NOTE: this is a sealed interface with a record for each form (a sum type), not one record with
+ * a leg mode and a nullable field for each value (a tagged class). With nullable fields, forms that
+ * mean different things look the same: with single leg sorts added, <code>{"$lexical": null}</code>
+ * and <code>{}</code> would both be all nulls. A form with no field of its own does not fit, e.g. a
+ * field sort. And every user of the sort must know which fields go with which mode. Here each
+ * record has only the values of its form, and a switch over the sort must handle every form or it
+ * does not compile.
  */
-@JsonDeserialize(using = FindAndRerankSortClauseDeserializer.class)
-@Schema(
-    name = "FindAndRerankSort",
-    type = SchemaType.OBJECT,
-    implementation = Map.class,
-    nullable = true,
-    additionalProperties = Schema.False.class,
-    properties =
-        @SchemaProperty(
-            name = HYBRID_FIELD,
-            anyOf = {String.class, FindAndRerankSort.HybridSortSchema.class}),
-    description =
-        "Use $hybrid with a query string or an object containing $vectorize or $vector, and optionally $lexical."
-            + " $vector and $vectorize cannot be used together.",
-    examples = {
-      """
-      {"$hybrid": "Same query for vectorize and BM25 sorting"}
-      """,
-      """
-      {"$hybrid": {"$vectorize": "vectorize sort query", "$lexical": "lexical sort"}}
-      """,
-      """
-      {"$hybrid": {"$vector": [1, 2, 3], "$lexical": "lexical sort"}}
-      """,
-      """
-      {"$hybrid": {"$vector": {"$binary": "P4AAAEAAAABAQAAA"}, "$lexical": "lexical query"}}
-      """
-    })
-public record FindAndRerankSort(
-    @JsonIgnore RerankLegMode rerankLegMode,
-    @JsonIgnore String hybridSort,
-    @JsonIgnore String vectorizeSort,
-    @JsonIgnore String lexicalSort,
-    @JsonIgnore float[] vectorSort,
-    @JsonIgnore CommandFeatures commandFeatures)
-    implements Recordable {
-
-  // Schema-only classes. @SchemaProperty can point at a nested schema only through a class, so
-  // these empty classes carry the @Schema for each nested part of the sort. Nothing creates them.
-
-  /** The object form of $hybrid, with $vector or $vectorize and an optional $lexical. */
-  @Schema(
-      name = "HybridSort",
-      type = SchemaType.OBJECT,
-      implementation = Object.class,
-      additionalProperties = Schema.False.class,
-      properties = {
-        @SchemaProperty(
-            name = VECTOR_EMBEDDING_TEXT_FIELD,
-            type = SchemaType.STRING,
-            nullable = true),
-        @SchemaProperty(name = LEXICAL_CONTENT_FIELD, type = SchemaType.STRING, nullable = true),
-        @SchemaProperty(
-            name = VECTOR_EMBEDDING_FIELD,
-            nullable = true,
-            anyOf = {float[].class, BinaryVectorSchema.class})
-      },
-      not = ConflictingVectorSortSchema.class)
-  public static class HybridSortSchema {}
-
-  /** A binary encoded vector such as {"$binary": "P4AAAEAAAABAQAAA"}. */
-  @Schema(
-      name = "BinaryVector",
-      type = SchemaType.OBJECT,
-      implementation = Object.class,
-      nullable = true,
-      additionalProperties = Schema.False.class,
-      requiredProperties = BINARY_VECTOR_TEXT_FIELD,
-      properties = @SchemaProperty(name = BINARY_VECTOR_TEXT_FIELD, type = SchemaType.STRING))
-  public static class BinaryVectorSchema {}
+public sealed interface FindAndRerankSort extends Recordable
+    permits FindAndRerankSort.MultiLeg, FindAndRerankSort.SingleLeg {
 
   /**
-   * Matches an object that has both $vector and $vectorize. HybridSort uses it as its {@code not}
-   * schema, so a sort that sets both fails validation.
-   */
-  @Schema(
-      name = "ConflictingVectorSort",
-      type = SchemaType.OBJECT,
-      implementation = Object.class,
-      requiredProperties = {VECTOR_EMBEDDING_FIELD, VECTOR_EMBEDDING_TEXT_FIELD})
-  public static class ConflictingVectorSortSchema {}
-
-  public static final FindAndRerankSort NO_ARG_SORT =
-      new FindAndRerankSort(
-          RerankLegMode.SINGLE_LEG, null, null, null, null, CommandFeatures.EMPTY);
-
-  public FindAndRerankSort {
-    Objects.requireNonNull(rerankLegMode, "rerankLegMode must not be null");
-    Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
-  }
-
-  @Override
-  public DataRecorder recordTo(DataRecorder dataRecorder) {
-    return dataRecorder
-        .append("rerankLegMode", rerankLegMode)
-        .append("hybridSort", hybridSort)
-        .append("vectorizeSort", vectorizeSort)
-        .append("lexicalSort", lexicalSort)
-        .append("vectorSort", Arrays.toString(vectorSort))
-        .append("commandFeatures", commandFeatures);
-  }
-
-  /**
-   * Override to do a value equality check on the vector
+   * A sort with $hybrid. The command may read with more than one leg, it does not have to: e.g.
+   * <code>{"$hybrid": "cheese"}</code> on a collection without a lexical index only reads with the
+   * vector leg.
    *
-   * @param obj the reference object with which to compare.
-   * @return
+   * <p>TODO: {@link FindAndRerankSortClauseDeserializer} still parses $hybrid, so a MultiLeg is
+   * also the {@link FindAndRerankSortDefinition} the command stores, and carries the metrics
+   * features of the sort. When {@link FindAndRerankSortParser} parses $hybrid, a MultiLeg is only a
+   * FindAndRerankSort.
    */
-  @Override
-  public boolean equals(Object obj) {
-    return (obj instanceof FindAndRerankSort other)
-        && rerankLegMode == other.rerankLegMode
-        && Objects.equals(hybridSort, other.hybridSort)
-        && Objects.equals(vectorizeSort, other.vectorizeSort)
-        && Objects.equals(lexicalSort, other.lexicalSort)
-        && Arrays.equals(vectorSort, other.vectorSort)
-        && Objects.equals(commandFeatures, other.commandFeatures);
+  sealed interface MultiLeg extends FindAndRerankSort, FindAndRerankSortDefinition
+      permits HybridText, HybridObject {}
+
+  /**
+   * <code>{"$hybrid": "cheese"}</code>: the same text for the vector leg and the lexical leg.
+   *
+   * @param text The trimmed text, <code>null</code> when the user sent blank text.
+   */
+  record HybridText(@JsonIgnore String text, @JsonIgnore CommandFeatures commandFeatures)
+      implements MultiLeg {
+
+    public HybridText {
+      Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+    }
+
+    @Override
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder.append("text", text).append("commandFeatures", commandFeatures);
+    }
   }
 
-  /** Override to do a value equality hash on the vector */
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        rerankLegMode,
-        hybridSort,
-        vectorizeSort,
-        lexicalSort,
-        Arrays.hashCode(vectorSort),
-        commandFeatures);
+  /**
+   * <code>{"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}</code>, or with $vector: a
+   * value for each leg. Which values must be set is checked when the command is planned.
+   *
+   * @param vectorize <code>null</code> when $vectorize was left out, null or blank, otherwise the
+   *     trimmed text.
+   * @param lexical <code>null</code> when $lexical was left out, null or blank, otherwise the
+   *     trimmed text.
+   * @param vector <code>null</code> when $vector was left out or null, otherwise the vector.
+   */
+  record HybridObject(
+      @JsonIgnore String vectorize,
+      @JsonIgnore String lexical,
+      @JsonIgnore float[] vector,
+      @JsonIgnore CommandFeatures commandFeatures)
+      implements MultiLeg {
+
+    public HybridObject {
+      Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+    }
+
+    @Override
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder
+          .append("vectorize", vectorize)
+          .append("lexical", lexical)
+          .append("vector", Arrays.toString(vector))
+          .append("commandFeatures", commandFeatures);
+    }
+
+    /** Override to do a value equality check on the vector. */
+    @Override
+    public boolean equals(Object obj) {
+      return (obj instanceof HybridObject other)
+          && Objects.equals(vectorize, other.vectorize)
+          && Objects.equals(lexical, other.lexical)
+          && Arrays.equals(vector, other.vector)
+          && Objects.equals(commandFeatures, other.commandFeatures);
+    }
+
+    /** Override to do a value equality hash on the vector. */
+    @Override
+    public int hashCode() {
+      return Objects.hash(vectorize, lexical, Arrays.hashCode(vector), commandFeatures);
+    }
+  }
+
+  /**
+   * A sort without $hybrid, the command reads with one leg. It has the syntax of the find sort, see
+   * {@link FindAndRerankSortParser}. The planner rejects every single leg sort until GH #2602 and
+   * GH #2603.
+   */
+  sealed interface SingleLeg extends FindAndRerankSort permits VectorLeg, LexicalLeg, FilterLeg {}
+
+  /**
+   * <code>{"$vectorize": "cheese"}</code> or <code>{"$vector": [0.1, 0.2]}</code>: reads with the
+   * vector leg.
+   */
+  record VectorLeg(VectorLegSortExpression sort) implements SingleLeg {
+
+    public VectorLeg {
+      Objects.requireNonNull(sort, "sort must not be null");
+    }
+
+    @Override
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder.append("sort", sort);
+    }
+  }
+
+  /** <code>{"$lexical": "cows"}</code>: reads with the lexical leg. */
+  record LexicalLeg(LexicalSortExpression sort) implements SingleLeg {
+
+    public LexicalLeg {
+      Objects.requireNonNull(sort, "sort must not be null");
+    }
+
+    @Override
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder.append("sort", sort);
+    }
+  }
+
+  /**
+   * <code>{"age": -1, "name": 1}</code>: reads the documents the filter matches with the filter
+   * leg, sorted by the fields.
+   *
+   * @param sorts The field sorts in the order the user sent them. Empty when the command has no
+   *     sort, a null sort or an empty sort.
+   */
+  record FilterLeg(List<FieldSortExpression> sorts) implements SingleLeg {
+
+    public FilterLeg {
+      sorts = List.copyOf(Objects.requireNonNull(sorts, "sorts must not be null"));
+    }
+
+    @Override
+    public DataRecorder recordTo(DataRecorder dataRecorder) {
+      return dataRecorder.append("sorts", Recordable.copyOf(sorts));
+    }
   }
 }
