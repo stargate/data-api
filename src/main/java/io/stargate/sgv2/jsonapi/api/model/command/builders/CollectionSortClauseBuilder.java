@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSortParser;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -140,16 +139,6 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     return SortExpression.sort(path, parseAscending(path, innerValue));
   }
 
-  /**
-   * Validates the value of a "non-special" sort expression, which must be 1 or -1.
-   *
-   * <p>Public and static so the findAndRerank sort parser checks field sorts the same way, see
-   * {@link FindAndRerankSortParser}.
-   *
-   * @param path Path to the field to sort by, used in the error message
-   * @param innerValue JSON value of the sort expression
-   * @return <code>true</code> for 1 (ascending), <code>false</code> for -1 (descending)
-   */
   public static boolean parseAscending(String path, JsonNode innerValue) {
     if (!innerValue.isInt()) {
       // Special checking for String and ArrayNode to give less confusing error messages
@@ -197,12 +186,6 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     }
   }
 
-  /**
-   * Validates the path of a "non-special" sort expression, such as <code>address.city</code>.
-   *
-   * <p>Public and static so the findAndRerank sort parser checks field sorts the same way, see
-   * {@link FindAndRerankSortParser}.
-   */
   public static void validateSortExpressionPath(String path) {
     if (!NamingRules.FIELD.apply(path)) {
       // This is only called after handling "special" sort expressions so simple validation
