@@ -51,14 +51,11 @@ public sealed interface FindAndRerankSort extends Recordable
   }
 
   /**
-   * <code>{"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}</code>, or with $vector: a
-   * value for each leg. Which values must be set is checked when the command is planned.
+   * <code>{"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}</code>: a separate value for
+   * the vector leg and the lexical leg. The vector leg can use $vector instead of $vectorize.
    *
-   * @param vectorize <code>null</code> when $vectorize was left out, null or blank, otherwise the
-   *     trimmed text.
-   * @param lexical <code>null</code> when $lexical was left out, null or blank, otherwise the
-   *     trimmed text.
-   * @param vector <code>null</code> when $vector was left out or null, otherwise the vector.
+   * <p>Each value can be <code>null</code>. The planner checks that the sort has $vectorize or
+   * $vector.
    */
   record HybridObject(
       @JsonIgnore String vectorize,
@@ -80,7 +77,6 @@ public sealed interface FindAndRerankSort extends Recordable
           .append("commandFeatures", commandFeatures);
     }
 
-    /** Override to do a value equality check on the vector. */
     @Override
     public boolean equals(Object obj) {
       return (obj instanceof HybridObject other)
@@ -90,18 +86,13 @@ public sealed interface FindAndRerankSort extends Recordable
           && Objects.equals(commandFeatures, other.commandFeatures);
     }
 
-    /** Override to do a value equality hash on the vector. */
     @Override
     public int hashCode() {
       return Objects.hash(vectorize, lexical, Arrays.hashCode(vector), commandFeatures);
     }
   }
 
-  /**
-   * A sort without $hybrid, the command reads with one leg. It has the syntax of the find sort, see
-   * {@link FindAndRerankSortParser}. The planner rejects every single leg sort until GH #2602 and
-   * GH #2603.
-   */
+  /** A sort without $hybrid, the command reads with one leg. */
   sealed interface SingleLeg extends FindAndRerankSort permits VectorLeg, LexicalLeg, FilterLeg {}
 
   /**
@@ -136,9 +127,6 @@ public sealed interface FindAndRerankSort extends Recordable
   /**
    * <code>{"age": -1, "name": 1}</code>: reads the documents the filter matches with the filter
    * leg, sorted by the fields.
-   *
-   * @param sorts The field sorts in the order the user sent them. Empty when the command has no
-   *     sort, a null sort or an empty sort.
    */
   record FilterLeg(List<FieldSortExpression> sorts) implements SingleLeg {
 
