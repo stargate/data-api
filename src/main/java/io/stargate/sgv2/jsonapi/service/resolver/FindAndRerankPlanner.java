@@ -6,7 +6,6 @@ import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSortParser;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.config.IntConfigWithBounds;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -26,13 +25,12 @@ import java.util.Objects;
 /**
  * Validates a {@link FindAndRerankCommand} and translates the intention of the user, expressed in
  * the command and its sort, into a {@link FindAndRerankPlan} that is used to build the operation
- * that runs it. The sort comes to the planner already parsed by {@link FindAndRerankSortParser}.
+ * that runs it.
  *
- * <p>TODO: move the checks that the command can run on the collection and with the config (the sort
- * is supported, hybridLimits, the rerank service, rerankQuery, rerankOn, the projection, the
- * $hybrid values) into a binder that runs between the parser and the planner, so the planner only
- * works out how to run a command that can run. Not done in the change that added the parser, so the
- * move is a change of its own that does not change behaviour.
+ * <p>TODO: move the checks that the command can run on the collection and with the config into a
+ * binder: the sort is supported, hybridLimits, the rerank service, rerankQuery, rerankOn and the
+ * projection. Then {@link #plan} takes only the bound command, not the command and the sort. The
+ * move is its own change and does not change behaviour.
  */
 class FindAndRerankPlanner {
 
@@ -44,7 +42,7 @@ class FindAndRerankPlanner {
    * Validates the command and makes its plan.
    *
    * @param command The command to plan.
-   * @param sort The sort of the command, parsed by {@link FindAndRerankSortParser}.
+   * @param sort The parsed sort of the command.
    * @param commandContext Context for the command, it has the collection and the config.
    * @return The plan, it always has a VECTOR_LEG.
    */
@@ -70,12 +68,6 @@ class FindAndRerankPlanner {
     var passageLocator = passageLocator(command, sort);
     var projector = command.buildProjector();
 
-    // NOTE: the legs are planned after the options and the projection are checked, to keep the
-    // error order of the command: e.g. {"$hybrid": ""} with no rerankQuery fails with
-    // MISSING_RERANK_QUERY_TEXT, not MISSING_HYBRID_SORT_VALUE
-
-    // NOTE: a sort with no $vector or $vectorize fails here with a SORT error, not later with an
-    // UNEXPECTED_SERVER_ERROR, see GH #2577
     var legs =
         switch (sort) {
           case FindAndRerankSort.MultiLeg multiLeg -> multiLegs(command, multiLeg, schemaObject);
@@ -174,19 +166,12 @@ class FindAndRerankPlanner {
   /**
    * The legs of a $hybrid sort: always a vector leg, and a lexical leg when the sort has lexical
    * text and the collection has a lexical index. Without a lexical index the $hybrid text skips the
-   * lexical leg, and an explicit $lexical throws. Throws when the sort has no vectorize text and no
-   * vector for the vector leg.
+   * lexical leg, and an explicit $lexical throws.
    */
   private static List<FindAndRerankPlan.RerankLeg> multiLegs(
       FindAndRerankCommand command,
       FindAndRerankSort.MultiLeg multiLeg,
       CollectionSchemaObject schemaObject) {
-
-    if (!isVectorizeSort(multiLeg) && !isVectorSort(multiLeg)) {
-      throw isLexicalSort(multiLeg)
-          ? SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT.get()
-          : SortException.Code.MISSING_HYBRID_SORT_VALUE.get();
-    }
 
     var hybridLimits =
         getOrDefault(

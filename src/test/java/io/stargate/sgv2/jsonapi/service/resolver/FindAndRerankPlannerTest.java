@@ -239,72 +239,6 @@ class FindAndRerankPlannerTest {
 
   static Stream<Arguments> sortErrorCases() {
     return Stream.of(
-        Arguments.of(
-            "$hybrid text empty",
-            """
-            {"$hybrid": ""}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$hybrid text blank",
-            """
-            {"$hybrid": "   "}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$hybrid object empty",
-            """
-            {"$hybrid": {}}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$vectorize null",
-            """
-            {"$hybrid": {"$vectorize": null}}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$vector null",
-            """
-            {"$hybrid": {"$vector": null}}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$lexical null",
-            """
-            {"$hybrid": {"$lexical": null}}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$lexical empty",
-            """
-            {"$hybrid": {"$lexical": ""}}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$lexical only",
-            """
-            {"$hybrid": {"$lexical": "cows"}}
-            """,
-            SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT),
-        Arguments.of(
-            "$lexical with $vectorize null",
-            """
-            {"$hybrid": {"$lexical": "cows", "$vectorize": null}}
-            """,
-            SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT),
-        Arguments.of(
-            "$lexical with $vectorize blank",
-            """
-            {"$hybrid": {"$lexical": "cows", "$vectorize": "   "}}
-            """,
-            SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT),
-        Arguments.of(
-            "$lexical with $vector null",
-            """
-            {"$hybrid": {"$lexical": "cows", "$vector": null}}
-            """,
-            SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT),
         Arguments.of("no sort", null, SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
         Arguments.of(
             "sort empty",
@@ -631,27 +565,6 @@ class FindAndRerankPlannerTest {
   // ===========================================================================================
   // Error order
   // ===========================================================================================
-
-  /**
-   * The one error order the planner keeps on purpose, see the NOTE in {@link
-   * FindAndRerankPlanner#plan}: the options are checked before the legs are planned. This command
-   * has no rerank query and a $hybrid sort with no value, it fails for the rerank query.
-   */
-  @Test
-  void reportsMissingRerankQueryBeforeHybridSortWithNoValue() throws Exception {
-    assertPlanFails(
-        "no rerank query and an empty $hybrid sort",
-        command(
-            """
-            {"$hybrid": ""}
-            """,
-            """
-            {"rerankOn": "body"}
-            """),
-        Collection.VECTOR_LEXICAL,
-        RequestException.class,
-        RequestException.Code.MISSING_RERANK_QUERY_TEXT);
-  }
 
   /**
    * A single leg sort is rejected after the options are checked, the same as a $hybrid sort is

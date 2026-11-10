@@ -2,11 +2,11 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.*;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.MissingNode;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Map;
@@ -16,25 +16,14 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 
 /**
- * The sort clause of a findAndRerank command as the command stores it, read by {@link
- * FindAndRerankSortClauseDeserializer}. {@link FindAndRerankSortParser} parses it into a {@link
- * FindAndRerankSort} when the command is resolved.
- *
- * <ul>
- *   <li>{@link FindAndRerankSort.MultiLeg}: a sort with $hybrid, already parsed by the
- *       deserializer.
- *   <li>{@link SingleLegDefinition}: any other sort, kept as the user sent it.
- * </ul>
- *
- * <p>TODO: parse $hybrid in {@link FindAndRerankSortParser} as well, then this type only holds the
- * sort as the user sent it, like {@link SortDefinition} does for find. Not done yet because moving
- * $hybrid changes its error codes and the order of its errors, so it needs its own change.
+ * The sort of a findAndRerank command, as the user sent it. It can be any JSON value. This class
+ * does not check it.
  *
  * <p>NOTE: the {@link Schema} is named <code>FindAndRerankSort</code>, not after this type, so the
- * OpenAPI and MCP schemas keep the name they had before the parsed sort got its own type. It only
- * describes $hybrid. Single leg sorts are added to it when they are supported, see GH #2604.
+ * OpenAPI and MCP schemas keep their name.
+ *
+ * @param json The sort as the user sent it. {@link MissingNode} when the command has no sort.
  */
-@JsonDeserialize(using = FindAndRerankSortClauseDeserializer.class)
 @Schema(
     name = "FindAndRerankSort",
     type = SchemaType.OBJECT,
@@ -62,49 +51,54 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
       {"$hybrid": {"$vector": {"$binary": "P4AAAEAAAABAQAAA"}, "$lexical": "lexical query"}}
       """
     })
-public sealed interface FindAndRerankSortDefinition extends Recordable
-    permits FindAndRerankSort.MultiLeg, FindAndRerankSortDefinition.SingleLegDefinition {
+public record FindAndRerankSortDefinition(@JsonIgnore JsonNode json) implements Recordable {
+
+  /** A command with no sort. */
+  public static final FindAndRerankSortDefinition NO_ARG_SORT =
+      new FindAndRerankSortDefinition(MissingNode.getInstance());
+
+  /** The metrics feature of each sort field that has one. */
+  private static final Map<String, CommandFeature> FIELD_FEATURES =
+      Map.of(
+          VECTOR_EMBEDDING_TEXT_FIELD, CommandFeature.VECTORIZE,
+          VECTOR_EMBEDDING_FIELD, CommandFeature.VECTOR,
+          LEXICAL_CONTENT_FIELD, CommandFeature.LEXICAL);
+
+  @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+  public FindAndRerankSortDefinition {
+    Objects.requireNonNull(json, "json must not be null");
+  }
 
   /**
-   * A command with no sort, a null sort or an empty sort.
-   *
-   * <p>NOTE: uses {@link MissingNode} because it cannot be changed, and this instance is shared.
+   * The metrics features of the sort, from its field names only. A field set to <code>null</code>
+   * still counts.
    */
-  SingleLegDefinition NO_ARG_SORT =
-      new SingleLegDefinition(MissingNode.getInstance(), CommandFeatures.EMPTY);
-
-  /**
-   * The metrics features of the sort, recorded when the sort is read. The command adds them to its
-   * features before it is resolved, so before the sort is parsed.
-   */
-  CommandFeatures commandFeatures();
-
-  /**
-   * Any sort without $hybrid, e.g. <code>{"$vectorize": "cheese"}</code>, <code>{"$vector": [0.1,
-   * 0.2]}</code>, <code>{"$lexical": "cows"}</code> or <code>{"age": -1}</code>. It is kept as the
-   * user sent it, {@link FindAndRerankSortParser} checks and parses it.
-   *
-   * @param sort The sort as the user sent it: an object, or {@link MissingNode} when the command
-   *     has no sort, a null sort or an empty sort.
-   * @param commandFeatures The metrics features, from the field names of the sort only.
-   */
-  record SingleLegDefinition(@JsonIgnore JsonNode sort, @JsonIgnore CommandFeatures commandFeatures)
-      implements FindAndRerankSortDefinition {
-
-    public SingleLegDefinition {
-      Objects.requireNonNull(sort, "sort must not be null");
-      Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
-      // the parser reads the sort as an object, see FindAndRerankSortParser
-      if (!sort.isObject() && !sort.isMissingNode()) {
-        throw new IllegalArgumentException(
-            "sort must be an object or MissingNode, sort.getNodeType(): " + sort.getNodeType());
-      }
+  public CommandFeatures commandFeatures() {
+    var commandFeatures = CommandFeatures.create();
+    var hybrid = json.get(HYBRID_FIELD);
+    if (hybrid == null) {
+      // a single leg sort, e.g. {"$vectorize": "cheese"}
+      addFieldFeatures(json, commandFeatures);
+    } else {
+      // e.g. {"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}
+      commandFeatures.addFeature(CommandFeature.HYBRID);
+      addFieldFeatures(hybrid, commandFeatures);
     }
+    return commandFeatures;
+  }
 
-    @Override
-    public DataRecorder recordTo(DataRecorder dataRecorder) {
-      return dataRecorder.append("sort", sort).append("commandFeatures", commandFeatures);
-    }
+  private static void addFieldFeatures(JsonNode node, CommandFeatures commandFeatures) {
+    FIELD_FEATURES.forEach(
+        (field, feature) -> {
+          if (node.has(field)) {
+            commandFeatures.addFeature(feature);
+          }
+        });
+  }
+
+  @Override
+  public DataRecorder recordTo(DataRecorder dataRecorder) {
+    return dataRecorder.append("json", json);
   }
 
   // Schema-only classes. @SchemaProperty can point at a nested schema only through a class, so
@@ -128,7 +122,7 @@ public sealed interface FindAndRerankSortDefinition extends Recordable
             anyOf = {float[].class, BinaryVectorSchema.class})
       },
       not = ConflictingVectorSortSchema.class)
-  class HybridSortSchema {}
+  public static class HybridSortSchema {}
 
   /** A binary encoded vector such as {"$binary": "P4AAAEAAAABAQAAA"}. */
   @Schema(
@@ -139,7 +133,7 @@ public sealed interface FindAndRerankSortDefinition extends Recordable
       additionalProperties = Schema.False.class,
       requiredProperties = BINARY_VECTOR_TEXT_FIELD,
       properties = @SchemaProperty(name = BINARY_VECTOR_TEXT_FIELD, type = SchemaType.STRING))
-  class BinaryVectorSchema {}
+  public static class BinaryVectorSchema {}
 
   /**
    * Matches an object that has both $vector and $vectorize. HybridSort uses it as its {@code not}
@@ -150,5 +144,5 @@ public sealed interface FindAndRerankSortDefinition extends Recordable
       type = SchemaType.OBJECT,
       implementation = Object.class,
       requiredProperties = {VECTOR_EMBEDDING_FIELD, VECTOR_EMBEDDING_TEXT_FIELD})
-  class ConflictingVectorSortSchema {}
+  public static class ConflictingVectorSortSchema {}
 }

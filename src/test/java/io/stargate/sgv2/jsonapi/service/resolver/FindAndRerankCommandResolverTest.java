@@ -57,6 +57,40 @@ class FindAndRerankCommandResolverTest {
     assertThat(ex.code).isEqualTo(SortException.Code.SORT_CLAUSE_VALUE_INVALID.name());
   }
 
+  /** A $hybrid sort with no value is a sort error, so it is reported before the missing options. */
+  @Test
+  void reportsHybridSortWithNoValueBeforeOptionErrors() throws Exception {
+    var command =
+        objectMapper.readValue(
+            """
+            {"findAndRerank": {"sort": {"$hybrid": ""}}}
+            """,
+            FindAndRerankCommand.class);
+    var commandContext = commandContext(true);
+
+    var ex =
+        assertThrowsExactly(
+            SortException.class, () -> resolver.resolveCollectionCommand(commandContext, command));
+    assertThat(ex.code).isEqualTo(SortException.Code.MISSING_HYBRID_SORT_VALUE.name());
+  }
+
+  /** Reading the command does not check the sort, so a sort that is not an object fails here. */
+  @Test
+  void reportsSortThatIsNotAnObject() throws Exception {
+    var command =
+        objectMapper.readValue(
+            """
+            {"findAndRerank": {"sort": "cheese"}}
+            """,
+            FindAndRerankCommand.class);
+    var commandContext = commandContext(true);
+
+    var ex =
+        assertThrowsExactly(
+            SortException.class, () -> resolver.resolveCollectionCommand(commandContext, command));
+    assertThat(ex.code).isEqualTo(SortException.Code.SORT_CLAUSE_INVALID.name());
+  }
+
   /** The reranking feature is checked before the sort is parsed. */
   @Test
   void reportsRerankingDisabledBeforeSortSyntaxError() throws Exception {
