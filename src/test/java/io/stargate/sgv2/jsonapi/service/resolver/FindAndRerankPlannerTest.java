@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSortParser;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.config.IntConfigWithBounds;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -84,7 +85,7 @@ class FindAndRerankPlannerTest {
       String vectorizeText,
       List<FindAndRerankPlan.RerankLeg> legs)
       throws Exception {
-    var plan = FindAndRerankPlanner.plan(command(sort, options), commandContext(collection));
+    var plan = plan(command(sort, options), commandContext(collection));
 
     assertThat(plan.vectorizeStep() == null ? null : plan.vectorizeStep().text())
         .as("%s: text to vectorize", description)
@@ -238,72 +239,6 @@ class FindAndRerankPlannerTest {
 
   static Stream<Arguments> sortErrorCases() {
     return Stream.of(
-        Arguments.of(
-            "$hybrid text empty",
-            """
-            {"$hybrid": ""}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$hybrid text blank",
-            """
-            {"$hybrid": "   "}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$hybrid object empty",
-            """
-            {"$hybrid": {}}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$vectorize null",
-            """
-            {"$hybrid": {"$vectorize": null}}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$vector null",
-            """
-            {"$hybrid": {"$vector": null}}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$lexical null",
-            """
-            {"$hybrid": {"$lexical": null}}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$lexical empty",
-            """
-            {"$hybrid": {"$lexical": ""}}
-            """,
-            SortException.Code.MISSING_HYBRID_SORT_VALUE),
-        Arguments.of(
-            "$lexical only",
-            """
-            {"$hybrid": {"$lexical": "cows"}}
-            """,
-            SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT),
-        Arguments.of(
-            "$lexical with $vectorize null",
-            """
-            {"$hybrid": {"$lexical": "cows", "$vectorize": null}}
-            """,
-            SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT),
-        Arguments.of(
-            "$lexical with $vectorize blank",
-            """
-            {"$hybrid": {"$lexical": "cows", "$vectorize": "   "}}
-            """,
-            SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT),
-        Arguments.of(
-            "$lexical with $vector null",
-            """
-            {"$hybrid": {"$lexical": "cows", "$vector": null}}
-            """,
-            SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT),
         Arguments.of("no sort", null, SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
         Arguments.of(
             "sort empty",
@@ -317,6 +252,50 @@ class FindAndRerankPlannerTest {
             null
             """,
             SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT));
+  }
+
+  /**
+   * Until GH #2602 and GH #2603, a sort without $hybrid parses but cannot be planned. The error
+   * must not tell the user they sent no sort.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("singleLegSorts")
+  void rejectsSingleLegSort(String description, String sort) throws Exception {
+    var ex =
+        assertPlanFails(
+            description,
+            command(sort, RERANK_OPTIONS),
+            Collection.VECTORIZE_LEXICAL,
+            SortException.class,
+            SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT);
+
+    assertThat(ex)
+        .hasMessageContaining(
+            "The command attempted to run findAndRerank without a `$hybrid` sort.");
+  }
+
+  static Stream<Arguments> singleLegSorts() {
+    return Stream.of(
+        Arguments.of(
+            "vector leg, $vectorize",
+            """
+            {"$vectorize": "cheese"}
+            """),
+        Arguments.of(
+            "vector leg, $vector",
+            """
+            {"$vector": [0.1, 0.2, 0.3]}
+            """),
+        Arguments.of(
+            "lexical leg",
+            """
+            {"$lexical": "cows"}
+            """),
+        Arguments.of(
+            "filter leg",
+            """
+            {"age": -1}
+            """));
   }
 
   // ===========================================================================================
@@ -449,9 +428,7 @@ class FindAndRerankPlannerTest {
         """
             .formatted(TestConstants.RERANK_MODEL);
 
-    var plan =
-        FindAndRerankPlanner.plan(
-            command(VECTOR_SORT, options), commandContext(Collection.VECTOR_NO_RERANK));
+    var plan = plan(command(VECTOR_SORT, options), commandContext(Collection.VECTOR_NO_RERANK));
 
     assertThat(plan.rerankStep().rerankServiceDef().provider()).isEqualTo("nvidia");
     assertThat(plan.rerankStep().rerankServiceDef().modelName())
@@ -569,7 +546,7 @@ class FindAndRerankPlannerTest {
   @Test
   void usesVectorizeTextWhenRerankOptionsAreBlank() throws Exception {
     var plan =
-        FindAndRerankPlanner.plan(
+        plan(
             command(
                 """
                 {"$hybrid": {"$vectorize": "cheese"}}
@@ -590,22 +567,21 @@ class FindAndRerankPlannerTest {
   // ===========================================================================================
 
   /**
-   * The one error order the planner keeps on purpose, see the NOTE in {@link
-   * FindAndRerankPlanner#plan}: the options are checked before the legs are planned. This command
-   * has no rerank query and a $hybrid sort with no value, it fails for the rerank query.
+   * A single leg sort is rejected after the options are checked, the same as a $hybrid sort is
+   * planned after them. This command has no rerank query, it fails for the rerank query.
    */
   @Test
-  void reportsMissingRerankQueryBeforeHybridSortWithNoValue() throws Exception {
+  void reportsMissingRerankQueryBeforeSingleLegSort() throws Exception {
     assertPlanFails(
-        "no rerank query and an empty $hybrid sort",
+        "no rerank query and a single leg sort",
         command(
             """
-            {"$hybrid": ""}
+            {"$lexical": "cows"}
             """,
             """
             {"rerankOn": "body"}
             """),
-        Collection.VECTOR_LEXICAL,
+        Collection.VECTORIZE_LEXICAL,
         RequestException.class,
         RequestException.Code.MISSING_RERANK_QUERY_TEXT);
   }
@@ -617,7 +593,7 @@ class FindAndRerankPlannerTest {
   @Test
   void plansHybridTextWithDefaults() throws Exception {
     var plan =
-        FindAndRerankPlanner.plan(
+        plan(
             command(
                 """
                 {"$hybrid": " cheese "}
@@ -655,7 +631,7 @@ class FindAndRerankPlannerTest {
   @Test
   void plansVectorWithOptions() throws Exception {
     var plan =
-        FindAndRerankPlanner.plan(
+        plan(
             command(
                 """
                 {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -692,11 +668,16 @@ class FindAndRerankPlannerTest {
       ErrorCode<?> code) {
     var commandContext = commandContext(collection);
 
-    var ex =
-        assertThrowsExactly(
-            exceptionClass, () -> FindAndRerankPlanner.plan(command, commandContext), description);
+    var ex = assertThrowsExactly(exceptionClass, () -> plan(command, commandContext), description);
     assertThat(ex.code).as(description).isEqualTo(code.name());
     return ex;
+  }
+
+  /** Parses the sort of the command, then plans the command, the same as the command resolver. */
+  private static FindAndRerankPlan plan(
+      FindAndRerankCommand command, CommandContext<CollectionSchemaObject> commandContext) {
+    return FindAndRerankPlanner.plan(
+        command, FindAndRerankSortParser.parse(command.sortClause()), commandContext);
   }
 
   private FindAndRerankCommand command(String sort, String options) throws Exception {

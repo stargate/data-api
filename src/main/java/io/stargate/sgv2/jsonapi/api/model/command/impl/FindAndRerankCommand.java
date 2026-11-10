@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSortDefinition;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
@@ -41,12 +41,12 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 public record FindAndRerankCommand(
     @Valid @JsonProperty("filter") FilterDefinition filterDefinition,
     @JsonProperty("projection") JsonNode projectionDefinition,
-    @Valid @JsonProperty("sort") FindAndRerankSort sortClause,
+    @Valid @JsonProperty("sort") FindAndRerankSortDefinition sortClause,
     @Valid @Nullable Options options)
     implements ReadCommand, Filterable, Projectable, Windowable {
 
   public FindAndRerankCommand {
-    sortClause = (sortClause == null) ? FindAndRerankSort.NO_ARG_SORT : sortClause;
+    sortClause = (sortClause == null) ? FindAndRerankSortDefinition.NO_ARG_SORT : sortClause;
   }
 
   // NOTE: is not VectorSortable because it has its own sort clause.

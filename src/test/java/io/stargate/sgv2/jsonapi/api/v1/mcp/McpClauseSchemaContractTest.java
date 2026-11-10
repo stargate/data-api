@@ -21,7 +21,7 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.JsonDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
@@ -323,7 +323,7 @@ class McpClauseSchemaContractTest {
 
   @Test
   void rerankToolUsesSortClassDescription() throws Exception {
-    var description = FindAndRerankSort.class.getAnnotation(Schema.class).description();
+    var description = FindAndRerankSortDefinition.class.getAnnotation(Schema.class).description();
     assertFalse(description.isBlank());
     var document = inputSchema("findAndRerank");
     assertEquals(
@@ -536,8 +536,9 @@ class McpClauseSchemaContractTest {
       })
   void sortSchemaAcceptsNullableAndEmptyWireForms(String json) throws Exception {
     var sort = objectMapper.readTree(json);
-    assertSchemaAccepts(schemaFor(FindAndRerankSort.class), sort);
-    var clause = assertDoesNotThrow(() -> objectMapper.treeToValue(sort, FindAndRerankSort.class));
+    assertSchemaAccepts(schemaFor(FindAndRerankSortDefinition.class), sort);
+    var clause =
+        assertDoesNotThrow(() -> objectMapper.treeToValue(sort, FindAndRerankSortDefinition.class));
     if (!sort.isNull()) {
       assertNotNull(clause);
     }
@@ -611,11 +612,12 @@ class McpClauseSchemaContractTest {
 
   static Stream<Arguments> invalidWireShapes() {
     return Stream.of(
-        Arguments.of(FindAndRerankSort.class, "{\"vectorizeSort\": \"query\"}"),
-        Arguments.of(FindAndRerankSort.class, "{\"$hybrid\": {\"$lexical\": 1}}"),
-        Arguments.of(FindAndRerankSort.class, "{\"$hybrid\": {\"$vector\": \"query\"}}"),
+        Arguments.of(FindAndRerankSortDefinition.class, "{\"vectorizeSort\": \"query\"}"),
+        Arguments.of(FindAndRerankSortDefinition.class, "{\"$hybrid\": {\"$lexical\": 1}}"),
+        Arguments.of(FindAndRerankSortDefinition.class, "{\"$hybrid\": {\"$vector\": \"query\"}}"),
         Arguments.of(
-            FindAndRerankSort.class, "{\"$hybrid\": {\"$vector\": null, \"$vectorize\": null}}"),
+            FindAndRerankSortDefinition.class,
+            "{\"$hybrid\": {\"$vector\": null, \"$vectorize\": null}}"),
         Arguments.of(
             FindAndRerankCommand.HybridLimits.class, "{\"vectorLimit\": 50, \"lexicalLimit\": 10}"),
         Arguments.of(FindAndRerankCommand.HybridLimits.class, "{\"$vector\": 50}"),

@@ -8,7 +8,7 @@ import io.quarkiverse.mcp.server.ToolResponse;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.indexes.RegularIndexDefinitionDesc;
@@ -160,7 +160,7 @@ public class CollectionCommandTools {
                   "Fields to include or exclude in the returned documents, for example {\"title\": 1}",
               required = false)
           JsonNode projection,
-      @ToolArg(required = false) FindAndRerankSort sort,
+      @ToolArg(required = false) FindAndRerankSortDefinition sort,
       @ToolArg(
               description = "Options for result limits, reranking, and what the response includes",
               required = false)
