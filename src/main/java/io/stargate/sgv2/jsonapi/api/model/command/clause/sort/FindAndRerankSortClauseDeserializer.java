@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
-import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
@@ -23,17 +22,8 @@ import java.util.*;
 /**
  * {@link StdDeserializer} for the {@link FindAndRerankSortDefinition}.
  *
- * <p>A sort with $hybrid is a multi leg sort, and its fields are read here. Any other sort is a
- * single leg sort, e.g. <code>{"$vectorize": "text"}</code> or <code>{"age": -1}</code>. It is read
- * by field name only and kept as the user sent it.
- *
- * <p>Note: This only checks the shape of the sort clause, the other validation is handled when
- * resolving the command to an operation.
- *
- * <p>NOTE: do not check a single leg sort here, {@link FindAndRerankSortParser} checks it when the
- * command is resolved. An {@link APIException} thrown here does not reach MCP users:
- * quarkus-mcp-server converts the tool arguments before it calls the tool, and reports any error
- * other than a Jackson mapping error as "Internal error".
+ * <p>It keeps the sort as the user sent it. It only checks that the sort is an object or null.
+ * There is no validation.
  */
 public class FindAndRerankSortClauseDeserializer
     extends StdDeserializer<FindAndRerankSortDefinition> {
