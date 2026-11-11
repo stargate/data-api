@@ -34,10 +34,8 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     // Start by checking "special" sort expressions, like lexical and vector sorts;
     // they must be the only expression in the sort clause.
 
-    // TODO: FindAndRerankSortClauseDeserializer has a copy of the checks below for $lexical,
-    // $vector and $vectorize. It uses the copy for the single leg sorts of findAndRerank. When
-    // these checks change, the copy may need the same change. When find moves to SortExpression2,
-    // find and findAndRerank should parse the sort with the same code, then the copy is not needed.
+    // NOTE: FindAndRerankSortClauseDeserializer has a copy of the checks below for $lexical,
+    // $vector and $vectorize. When these checks change, the copy may need the same change.
     JsonNode lexicalNode = sortNode.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
     if (lexicalNode != null) {
       // We can also check if lexical sort supported by the collection:
