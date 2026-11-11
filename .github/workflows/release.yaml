@@ -32,8 +32,8 @@ permissions:
 # global env vars, available in all jobs and steps
 env:
   MAVEN_OPTS: '-Xmx4g'
-  DS_ARTIFACTORY_USERNAME: ${{ secrets.DS_ARTIFACTORY_USERNAME }}
-  DS_ARTIFACTORY_PASSWORD: ${{ secrets.DS_ARTIFACTORY_PASSWORD }}
+  TAAS_ARTIFACTORY_USERNAME: ${{ secrets.TAAS_ARTIFACTORY_USERNAME }}
+  TAAS_ARTIFACTORY_PASSWORD: ${{ secrets.TAAS_ARTIFACTORY_PASSWORD }}
 
 jobs:
 
@@ -92,28 +92,28 @@ jobs:
             <servers>
               <server>
                 <id>stargate-central</id>
-                <username>${DS_ARTIFACTORY_USERNAME}</username>
-                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+                <username>${TAAS_ARTIFACTORY_USERNAME}</username>
+                <password>${TAAS_ARTIFACTORY_PASSWORD}</password>
               </server>
               <server>
                 <id>stargate-snapshots</id>
-                <username>${DS_ARTIFACTORY_USERNAME}</username>
-                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+                <username>${TAAS_ARTIFACTORY_USERNAME}</username>
+                <password>${TAAS_ARTIFACTORY_PASSWORD}</password>
              </server>
               <server>
                 <id>artifactory</id>
-                <username>${DS_ARTIFACTORY_USERNAME}</username>
-                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+                <username>${TAAS_ARTIFACTORY_USERNAME}</username>
+                <password>${TAAS_ARTIFACTORY_PASSWORD}</password>
               </server>
               <server>
                 <id>artifactory-snapshots</id>
-                <username>${DS_ARTIFACTORY_USERNAME}</username>
-                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+                <username>${TAAS_ARTIFACTORY_USERNAME}</username>
+                <password>${TAAS_ARTIFACTORY_PASSWORD}</password>
               </server>
               <server>
                 <id>artifactory-releases</id>
-                <username>${DS_ARTIFACTORY_USERNAME}</username>
-                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+                <username>${TAAS_ARTIFACTORY_USERNAME}</username>
+                <password>${TAAS_ARTIFACTORY_PASSWORD}</password>
              </server>
            </servers>
           </settings>
