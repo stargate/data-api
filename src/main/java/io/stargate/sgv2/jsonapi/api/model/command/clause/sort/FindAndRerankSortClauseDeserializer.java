@@ -108,11 +108,6 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
   private static FindAndRerankSort deserialize(JsonParser jsonParser, ObjectNode sort)
       throws JsonMappingException {
 
-    // { "sort" : { } }
-    if (sort.isEmpty()) {
-      return FindAndRerankSort.NO_ARG_SORT;
-    }
-
     // no $hybrid, so a single leg sort, e.g.
     // { "sort" : { "$lexical" : "cows" } } or { "sort" : { "age" : -1 } }
     if (!sort.has(HYBRID_FIELD)) {
@@ -274,6 +269,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     }
 
     // { "sort" : { "age" : -1, "name" : 1 } }
+    // an empty sort { "sort" : { } } gives the filter leg with no sorts
     // every path is checked before any value, the same as find
     sort.fieldNames().forEachRemaining(CollectionSortClauseBuilder::validateSortExpressionPath);
     var sorts = new ArrayList<FieldSortExpression>(sort.size());
