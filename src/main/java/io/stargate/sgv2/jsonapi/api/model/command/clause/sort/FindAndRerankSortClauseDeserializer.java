@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.Fi
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorizeSortExpression;
-import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
@@ -32,26 +31,34 @@ import java.util.*;
 /**
  * {@link StdDeserializer} for the {@link FindAndRerankSort}.
  *
- * <p>A sort with $hybrid is a {@link FindAndRerankSort.MultiLeg} sort. This only checks its shape,
- * the planner checks its values.
+ * <p>NOTE1: some single leg checks are a copy of the checks in {@link CollectionSortClauseBuilder}.
  *
- * <p>Any other sort is a {@link FindAndRerankSort.SingleLeg} sort, e.g. <code>
- * {"$vectorize": "text"}</code> or <code>{"age": -1}</code>. This checks its syntax and throws an
- * {@link APIException} when it is not valid.
+ * <ul>
+ *   <li>The copied checks are for $lexical, $vector and $vectorize.
+ *   <li>That class checks them in one method together with the lexical index of the collection.
+ *       This class does not have the collection, so it cannot call that method.
+ *   <li>For field sorts and $binary vectors, this class calls it.
+ * </ul>
  *
- * <p>NOTE: for field sorts and $binary vectors this calls the checks find uses. Find checks
- * $lexical, $vector and $vectorize in the same method as its lexical index check, so this class has
- * its own copy of those checks. The copy differs from find on purpose: $lexical must not be blank,
- * a $lexical that is not text gets SORT_CLAUSE_VALUE_INVALID, and the text of $lexical and
- * $vectorize is trimmed. TODO: when find moves to {@link SortExpression2}, find and findAndRerank
- * should parse the sort with the same code. Then the copy is not needed.
+ * <p>TODO: remove the copy when find and findAndRerank parse the sort with the same code.
  *
- * <p>NOTE: an error thrown here for a single leg sort reaches HTTP users with its code and message,
- * but MCP users only get "Internal error". quarkus-mcp-server converts the tool arguments before it
- * calls the tool, and reports any error other than a Jackson mapping error as "Internal error".
- * TODO: check the single leg sort when the command is resolved. An error from the command resolver
- * reaches MCP users with its code and message. This needs a parser the resolver can call, which is
- * a change of its own.
+ * <p>NOTE2: an error thrown here reaches HTTP users with its error code and message. MCP users get
+ * a different error:
+ *
+ * <ul>
+ *   <li>quarkus-mcp-server converts the tool arguments with Jackson before it calls the tool.
+ *   <li>The MCP server catches only a Jackson mapping error. It reports it as "Invalid argument
+ *       [sort] - unable to convert value".
+ *   <li>It does not catch any other error, such as a {@link SortException}. It reports the error as
+ *       "Internal error" and logs it as an ERROR.
+ *   <li>Neither error has the error code or tells the agent how to fix the request.
+ *   <li>See <a
+ *       href="https://github.com/quarkiverse/quarkus-mcp-server/blob/2.0.3/core/runtime/src/main/java/io/quarkiverse/mcp/server/runtime/FeatureManagerBase.java#L297-L314">FeatureManagerBase.handleParam()</a>
+ *       in quarkus-mcp-server 2.0.3.
+ * </ul>
+ *
+ * <p>TODO: parse the sort when the command is resolved. Then MCP users also get the error code and
+ * message.
  */
 public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAndRerankSort> {
 
