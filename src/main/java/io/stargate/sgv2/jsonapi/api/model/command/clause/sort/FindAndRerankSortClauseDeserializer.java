@@ -36,16 +36,14 @@ import java.util.*;
  * the planner checks its values.
  *
  * <p>Any other sort is a {@link FindAndRerankSort.SingleLeg} sort, e.g. <code>
- * {"$vectorize": "text"}</code> or <code>{"age": -1}</code>. It uses the find sort syntax. This
- * checks the syntax and throws an {@link APIException} when the sort is not valid, in most cases a
- * {@link SortException}. For field sorts and $binary vectors it calls the checks find uses, in
- * {@link CollectionSortClauseBuilder} and {@link SortClauseBuilder}.
+ * {"$vectorize": "text"}</code> or <code>{"age": -1}</code>. This checks its syntax and throws an
+ * {@link APIException} when it is not valid.
  *
- * <p>NOTE: find checks $lexical, $vector and $vectorize in the same method as its lexical index
- * check, so this class has its own copy of those checks. The copy differs from find in three ways:
- * $lexical must not be blank, a $lexical that is not text gets SORT_CLAUSE_VALUE_INVALID, and the
- * text of $lexical and $vectorize is trimmed. The problem text in the error messages is also not
- * the same as in find. TODO: when find moves to {@link SortExpression2}, find and findAndRerank
+ * <p>NOTE: for field sorts and $binary vectors this calls the checks find uses. Find checks
+ * $lexical, $vector and $vectorize in the same method as its lexical index check, so this class has
+ * its own copy of those checks. The copy differs from find on purpose: $lexical must not be blank,
+ * a $lexical that is not text gets SORT_CLAUSE_VALUE_INVALID, and the text of $lexical and
+ * $vectorize is trimmed. TODO: when find moves to {@link SortExpression2}, find and findAndRerank
  * should parse the sort with the same code. Then the copy is not needed.
  *
  * <p>NOTE: an error thrown here for a single leg sort reaches HTTP users with its code and message,
@@ -102,18 +100,19 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
    * Deserialize the sort clause from an object node.
    *
    * @param sort The sort clause as an object node, no check for nulls.
-   * @return The {@link FindAndRerankSort} for the request. A $hybrid sort is not validated, e.g.
-   *     there is no check that a vectorize or vector sort is provided but not both.
+   * @return The {@link FindAndRerankSort} for the request.
    */
   private static FindAndRerankSort deserialize(JsonParser jsonParser, ObjectNode sort)
       throws JsonMappingException {
-
-    // no $hybrid, so a single leg sort, e.g.
-    // { "sort" : { "$lexical" : "cows" } } or { "sort" : { "age" : -1 } }
-    if (!sort.has(HYBRID_FIELD)) {
-      return deserializeSingleLeg(sort);
+    if (sort.has(HYBRID_FIELD)) {
+      return deserializeMultiLeg(jsonParser, sort);
     }
+    return deserializeSingleLeg(sort);
+  }
 
+  /** Deserialize a sort with $hybrid, which must be the only field in the sort. */
+  private static FindAndRerankSort.MultiLeg deserializeMultiLeg(
+      JsonParser jsonParser, ObjectNode sort) throws JsonMappingException {
     var hybridMatch = MATCH_HYBRID_FIELD.matchAndThrow(sort, jsonParser, ERROR_CONTEXT);
 
     return switch (hybridMatch.matched().get(HYBRID_FIELD)) {
