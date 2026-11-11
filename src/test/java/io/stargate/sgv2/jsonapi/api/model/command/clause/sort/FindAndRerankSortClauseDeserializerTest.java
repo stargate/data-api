@@ -93,15 +93,9 @@ public class FindAndRerankSortClauseDeserializerTest {
             CommandFeatures.EMPTY);
     var diffForm = new HybridText("vectorize sort", CommandFeatures.EMPTY);
 
-    var vectorLeg =
-        new VectorLeg(
-            new VectorSortExpression(new float[] {1.1f, 2.2f, 3.3f}), CommandFeatures.of(VECTOR));
-    var sameVectorLeg =
-        new VectorLeg(
-            new VectorSortExpression(new float[] {1.1f, 2.2f, 3.3f}), CommandFeatures.of(VECTOR));
-    var diffVectorLeg =
-        new VectorLeg(
-            new VectorSortExpression(new float[] {1.1f, 2.2f, 4.4f}), CommandFeatures.of(VECTOR));
+    var vectorLeg = new VectorLeg(new VectorSortExpression(new float[] {1.1f, 2.2f, 3.3f}));
+    var sameVectorLeg = new VectorLeg(new VectorSortExpression(new float[] {1.1f, 2.2f, 3.3f}));
+    var diffVectorLeg = new VectorLeg(new VectorSortExpression(new float[] {1.1f, 2.2f, 4.4f}));
 
     assertThat(value1).as("Object equals self").isEqualTo(value1);
     assertThat(value1).as("same values, vector compared by value").isEqualTo(sameValue);
@@ -307,34 +301,33 @@ public class FindAndRerankSortClauseDeserializerTest {
             """
             { "$vectorize" : "cheese" }
             """,
-            new VectorLeg(new VectorizeSortExpression("cheese"), CommandFeatures.of(VECTORIZE))),
+            new VectorLeg(new VectorizeSortExpression("cheese"))),
         Arguments.of(
             """
             { "$vectorize" : "  padded text  " }
             """,
-            new VectorLeg(
-                new VectorizeSortExpression("padded text"), CommandFeatures.of(VECTORIZE))),
+            new VectorLeg(new VectorizeSortExpression("padded text"))),
         Arguments.of(
             """
             { "$vector" : [1.1, 2.2, 3.3] }
             """,
-            new VectorLeg(new VectorSortExpression(vector), CommandFeatures.of(VECTOR))),
+            new VectorLeg(new VectorSortExpression(vector))),
         Arguments.of(
                 """
             { "$vector" : {"$binary": "%s"} }
             """
                 .formatted(vectorBase64),
-            new VectorLeg(new VectorSortExpression(vector), CommandFeatures.of(VECTOR))),
+            new VectorLeg(new VectorSortExpression(vector))),
         Arguments.of(
             """
             { "$lexical" : "cows" }
             """,
-            new LexicalLeg(new LexicalSortExpression("cows"), CommandFeatures.of(LEXICAL))),
+            new LexicalLeg(new LexicalSortExpression("cows"))),
         Arguments.of(
             """
             { "$lexical" : "  padded text  " }
             """,
-            new LexicalLeg(new LexicalSortExpression("padded text"), CommandFeatures.of(LEXICAL))),
+            new LexicalLeg(new LexicalSortExpression("padded text"))),
         // ----
         // field sorts, in the order sent
         Arguments.of(
@@ -343,27 +336,84 @@ public class FindAndRerankSortClauseDeserializerTest {
             """,
             new FilterLeg(
                 List.of(
-                    new FieldSortExpression("age", false), new FieldSortExpression("name", true)),
-                CommandFeatures.EMPTY)),
+                    new FieldSortExpression("age", false), new FieldSortExpression("name", true)))),
         Arguments.of(
             """
             { "name" : 1, "age" : -1 }
             """,
             new FilterLeg(
                 List.of(
-                    new FieldSortExpression("name", true), new FieldSortExpression("age", false)),
-                CommandFeatures.EMPTY)),
+                    new FieldSortExpression("name", true), new FieldSortExpression("age", false)))),
         Arguments.of(
             """
             { "address.city" : 1 }
             """,
-            new FilterLeg(
-                List.of(new FieldSortExpression("address.city", true)), CommandFeatures.EMPTY)),
+            new FilterLeg(List.of(new FieldSortExpression("address.city", true)))),
         Arguments.of(
             """
             { " " : 1 }
             """,
-            new FilterLeg(List.of(new FieldSortExpression(" ", true)), CommandFeatures.EMPTY)));
+            new FilterLeg(List.of(new FieldSortExpression(" ", true)))));
+  }
+
+  /**
+   * A single leg sort works out its metrics features from its type. The expected features are
+   * written out here, so the test does not use the code it tests.
+   */
+  @ParameterizedTest
+  @MethodSource("singleLegFeaturesTestCases")
+  public void singleLegFeatures(String jsonString, CommandFeatures expected) throws Exception {
+
+    LOGGER.debug("singleLegFeatures() - jsonString: {}", jsonString);
+    var mapper = new ObjectMapper();
+    when(deserializationContext.readTree(jsonParser)).thenReturn(mapper.readTree(jsonString));
+
+    var actual = deserializer.deserialize(jsonParser, deserializationContext);
+
+    assertEquals(expected, actual.commandFeatures());
+  }
+
+  private static Stream<Arguments> singleLegFeaturesTestCases() {
+
+    var vectorBase64 = encodeAsMimeBase64(floatsToBytes(new float[] {1.1f, 2.2f, 3.3f}));
+
+    return Stream.of(
+        Arguments.of(
+            """
+            { "$vectorize" : "cheese" }
+            """,
+            CommandFeatures.of(VECTORIZE)),
+        Arguments.of(
+            """
+            { "$vector" : [1.1, 2.2, 3.3] }
+            """,
+            CommandFeatures.of(VECTOR)),
+        Arguments.of(
+                """
+            { "$vector" : {"$binary": "%s"} }
+            """
+                .formatted(vectorBase64),
+            CommandFeatures.of(VECTOR)),
+        Arguments.of(
+            """
+            { "$lexical" : "cows" }
+            """,
+            CommandFeatures.of(LEXICAL)),
+        Arguments.of(
+            """
+            { "age" : -1, "name" : 1 }
+            """,
+            CommandFeatures.EMPTY),
+        Arguments.of(
+            """
+            {}
+            """,
+            CommandFeatures.EMPTY),
+        Arguments.of(
+            """
+            null
+            """,
+            CommandFeatures.EMPTY));
   }
 
   /** The error for each syntax mistake in a sort without $hybrid. */

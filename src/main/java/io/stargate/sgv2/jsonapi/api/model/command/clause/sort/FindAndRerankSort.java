@@ -7,6 +7,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.FieldSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorLegSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorizeSortExpression;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.*;
@@ -25,7 +28,7 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
  *       lexical leg or the filter leg.
  * </ul>
  *
- * <p>NOTE: the {@link Schema} only describes $hybrid. Single leg sorts are added to it when they
+ * <p>TODO: the {@link Schema} only describes $hybrid. Single leg sorts are added to it when they
  * are supported, see GH #2604.
  */
 @JsonDeserialize(using = FindAndRerankSortClauseDeserializer.class)
@@ -60,9 +63,15 @@ public sealed interface FindAndRerankSort extends Recordable
     permits FindAndRerankSort.MultiLeg, FindAndRerankSort.SingleLeg {
 
   /** A command with no sort, a null sort or an empty sort: the filter leg, without sorting. */
-  FilterLeg NO_ARG_SORT = new FilterLeg(List.of(), CommandFeatures.EMPTY);
+  FilterLeg NO_ARG_SORT = new FilterLeg(List.of());
 
-  /** The metrics features of the sort, recorded when the sort is read. */
+  /**
+   * The metrics features of the sort.
+   *
+   * <p>NOTE: a $hybrid record gets its features when the sort is read, because the record is the
+   * same for <code>"$vectorize": null</code> and for no $vectorize. A single leg record works out
+   * its features from its type.
+   */
   CommandFeatures commandFeatures();
 
   /**
@@ -139,34 +148,41 @@ public sealed interface FindAndRerankSort extends Recordable
    * <code>{"$vectorize": "cheese"}</code> or <code>{"$vector": [0.1, 0.2]}</code>: reads with the
    * vector leg.
    */
-  record VectorLeg(
-      @JsonIgnore VectorLegSortExpression sort, @JsonIgnore CommandFeatures commandFeatures)
-      implements SingleLeg {
+  record VectorLeg(@JsonIgnore VectorLegSortExpression sort) implements SingleLeg {
 
     public VectorLeg {
       Objects.requireNonNull(sort, "sort must not be null");
-      Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+    }
+
+    @Override
+    public CommandFeatures commandFeatures() {
+      return switch (sort) {
+        case VectorizeSortExpression ignored -> CommandFeatures.of(CommandFeature.VECTORIZE);
+        case VectorSortExpression ignored -> CommandFeatures.of(CommandFeature.VECTOR);
+      };
     }
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
-      return dataRecorder.append("sort", sort).append("commandFeatures", commandFeatures);
+      return dataRecorder.append("sort", sort);
     }
   }
 
   /** <code>{"$lexical": "cows"}</code>: reads with the lexical leg. */
-  record LexicalLeg(
-      @JsonIgnore LexicalSortExpression sort, @JsonIgnore CommandFeatures commandFeatures)
-      implements SingleLeg {
+  record LexicalLeg(@JsonIgnore LexicalSortExpression sort) implements SingleLeg {
 
     public LexicalLeg {
       Objects.requireNonNull(sort, "sort must not be null");
-      Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+    }
+
+    @Override
+    public CommandFeatures commandFeatures() {
+      return CommandFeatures.of(CommandFeature.LEXICAL);
     }
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
-      return dataRecorder.append("sort", sort).append("commandFeatures", commandFeatures);
+      return dataRecorder.append("sort", sort);
     }
   }
 
@@ -174,20 +190,21 @@ public sealed interface FindAndRerankSort extends Recordable
    * <code>{"age": -1, "name": 1}</code>: reads the documents the filter matches with the filter
    * leg, sorted by the fields.
    */
-  record FilterLeg(
-      @JsonIgnore List<FieldSortExpression> sorts, @JsonIgnore CommandFeatures commandFeatures)
-      implements SingleLeg {
+  record FilterLeg(@JsonIgnore List<FieldSortExpression> sorts) implements SingleLeg {
 
     public FilterLeg {
       sorts = List.copyOf(Objects.requireNonNull(sorts, "sorts must not be null"));
-      Objects.requireNonNull(commandFeatures, "commandFeatures must not be null");
+    }
+
+    @Override
+    public CommandFeatures commandFeatures() {
+      // there is no metrics feature for a field sort
+      return CommandFeatures.EMPTY;
     }
 
     @Override
     public DataRecorder recordTo(DataRecorder dataRecorder) {
-      return dataRecorder
-          .append("sorts", Recordable.copyOf(sorts))
-          .append("commandFeatures", commandFeatures);
+      return dataRecorder.append("sorts", Recordable.copyOf(sorts));
     }
   }
 

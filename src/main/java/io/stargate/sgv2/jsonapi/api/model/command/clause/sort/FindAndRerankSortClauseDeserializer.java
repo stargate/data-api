@@ -259,22 +259,18 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     // { "sort" : { "$lexical" : "cows" } }
     if (sort.has(LEXICAL_CONTENT_FIELD)) {
       return new FindAndRerankSort.LexicalLeg(
-          new LexicalSortExpression(singleLegText(sort, LEXICAL_CONTENT_FIELD)),
-          CommandFeatures.of(CommandFeature.LEXICAL));
+          new LexicalSortExpression(singleLegText(sort, LEXICAL_CONTENT_FIELD)));
     }
 
     // { "sort" : { "$vector" : [0.1, 0.2, 0.3] } }
     if (sort.has(VECTOR_EMBEDDING_FIELD)) {
-      return new FindAndRerankSort.VectorLeg(
-          new VectorSortExpression(singleLegVector(sort)),
-          CommandFeatures.of(CommandFeature.VECTOR));
+      return new FindAndRerankSort.VectorLeg(new VectorSortExpression(singleLegVector(sort)));
     }
 
     // { "sort" : { "$vectorize" : "cheese" } }
     if (sort.has(VECTOR_EMBEDDING_TEXT_FIELD)) {
       return new FindAndRerankSort.VectorLeg(
-          new VectorizeSortExpression(singleLegText(sort, VECTOR_EMBEDDING_TEXT_FIELD)),
-          CommandFeatures.of(CommandFeature.VECTORIZE));
+          new VectorizeSortExpression(singleLegText(sort, VECTOR_EMBEDDING_TEXT_FIELD)));
     }
 
     // { "sort" : { "age" : -1, "name" : 1 } }
@@ -287,7 +283,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
               field.getKey(),
               CollectionSortClauseBuilder.parseAscending(field.getKey(), field.getValue())));
     }
-    return new FindAndRerankSort.FilterLeg(sorts, CommandFeatures.EMPTY);
+    return new FindAndRerankSort.FilterLeg(sorts);
   }
 
   /** The value of $lexical, $vector or $vectorize, which must be the only field in the sort. */
