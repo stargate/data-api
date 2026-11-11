@@ -65,13 +65,7 @@ public sealed interface FindAndRerankSort extends Recordable
   /** A command with no sort, a null sort or an empty sort: the filter leg, without sorting. */
   FilterLeg NO_ARG_SORT = new FilterLeg(List.of());
 
-  /**
-   * The metrics features of the sort.
-   *
-   * <p>NOTE: a $hybrid record gets its features when the sort is read, because the record is the
-   * same for <code>"$vectorize": null</code> and for no $vectorize. A single leg record works out
-   * its features from its type.
-   */
+  /** The metrics features of the sort. */
   CommandFeatures commandFeatures();
 
   /**
