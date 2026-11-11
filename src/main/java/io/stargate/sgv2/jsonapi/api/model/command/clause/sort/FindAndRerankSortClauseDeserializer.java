@@ -12,24 +12,54 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import io.stargate.sgv2.jsonapi.api.model.command.builders.CollectionSortClauseBuilder;
+import io.stargate.sgv2.jsonapi.api.model.command.builders.SortClauseBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.FieldSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorizeSortExpression;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
+import io.stargate.sgv2.jsonapi.util.StringUtil;
 import java.io.IOException;
 import java.util.*;
 
 /**
  * {@link StdDeserializer} for the {@link FindAndRerankSort}.
  *
- * <p>Note: This only checks the shape of the sort clause, the other validation is handled when
- * resolving the command to an operation.
+ * <p>A sort with $hybrid is a {@link FindAndRerankSort.MultiLeg} sort. This only checks its shape,
+ * the planner checks its values.
+ *
+ * <p>Any other sort is a {@link FindAndRerankSort.SingleLeg} sort, e.g. <code>
+ * {"$vectorize": "text"}</code> or <code>{"age": -1}</code>. It uses the find sort syntax. This
+ * checks the syntax and throws an {@link APIException} when the sort is not valid, in most cases a
+ * {@link SortException}. For field sorts and $binary vectors it calls the checks find uses, in
+ * {@link CollectionSortClauseBuilder} and {@link SortClauseBuilder}.
+ *
+ * <p>NOTE: find checks $lexical, $vector and $vectorize in the same method as its lexical index
+ * check, so this class has its own copy of those checks. The copy differs from find in three ways:
+ * $lexical must not be blank, a $lexical that is not text gets SORT_CLAUSE_VALUE_INVALID, and the
+ * text of $lexical and $vectorize is trimmed. The problem text in the error messages is also not
+ * the same as in find. TODO: when find moves to {@link SortExpression2}, find and findAndRerank
+ * should parse the sort with the same code. Then the copy is not needed.
+ *
+ * <p>NOTE: an error thrown here for a single leg sort reaches HTTP users with its code and message,
+ * but MCP users only get "Internal error". quarkus-mcp-server converts the tool arguments before it
+ * calls the tool, and reports any error other than a Jackson mapping error as "Internal error".
+ * TODO: check the single leg sort when the command is resolved. An error from the command resolver
+ * reaches MCP users with its code and message. This needs a parser the resolver can call, which is
+ * a change of its own.
  */
 public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAndRerankSort> {
 
   private static final String ERROR_CONTEXT = "`sort` clause";
 
-  // the only field we accept at top level is $hybrid
+  // when the sort has $hybrid it must be the only field at top level
   // can be string or object
   // { "sort" : { "$hybrid" : "i like cheese" } }
   // { "sort" : { "$hybrid" : { "$vectorize" : "i like cheese", "$lexical" : "cows"} } }
@@ -72,8 +102,8 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
    * Deserialize the sort clause from an object node.
    *
    * @param sort The sort clause as an object node, no check for nulls.
-   * @return The {@link FindAndRerankSort} that reflects the request without validation, e.g.
-   *     checking that a vectorize or vector sort is provided but not both.
+   * @return The {@link FindAndRerankSort} for the request. A $hybrid sort is not validated, e.g.
+   *     there is no check that a vectorize or vector sort is provided but not both.
    */
   private static FindAndRerankSort deserialize(JsonParser jsonParser, ObjectNode sort)
       throws JsonMappingException {
@@ -83,17 +113,18 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
       return FindAndRerankSort.NO_ARG_SORT;
     }
 
+    // no $hybrid, so a single leg sort, e.g.
+    // { "sort" : { "$lexical" : "cows" } } or { "sort" : { "age" : -1 } }
+    if (!sort.has(HYBRID_FIELD)) {
+      return deserializeSingleLeg(sort);
+    }
+
     var hybridMatch = MATCH_HYBRID_FIELD.matchAndThrow(sort, jsonParser, ERROR_CONTEXT);
 
     return switch (hybridMatch.matched().get(HYBRID_FIELD)) {
       case TextNode textNode ->
-          new FindAndRerankSort(
-              RerankLegMode.MULTI_LEG,
-              normalizedText(textNode.asText()),
-              null,
-              null,
-              null,
-              CommandFeatures.of(CommandFeature.HYBRID));
+          new FindAndRerankSort.HybridText(
+              normalizedText(textNode.asText()), CommandFeatures.of(CommandFeature.HYBRID));
       case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
       case JsonNode node ->
           throw JsonFieldMatcher.errorForWrongType(
@@ -101,7 +132,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     };
   }
 
-  private static FindAndRerankSort deserializeHybridObject(
+  private static FindAndRerankSort.HybridObject deserializeHybridObject(
       JsonParser jsonParser, ObjectNode hybridObject) throws JsonMappingException {
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
@@ -213,8 +244,96 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   ObjectNode.class);
         };
 
-    return new FindAndRerankSort(
-        RerankLegMode.MULTI_LEG, null, vectorizeText, lexicalText, vector, commandFeatures);
+    return new FindAndRerankSort.HybridObject(vectorizeText, lexicalText, vector, commandFeatures);
+  }
+
+  /**
+   * Deserialize a sort without $hybrid: $lexical, $vector or $vectorize must be the only field in
+   * the sort, any other field is a field sort with the value <code>1</code> or <code>-1</code>.
+   */
+  private static FindAndRerankSort.SingleLeg deserializeSingleLeg(ObjectNode sort) {
+
+    // $lexical, $vector and $vectorize are checked in the same order as find, so a sort with more
+    // than one of them gets the same error
+
+    // { "sort" : { "$lexical" : "cows" } }
+    if (sort.has(LEXICAL_CONTENT_FIELD)) {
+      return new FindAndRerankSort.LexicalLeg(
+          new LexicalSortExpression(singleLegText(sort, LEXICAL_CONTENT_FIELD)),
+          CommandFeatures.of(CommandFeature.LEXICAL));
+    }
+
+    // { "sort" : { "$vector" : [0.1, 0.2, 0.3] } }
+    if (sort.has(VECTOR_EMBEDDING_FIELD)) {
+      return new FindAndRerankSort.VectorLeg(
+          new VectorSortExpression(singleLegVector(sort)),
+          CommandFeatures.of(CommandFeature.VECTOR));
+    }
+
+    // { "sort" : { "$vectorize" : "cheese" } }
+    if (sort.has(VECTOR_EMBEDDING_TEXT_FIELD)) {
+      return new FindAndRerankSort.VectorLeg(
+          new VectorizeSortExpression(singleLegText(sort, VECTOR_EMBEDDING_TEXT_FIELD)),
+          CommandFeatures.of(CommandFeature.VECTORIZE));
+    }
+
+    // { "sort" : { "age" : -1, "name" : 1 } }
+    // every path is checked before any value, the same as find
+    sort.fieldNames().forEachRemaining(CollectionSortClauseBuilder::validateSortExpressionPath);
+    var sorts = new ArrayList<FieldSortExpression>(sort.size());
+    for (var field : sort.properties()) {
+      sorts.add(
+          new FieldSortExpression(
+              field.getKey(),
+              CollectionSortClauseBuilder.parseAscending(field.getKey(), field.getValue())));
+    }
+    return new FindAndRerankSort.FilterLeg(sorts, CommandFeatures.EMPTY);
+  }
+
+  /** The value of $lexical, $vector or $vectorize, which must be the only field in the sort. */
+  private static JsonNode onlySortField(ObjectNode sort, String field) {
+    if (sort.size() > 1) {
+      throw SortException.Code.SORT_CLAUSE_INVALID.get(
+          Map.of(
+              "problem",
+              "when sorting by field '%s' no other sort expressions allowed".formatted(field)));
+    }
+    return sort.get(field);
+  }
+
+  /** The trimmed text of $lexical or $vectorize, which must not be blank. */
+  private static String singleLegText(ObjectNode sort, String field) {
+    var value = onlySortField(sort, field);
+    // textValue() is null when the value is not text
+    var text = normalizedText(value.textValue());
+    // NOTE: checks for blank as well as null. The trimmed text can be blank when the value is not,
+    // because trim() also removes control characters
+    if (StringUtil.isNullOrBlank(text)) {
+      throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+          Map.of(
+              "path",
+              field,
+              "problem",
+              "value must be a non-blank String, not %s".formatted(value)));
+    }
+    return text;
+  }
+
+  /** The vector of $vector: an array of numbers, or a $binary vector. */
+  private static float[] singleLegVector(ObjectNode sort) {
+    return switch (onlySortField(sort, VECTOR_EMBEDDING_FIELD)) {
+      case ArrayNode arrayNode -> arrayNodeToVector(arrayNode);
+      case ObjectNode objectNode ->
+          SortClauseBuilder.tryDecodeBinaryVector(VECTOR_EMBEDDING_FIELD, objectNode);
+      case JsonNode node ->
+          throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+              Map.of(
+                  "path",
+                  VECTOR_EMBEDDING_FIELD,
+                  "problem",
+                  "value must be an Array of numbers or a $binary vector, not %s"
+                      .formatted(JsonUtil.nodeTypeAsString(node))));
+    };
   }
 
   /**

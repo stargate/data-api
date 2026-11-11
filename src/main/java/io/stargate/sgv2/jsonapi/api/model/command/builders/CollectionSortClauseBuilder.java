@@ -34,6 +34,10 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     // Start by checking "special" sort expressions, like lexical and vector sorts;
     // they must be the only expression in the sort clause.
 
+    // TODO: FindAndRerankSortClauseDeserializer has a copy of the checks below for $lexical,
+    // $vector and $vectorize. It uses the copy for the single leg sorts of findAndRerank. When
+    // these checks change, the copy may need the same change. When find moves to SortExpression2,
+    // find and findAndRerank should parse the sort with the same code, then the copy is not needed.
     JsonNode lexicalNode = sortNode.get(DocumentConstants.Fields.LEXICAL_CONTENT_FIELD);
     if (lexicalNode != null) {
       // We can also check if lexical sort supported by the collection:
@@ -136,6 +140,10 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
    * @return {@link SortExpression} for the regular sort
    */
   private SortExpression buildRegularSortExpression(String path, JsonNode innerValue) {
+    return SortExpression.sort(path, parseAscending(path, innerValue));
+  }
+
+  public static boolean parseAscending(String path, JsonNode innerValue) {
     if (!innerValue.isInt()) {
       // Special checking for String and ArrayNode to give less confusing error messages
       if (innerValue.isArray()) {
@@ -172,8 +180,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
                   .formatted(innerValue)));
     }
 
-    boolean ascending = innerValue.intValue() == 1;
-    return SortExpression.sort(path, ascending);
+    return innerValue.intValue() == 1;
   }
 
   private void validateSortExpressionPaths(ObjectNode sortNode) {
@@ -183,7 +190,7 @@ public class CollectionSortClauseBuilder extends SortClauseBuilder<CollectionSch
     }
   }
 
-  private void validateSortExpressionPath(String path) {
+  public static void validateSortExpressionPath(String path) {
     if (!NamingRules.FIELD.apply(path)) {
       // This is only called after handling "special" sort expressions so simple validation
       if (path.isEmpty()) {

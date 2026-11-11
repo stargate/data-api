@@ -66,11 +66,12 @@ class FindAndRerankPlanner {
     // NOTE: a sort with no $vector or $vectorize fails here with a SORT error, not later with an
     // UNEXPECTED_SERVER_ERROR, see GH #2577
     var legs =
-        switch (sort.rerankLegMode()) {
-            // TODO: GH #2602, GH #2603 - plan single leg sorts, until then only a command with no
-            // sort is SINGLE_LEG
-          case SINGLE_LEG -> throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
-          case MULTI_LEG -> multiLegs(command, schemaObject);
+        switch (sort) {
+          case FindAndRerankSort.MultiLeg multiLeg -> multiLegs(command, multiLeg, schemaObject);
+            // TODO: GH #2602, GH #2603 - plan single leg sorts. Until then every sort without
+            // $hybrid is rejected here, after the checks above
+          case FindAndRerankSort.SingleLeg ignored ->
+              throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
         };
     var vectorizeStep = isVectorizeSort(sort) ? planVectorizeStep(sort, schemaObject) : null;
 
@@ -166,11 +167,12 @@ class FindAndRerankPlanner {
    * vector for the vector leg.
    */
   private static List<FindAndRerankPlan.RerankLeg> multiLegs(
-      FindAndRerankCommand command, CollectionSchemaObject schemaObject) {
+      FindAndRerankCommand command,
+      FindAndRerankSort.MultiLeg multiLeg,
+      CollectionSchemaObject schemaObject) {
 
-    var sort = command.sortClause();
-    if (!isVectorizeSort(sort) && !isVectorSort(sort)) {
-      throw isLexicalSort(sort)
+    if (!isVectorizeSort(multiLeg) && !isVectorSort(multiLeg)) {
+      throw isLexicalSort(multiLeg)
           ? SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT.get()
           : SortException.Code.MISSING_HYBRID_SORT_VALUE.get();
     }
@@ -189,18 +191,21 @@ class FindAndRerankPlanner {
     legs.add(
         new FindAndRerankPlan.RerankLeg(
             RerankLegType.VECTOR_LEG,
-            isVectorizeSort(sort) ? null : sort.vectorSort(),
+            isVectorizeSort(multiLeg) ? null : vector(multiLeg),
             null,
             hybridLimits.vectorLimit()));
 
     // the lexical leg is optional: if there is a lexical sort, but the user did not ask explicitly
     // for it then it is OK to skip when there is no lexical index.
-    if (isLexicalSort(sort)) {
+    if (isLexicalSort(multiLeg)) {
       if (schemaObject.lexicalDef().enabled()) {
         legs.add(
             new FindAndRerankPlan.RerankLeg(
-                RerankLegType.LEXICAL_LEG, null, lexicalText(sort), hybridLimits.lexicalLimit()));
-      } else if (isExplicitLexicalSort(sort)) {
+                RerankLegType.LEXICAL_LEG,
+                null,
+                lexicalText(multiLeg),
+                hybridLimits.lexicalLimit()));
+      } else if (isExplicitLexicalSort(multiLeg)) {
         // error should have been caught in checkSortSupported() safety here
         throwIfNoLexicalIndex(schemaObject);
       }
@@ -284,16 +289,34 @@ class FindAndRerankPlanner {
     }
   }
 
+  // NOTE: the helpers below return null or false for a SingleLeg sort, because plan() rejects
+  // single leg sorts until GH #2602 and GH #2603
+
   /** The text to vectorize: the $hybrid text, or the $vectorize value, or <code>null</code>. */
   private static String vectorizeText(FindAndRerankSort sort) {
-    return sort.hybridSort() != null ? sort.hybridSort() : sort.vectorizeSort();
+    return switch (sort) {
+      case FindAndRerankSort.HybridText hybridText -> hybridText.text();
+      case FindAndRerankSort.HybridObject hybridObject -> hybridObject.vectorize();
+      case FindAndRerankSort.SingleLeg ignored -> null;
+    };
   }
 
   /**
    * The text for the lexical sort: the $hybrid text, or the $lexical value, or <code>null</code>.
    */
   private static String lexicalText(FindAndRerankSort sort) {
-    return sort.hybridSort() != null ? sort.hybridSort() : sort.lexicalSort();
+    return switch (sort) {
+      case FindAndRerankSort.HybridText hybridText -> hybridText.text();
+      case FindAndRerankSort.HybridObject hybridObject -> hybridObject.lexical();
+      case FindAndRerankSort.SingleLeg ignored -> null;
+    };
+  }
+
+  /** The vector from the $hybrid object, or <code>null</code>. */
+  private static float[] vector(FindAndRerankSort sort) {
+    return sort instanceof FindAndRerankSort.HybridObject hybridObject
+        ? hybridObject.vector()
+        : null;
   }
 
   private static boolean isLexicalSort(FindAndRerankSort sort) {
@@ -302,7 +325,8 @@ class FindAndRerankPlanner {
 
   /** The $hybrid object has $lexical text, so the collection must have a lexical index. */
   private static boolean isExplicitLexicalSort(FindAndRerankSort sort) {
-    return sort.lexicalSort() != null;
+    return sort instanceof FindAndRerankSort.HybridObject hybridObject
+        && hybridObject.lexical() != null;
   }
 
   private static boolean isVectorizeSort(FindAndRerankSort sort) {
@@ -310,6 +334,6 @@ class FindAndRerankPlanner {
   }
 
   private static boolean isVectorSort(FindAndRerankSort sort) {
-    return sort.vectorSort() != null;
+    return vector(sort) != null;
   }
 }
