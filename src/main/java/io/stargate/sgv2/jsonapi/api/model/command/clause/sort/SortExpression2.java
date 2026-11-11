@@ -8,19 +8,27 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * One expression in a sort clause, with one record for each kind of sort: by vector similarity, by
- * lexical relevance, or by the value of a document field. {@link
- * FindAndRerankSortClauseDeserializer} makes them for the single leg sorts of findAndRerank.
+ * One expression in a sort clause. There is one type for each kind of sort:
  *
- * <p>NOTE: this replaces {@link SortExpression}, one class with a nullable field for each kind of
- * sort: users of it must check the fields in the right order to know what kind of sort they have.
- * Here the kind of sort is the type, each record has only the values of its kind, and a switch over
- * the expression must handle every kind or it does not compile.
+ * <ul>
+ *   <li>{@link VectorLegSortExpression}: by vector similarity.
+ *       <ul>
+ *         <li>{@link VectorizeSortExpression}: for $vectorize.
+ *         <li>{@link VectorSortExpression}: for $vector.
+ *       </ul>
+ *   <li>{@link LexicalSortExpression}: by lexical relevance.
+ *   <li>{@link FieldSortExpression}: by the value of a document field.
+ * </ul>
  *
- * <p>NOTE: <code>SortExpression2</code> is a temporary name while both types are in use: the
- * findAndRerank single leg sorts use this type, find and the other commands still use {@link
- * SortExpression}. When they move to this type, {@link SortExpression} is deleted and this type
- * takes its name.
+ * <p>NOTE: this type will replace {@link SortExpression}.
+ *
+ * <ul>
+ *   <li>Each kind of sort is its own type, so a switch over the expression must handle every kind.
+ *   <li><code>SortExpression2</code> is a temporary name. Today only the findAndRerank single leg
+ *       sorts use this type. Find and the other commands still use {@link SortExpression}.
+ *   <li>When they move to this type, {@link SortExpression} is deleted and this type takes its
+ *       name.
+ * </ul>
  */
 public sealed interface SortExpression2 extends Recordable
     permits SortExpression2.VectorLegSortExpression,
