@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -24,6 +25,8 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.ws.rs.core.HttpHeaders;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -97,6 +100,64 @@ class HeaderBasedAuthenticationMechanismTest {
     assertThatThrownBy(() -> mechanism.authenticate(context, manager).await().indefinitely())
         .isInstanceOf(AuthenticationFailedException.class);
     verify(response).putHeader(HttpHeaders.WWW_AUTHENTICATE, challenge);
+  }
+
+  @Test
+  void bearerIssuedForAnotherResourceIsRejectedWithTheChallenge() {
+    var manager = mock(IdentityProviderManager.class);
+    var audience = Set.of("https://db-two.apps.example.test/v1/mcp");
+    var identity = jwtIdentity(audience);
+    when(manager.authenticate(any())).thenReturn(Uni.createFrom().item(identity));
+    var context = context(Map.of("Authorization", "Bearer encoded-jwt"));
+    var response = mock(HttpServerResponse.class);
+    when(context.response()).thenReturn(response);
+    var metadata = mock(McpOAuthMetadata.class);
+    String challenge =
+        "Bearer resource_metadata=\"https://db-one.apps.example.test/.well-known/oauth-protected-resource\"";
+    when(metadata.isMcpRequest(context)).thenReturn(true);
+    when(metadata.challenge(context)).thenReturn(Optional.of(challenge));
+    when(metadata.acceptsAudience(context, audience)).thenReturn(false);
+    var mechanism =
+        new HeaderBasedAuthenticationMechanism(authConfig(true, true), instance(), metadata);
+
+    assertThatThrownBy(() -> mechanism.authenticate(context, manager).await().indefinitely())
+        .isInstanceOf(AuthenticationFailedException.class);
+    verify(metadata).acceptsAudience(context, audience);
+    verify(response).putHeader(HttpHeaders.WWW_AUTHENTICATE, challenge);
+  }
+
+  @Test
+  void bearerIssuedForTheRequestedResourceAuthenticates() {
+    var manager = mock(IdentityProviderManager.class);
+    var audience = Set.of("https://db-one.apps.example.test/v1/mcp");
+    var identity = jwtIdentity(audience);
+    when(manager.authenticate(any())).thenReturn(Uni.createFrom().item(identity));
+    var context = context(Map.of("Authorization", "Bearer encoded-jwt"));
+    var metadata = mock(McpOAuthMetadata.class);
+    when(metadata.isMcpRequest(context)).thenReturn(true);
+    when(metadata.acceptsAudience(context, audience)).thenReturn(true);
+    var mechanism =
+        new HeaderBasedAuthenticationMechanism(authConfig(true, true), instance(), metadata);
+
+    assertThat(mechanism.authenticate(context, manager).await().indefinitely()).isSameAs(identity);
+  }
+
+  @Test
+  void legacyCredentialsSkipTheBearerAudienceCheck() {
+    var manager = mock(IdentityProviderManager.class);
+    var identity = mock(SecurityIdentity.class);
+    when(manager.authenticate(any())).thenReturn(Uni.createFrom().item(identity));
+    var metadata = mock(McpOAuthMetadata.class);
+    var mechanism =
+        new HeaderBasedAuthenticationMechanism(authConfig(true, true), instance(), metadata);
+
+    assertThat(
+            mechanism
+                .authenticate(context(Map.of("Token", "legacy-token")), manager)
+                .await()
+                .indefinitely())
+        .isSameAs(identity);
+    verify(metadata, never()).acceptsAudience(any(), any());
   }
 
   @Test
@@ -221,6 +282,7 @@ class HeaderBasedAuthenticationMechanismTest {
     var metadata = mock(McpOAuthMetadata.class);
     when(metadata.isMcpRequest(any())).thenReturn(mcpRequest);
     when(metadata.challenge(any())).thenReturn(Optional.empty());
+    when(metadata.acceptsAudience(any(), any())).thenReturn(true);
     return new HeaderBasedAuthenticationMechanism(authConfig(bearer, legacy), instance(), metadata);
   }
 
@@ -242,6 +304,14 @@ class HeaderBasedAuthenticationMechanismTest {
     var context = mock(RoutingContext.class);
     when(context.request()).thenReturn(request);
     return context;
+  }
+
+  private static SecurityIdentity jwtIdentity(Set<String> audience) {
+    var token = mock(JsonWebToken.class);
+    when(token.getAudience()).thenReturn(audience);
+    var identity = mock(SecurityIdentity.class);
+    when(identity.getPrincipal()).thenReturn(token);
+    return identity;
   }
 
   @SuppressWarnings("unchecked")

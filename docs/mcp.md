@@ -26,9 +26,17 @@ mp.jwt.verify.publickey.location=https://auth.example.com/.well-known/jwks.json
 mp.jwt.verify.audiences=https://api.example.com/v1/mcp
 ```
 
-Use the issuer and verification key published by your authorization server. A local public-key file can replace the JWKS URL. Bearer authentication requires an explicit issuer, verification key, and audience at startup. With MCP enabled, the audience must include the public MCP resource URL.
+Use the issuer and verification key published by your authorization server. A local public-key file can replace the JWKS URL. Bearer authentication requires an explicit issuer, verification key, and audience at startup. Tokens are read from the `Authorization` header only, and startup fails when `mp.jwt.token.header` names a cookie or another header. With MCP enabled, the audience must include the public MCP resource URL.
 
 The public base URL contains the scheme, host, and optional port. The server derives the MCP resource path from its HTTP and MCP root configuration. For example, HTTP root `/service` and MCP root `/tools` require audience `https://api.example.com/service/tools`. OAuth mode requires a dedicated MCP path beneath the HTTP root. Root-only configurations are rejected at startup because the current framework does not keep those transport routes within application authentication. Public discovery requires MCP to be enabled in server configuration. Its metadata is available without credentials at `/.well-known/oauth-protected-resource`, under the HTTP root when configured, and is absent when Bearer authentication or MCP is disabled.
+
+A deployment that serves one public host per database sets a host suffix instead of the fixed base URL. Each request host made of a single DNS label under that suffix is then its own resource.
+
+```properties
+stargate.mcp.auth.public-host-suffix=.apps.example.com
+```
+
+A request to `https://db1-us-east-2.apps.example.com/v1/mcp` receives metadata and a challenge that name that host, and its token must carry that exact URL in `aud`. A token issued for another database receives HTTP 401. The published scheme is always `https`, and a port other than 443 is kept. A request on any other host receives HTTP 401 without a challenge, and its metadata request receives HTTP 404. Set either `stargate.mcp.auth.public-base-url` or the suffix, never both. `mp.jwt.verify.audiences` is not required with a suffix, and a value set there is checked in addition to the request host. The host is the one the request arrives with, after any forwarded-host handling enabled through `quarkus.http.proxy`, so the gateway must pass the public host through unchanged.
 
 Unauthenticated MCP requests receive HTTP 401 with an absolute `WWW-Authenticate: Bearer resource_metadata="..."` URL. Send `Authorization: Bearer <access-token>` on every subsequent HTTP request, including initialization for older protocols and catalog requests. The validator checks the token before tool execution. Legacy MCP headers and invalid Bearer credentials cannot fall back to legacy authentication in OAuth mode. When OAuth mode is disabled, legacy MCP authentication keeps its existing precedence. An MCP access token alone does not authenticate an ordinary REST request.
 
