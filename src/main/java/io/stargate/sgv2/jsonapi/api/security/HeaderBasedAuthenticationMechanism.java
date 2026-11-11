@@ -39,6 +39,7 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import java.util.Optional;
 import java.util.Set;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 /**
  * Coordinates OAuth-only MCP requests and the existing Data API token headers.
@@ -97,7 +98,9 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
           new TokenAuthenticationRequest(
               new JsonWebTokenCredential(authorization.substring(7).trim()));
       HttpSecurityUtils.setRoutingContextAttribute(request, context);
-      return identityProviderManager.authenticate(request);
+      return identityProviderManager
+          .authenticate(request)
+          .map(identity -> requireAudience(context, identity));
     }
 
     if (headerEnabled) {
@@ -116,6 +119,16 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
       return Uni.createFrom().failure(new AuthenticationFailedException());
     }
     return Uni.createFrom().optional(Optional.empty());
+  }
+
+  /** A verified token is only usable on the resource it was issued for. */
+  private SecurityIdentity requireAudience(RoutingContext context, SecurityIdentity identity) {
+    Set<String> audience =
+        identity.getPrincipal() instanceof JsonWebToken token ? token.getAudience() : null;
+    if (!metadata.acceptsAudience(context, audience)) {
+      throw new AuthenticationFailedException();
+    }
+    return identity;
   }
 
   private String legacyHeader(RoutingContext context) {

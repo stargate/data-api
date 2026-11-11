@@ -31,6 +31,7 @@ import io.stargate.sgv2.jsonapi.config.AuthConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
+import jakarta.ws.rs.core.HttpHeaders;
 import java.util.ArrayList;
 
 /** The configuration for the header based security. */
@@ -45,12 +46,17 @@ public class HeaderBasedSecurityConfiguration {
       McpOAuthMetadata metadata,
       JWTAuthContextInfo jwtConfig) {
     if (config.bearer().enabled()) {
-      validateBearerConfiguration(jwtConfig);
+      validateBearerConfiguration(jwtConfig, metadata.audienceFromRequestHost());
     }
     return new HeaderBasedAuthenticationMechanism(config, customChallengeSender, metadata);
   }
 
-  static void validateBearerConfiguration(JWTAuthContextInfo config) {
+  /**
+   * @param audienceFromRequestHost true when {@link McpOAuthMetadata} checks each token against the
+   *     host it was sent to, which replaces the static audience list
+   */
+  static void validateBearerConfiguration(
+      JWTAuthContextInfo config, boolean audienceFromRequestHost) {
     var missing = new ArrayList<String>();
     if (!isConfigured(config.getIssuedBy())) {
       missing.add("mp.jwt.verify.issuer");
@@ -60,9 +66,15 @@ public class HeaderBasedSecurityConfiguration {
         && config.getPublicVerificationKey() == null) {
       missing.add("mp.jwt.verify.publickey.location or mp.jwt.verify.publickey");
     }
-    if (config.getExpectedAudience() == null
-        || config.getExpectedAudience().stream()
-            .noneMatch(HeaderBasedSecurityConfiguration::isConfigured)) {
+    if (!HttpHeaders.AUTHORIZATION.equals(config.getTokenHeader())) {
+      // The built-in JWT mechanism reads this header on requests our mechanism leaves alone, and
+      // it would accept a token from a cookie there without the checks made for MCP.
+      missing.add("mp.jwt.token.header=Authorization");
+    }
+    if (!audienceFromRequestHost
+        && (config.getExpectedAudience() == null
+            || config.getExpectedAudience().stream()
+                .noneMatch(HeaderBasedSecurityConfiguration::isConfigured))) {
       missing.add("mp.jwt.verify.audiences");
     }
     if (!missing.isEmpty()) {
