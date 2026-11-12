@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.FieldSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorLegSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSimilaritySortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorizeSortExpression;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
@@ -142,7 +142,7 @@ public sealed interface FindAndRerankSort extends Recordable
    * <code>{"$vectorize": "cheese"}</code> or <code>{"$vector": [0.1, 0.2]}</code>: reads with the
    * vector leg.
    */
-  record VectorLeg(@JsonIgnore VectorLegSortExpression sort) implements SingleLeg {
+  record VectorLeg(@JsonIgnore VectorSimilaritySortExpression sort) implements SingleLeg {
 
     public VectorLeg {
       Objects.requireNonNull(sort, "sort must not be null");

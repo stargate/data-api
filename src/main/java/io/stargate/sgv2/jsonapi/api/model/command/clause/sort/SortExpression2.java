@@ -11,7 +11,7 @@ import java.util.Objects;
  * One expression in a sort clause. There is one type for each kind of sort:
  *
  * <ul>
- *   <li>{@link VectorLegSortExpression}: by vector similarity.
+ *   <li>{@link VectorSimilaritySortExpression}: by vector similarity.
  *       <ul>
  *         <li>{@link VectorizeSortExpression}: for $vectorize.
  *         <li>{@link VectorSortExpression}: for $vector.
@@ -31,7 +31,7 @@ import java.util.Objects;
  * </ul>
  */
 public sealed interface SortExpression2 extends Recordable
-    permits SortExpression2.VectorLegSortExpression,
+    permits SortExpression2.VectorSimilaritySortExpression,
         SortExpression2.LexicalSortExpression,
         SortExpression2.FieldSortExpression {
 
@@ -42,16 +42,11 @@ public sealed interface SortExpression2 extends Recordable
   String path();
 
   /** A sort by vector similarity: to the vector of a text, or to a vector. */
-  sealed interface VectorLegSortExpression extends SortExpression2
+  sealed interface VectorSimilaritySortExpression extends SortExpression2
       permits VectorizeSortExpression, VectorSortExpression {}
 
-  /**
-   * <code>{"$vectorize": "cheese"}</code>: sort by similarity to the vector of the text, made by
-   * the vectorize service of the collection.
-   *
-   * @param text The text to vectorize, not blank.
-   */
-  record VectorizeSortExpression(String text) implements VectorLegSortExpression {
+  /** <code>{"$vectorize": "cheese"}</code> */
+  record VectorizeSortExpression(String text) implements VectorSimilaritySortExpression {
 
     public VectorizeSortExpression {
       StringUtil.requireNonBlank(text, "text");
@@ -69,11 +64,10 @@ public sealed interface SortExpression2 extends Recordable
   }
 
   /**
-   * <code>{"$vector": [0.1, 0.2, 0.3]}</code>: sort by similarity to the vector.
-   *
-   * @param vector The vector. Its dimension is not checked here, that needs the collection.
+   * <code>{"$vector": [0.1, 0.2, 0.3]}</code> Its dimension is not checked here, that needs the
+   * collection.
    */
-  record VectorSortExpression(float[] vector) implements VectorLegSortExpression {
+  record VectorSortExpression(float[] vector) implements VectorSimilaritySortExpression {
 
     public VectorSortExpression {
       Objects.requireNonNull(vector, "vector must not be null");
@@ -89,25 +83,18 @@ public sealed interface SortExpression2 extends Recordable
       return dataRecorder.append("vector", Arrays.toString(vector));
     }
 
-    /** Override to do a value equality check on the vector. */
     @Override
     public boolean equals(Object obj) {
       return (obj instanceof VectorSortExpression other) && Arrays.equals(vector, other.vector);
     }
 
-    /** Override to do a value equality hash on the vector. */
     @Override
     public int hashCode() {
       return Arrays.hashCode(vector);
     }
   }
 
-  /**
-   * <code>{"$lexical": "cows"}</code>: sort by the lexical (BM25) relevance of the documents to the
-   * text.
-   *
-   * @param text The text to match, not blank.
-   */
+  /** <code>{"$lexical": "cows"}</code> */
   record LexicalSortExpression(String text) implements SortExpression2 {
 
     public LexicalSortExpression {
@@ -125,13 +112,7 @@ public sealed interface SortExpression2 extends Recordable
     }
   }
 
-  /**
-   * <code>{"age": -1}</code>: sort by the value of a document field.
-   *
-   * @param path The path of the field, e.g. <code>address.city</code>.
-   * @param ascending <code>true</code> for ascending, from <code>1</code> in the sort clause,
-   *     <code>false</code> for descending, from <code>-1</code>.
-   */
+  /** <code>{"age": -1}</code>: sort by the value of a document field. */
   record FieldSortExpression(String path, boolean ascending) implements SortExpression2 {
 
     public FieldSortExpression {
