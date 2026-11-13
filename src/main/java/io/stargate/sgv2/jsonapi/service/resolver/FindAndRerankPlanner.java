@@ -53,6 +53,7 @@ class FindAndRerankPlanner {
     checkSortSupported(sort, schemaObject);
     validateHybridLimits(command, operationsConfig);
     checkRerankCandidateLimit(command, operationsConfig);
+
     var rerankServiceDef = resolveRerankServiceDef(command, commandContext);
     var rerankingQuery =
         RerankingQuery.create(
@@ -119,9 +120,6 @@ class FindAndRerankPlanner {
   /**
    * Check the user-supplied rerankCandidateLimit: it cannot be used with a $hybrid sort, and must
    * be an integer inside the dynamic OperationsConfig bounds.
-   *
-   * <p>TODO: GH #2602, GH #2603 - the limit is only checked. Use it as the read limit of a single
-   * leg sort, and use the default from the config when the command has no limit.
    */
   private static void checkRerankCandidateLimit(
       FindAndRerankCommand command, OperationsConfig operationsConfig) {
