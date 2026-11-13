@@ -79,8 +79,7 @@ public record FindAndRerankCommand(
       @Schema(ref = HybridLimits.REF) HybridLimits hybridLimits,
       /** ---- */
       // NOTE: a BigDecimal, so the command keeps a number with a fraction such as 1.5. Jackson
-      // turns 1.5 into 1 when it reads an Integer. The @Schema makes OpenAPI show an integer. MCP
-      // builds its schema from the Java type, so it shows a number.
+      // turns 1.5 into 1 when it reads an Integer.
       @Schema(
               description =
                   "Optional maximum number of candidate documents to read for reranking when the sort does not use $hybrid. Defaults to the configured limit. It cannot be used with a $hybrid sort. Use hybridLimits with a $hybrid sort.",
@@ -162,6 +161,20 @@ public record FindAndRerankCommand(
           """)
   public static class RerankOverrideSchema {
     public static final String NAME = "RerankServiceOverride";
+    public static final String REF = SCHEMA_REF_PREFIX + NAME;
+  }
+
+  /**
+   * Schema of the rerankCandidateLimit option, an integer. The option is a {@link BigDecimal} in
+   * Java, so its schema is set here and not taken from the Java type.
+   */
+  @Schema(
+      name = RerankCandidateLimitSchema.NAME,
+      type = SchemaType.INTEGER,
+      implementation = Integer.class,
+      nullable = true)
+  public static class RerankCandidateLimitSchema {
+    public static final String NAME = "RerankCandidateLimit";
     public static final String REF = SCHEMA_REF_PREFIX + NAME;
   }
 
