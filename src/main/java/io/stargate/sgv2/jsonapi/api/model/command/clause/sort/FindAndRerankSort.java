@@ -28,6 +28,10 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
  *       lexical leg or the filter leg.
  * </ul>
  *
+ * <p>NOTE: every record component in this interface must have {@code @JsonIgnore}, also in new
+ * records. Then the OpenAPI and MCP schemas do not show the Java fields. These schemas use only the
+ * {@link Schema} on this interface.
+ *
  * <p>TODO: the {@link Schema} only describes $hybrid. Single leg sorts are added to it when they
  * are supported, see GH #2604.
  */
@@ -120,6 +124,7 @@ public sealed interface FindAndRerankSort extends Recordable
           .append("commandFeatures", commandFeatures);
     }
 
+    // NOTE: we override equals() and hashCode() to compare the vector by value, not by reference.
     @Override
     public boolean equals(Object obj) {
       return (obj instanceof HybridObject other)
