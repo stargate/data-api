@@ -374,11 +374,6 @@ public interface OperationsConfig {
   @WithConverter(IntConfigWithBoundsConverter.class)
   IntConfigWithBounds hybridSearchLexicalLimit();
 
-  /**
-   * @return The min, default and max for the {@code rerankCandidateLimit} option of {@code
-   *     findAndRerank}, written as {@code min,default,max}. Defaults to {@link
-   *     #DEFAULT_RERANK_CANDIDATE_LIMIT_CONFIG}.
-   */
   @NotNull
   @WithDefault(DEFAULT_RERANK_CANDIDATE_LIMIT_CONFIG)
   @WithConverter(IntConfigWithBoundsConverter.class)

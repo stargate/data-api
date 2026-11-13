@@ -10,7 +10,8 @@ public interface RerankingConstants {
 
   /** The min, default and max for the rerankCandidateLimit option of findAndRerank. */
   interface RerankCandidateLimits {
-    // TODO: the design doc says "an integer greater than 1", that's different from HybridSearchLimits
+    // TODO: the design doc says "an integer greater than 1", that's different from
+    // HybridSearchLimits
     int MIN = 2;
     // TODO: the design doc says "The maximum value and the default value are TBC"
     int DEFAULT = 50;
