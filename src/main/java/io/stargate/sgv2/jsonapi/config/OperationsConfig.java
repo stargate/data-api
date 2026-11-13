@@ -57,6 +57,14 @@ public interface OperationsConfig {
           + ","
           + RerankingConstants.HybridSearchLimits.MAX;
 
+  /** Built-in rerank candidate limit config default as min,default,max. */
+  String DEFAULT_RERANK_CANDIDATE_LIMIT_CONFIG =
+      RerankingConstants.RerankCandidateLimits.MIN
+          + ","
+          + RerankingConstants.RerankCandidateLimits.DEFAULT
+          + ","
+          + RerankingConstants.RerankCandidateLimits.MAX;
+
   /** Defines the maximum configurable default page size for read queries. */
   int MAX_CONFIGURABLE_PAGE_SIZE = 500;
 
@@ -365,4 +373,14 @@ public interface OperationsConfig {
   @WithDefault(DEFAULT_HYBRID_SEARCH_LIMIT_CONFIG)
   @WithConverter(IntConfigWithBoundsConverter.class)
   IntConfigWithBounds hybridSearchLexicalLimit();
+
+  /**
+   * @return The min, default and max for the {@code rerankCandidateLimit} option of {@code
+   *     findAndRerank}, written as {@code min,default,max}. Defaults to {@link
+   *     #DEFAULT_RERANK_CANDIDATE_LIMIT_CONFIG}.
+   */
+  @NotNull
+  @WithDefault(DEFAULT_RERANK_CANDIDATE_LIMIT_CONFIG)
+  @WithConverter(IntConfigWithBoundsConverter.class)
+  IntConfigWithBounds rerankCandidateLimit();
 }

@@ -30,6 +30,7 @@ import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -77,6 +78,16 @@ public record FindAndRerankCommand(
       /** ---- */
       @Schema(ref = HybridLimits.REF) HybridLimits hybridLimits,
       /** ---- */
+      // NOTE: a BigDecimal, so the command keeps a number with a fraction such as 1.5. Jackson
+      // turns 1.5 into 1 when it reads an Integer. The @Schema makes OpenAPI show an integer. MCP
+      // builds its schema from the Java type, so it shows a number.
+      @Schema(
+              description =
+                  "Optional maximum number of candidate documents to read for reranking when the sort does not use $hybrid. Defaults to the configured limit. It cannot be used with a $hybrid sort. Use hybridLimits with a $hybrid sort.",
+              type = SchemaType.INTEGER,
+              implementation = Integer.class)
+          BigDecimal rerankCandidateLimit,
+      /** ---- */
       @Schema(
               description =
                   "Query to pass to the reranking model, defaults to the text used for the $vectorize sort, required if $vectorize is not used.",
@@ -117,7 +128,11 @@ public record FindAndRerankCommand(
               implementation = RerankOverrideSchema.class,
               ref = RerankOverrideSchema.REF)
           @JsonProperty("rerank")
-          CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
+          CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {
+
+    /** The name of the rerankCandidateLimit option, for error messages. */
+    public static final String RERANK_CANDIDATE_LIMIT_FIELD = "rerankCandidateLimit";
+  }
 
   // Matches the override validation in CollectionRerankDef. Update both together.
   @Schema(

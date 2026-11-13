@@ -54,6 +54,12 @@ class FindAndRerankPlannerTest {
       {"$hybrid": {"$vector": [0.1, 0.2, 0.3]}}
       """;
 
+  /** A sort without $hybrid, for the cases of the limit options. */
+  private static final String SINGLE_LEG_SORT =
+      """
+      {"$vectorize": "cheese"}
+      """;
+
   /** The vector in the sorts of the cases. */
   private static final float[] VECTOR = {0.1f, 0.2f, 0.3f};
 
@@ -218,7 +224,18 @@ class FindAndRerankPlannerTest {
             """,
             Collection.VECTOR_LEXICAL,
             null,
-            List.of(vectorLeg(100), lexicalLeg("cows", 100))));
+            List.of(vectorLeg(100), lexicalLeg("cows", 100))),
+        Arguments.of(
+            "rerankCandidateLimit null, the option is not set",
+            """
+            {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
+            """,
+            """
+            {"rerankQuery": "q", "rerankOn": "body", "rerankCandidateLimit": null}
+            """,
+            Collection.VECTOR_LEXICAL,
+            null,
+            List.of(vectorLeg(DEFAULT_READ_LIMIT), lexicalLeg("cows", DEFAULT_READ_LIMIT))));
   }
 
   // ===========================================================================================
@@ -629,6 +646,219 @@ class FindAndRerankPlannerTest {
             "Command field 'hybridLimits.$vector' value 0 not valid"));
   }
 
+  /** hybridLimits can only be used with a $hybrid sort, whatever its value is. */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("hybridLimitsWithoutHybridSortCases")
+  void rejectsHybridLimitsWithoutHybridSort(String description, String sort, String options)
+      throws Exception {
+    assertPlanFails(
+        description,
+        command(sort, options),
+        Collection.VECTORIZE_LEXICAL,
+        RequestException.class,
+        RequestException.Code.UNSUPPORTED_HYBRID_LIMITS_WITHOUT_HYBRID_SORT);
+  }
+
+  static Stream<Arguments> hybridLimitsWithoutHybridSortCases() {
+    var hybridLimits =
+        """
+        {"rerankQuery": "q", "rerankOn": "body", "hybridLimits": 30}
+        """;
+    return Stream.of(
+        Arguments.of("$vectorize sort", SINGLE_LEG_SORT, hybridLimits),
+        Arguments.of(
+            "$vector sort",
+            """
+            {"$vector": [0.1, 0.2, 0.3]}
+            """,
+            hybridLimits),
+        Arguments.of(
+            "$lexical sort",
+            """
+            {"$lexical": "cows"}
+            """,
+            hybridLimits),
+        Arguments.of(
+            "field sort",
+            """
+            {"age": -1}
+            """,
+            hybridLimits),
+        Arguments.of("no sort", null, hybridLimits),
+        Arguments.of(
+            "sort empty",
+            """
+            {}
+            """,
+            hybridLimits),
+        Arguments.of(
+            "sort null",
+            """
+            null
+            """,
+            hybridLimits),
+        Arguments.of(
+            "hybridLimits for each leg",
+            SINGLE_LEG_SORT,
+            """
+            {"rerankQuery": "q", "rerankOn": "body",
+             "hybridLimits": {"$vector": 30, "$lexical": 30}}
+            """),
+        Arguments.of(
+            "hybridLimits outside the bounds",
+            SINGLE_LEG_SORT,
+            """
+            {"rerankQuery": "q", "rerankOn": "body", "hybridLimits": 101}
+            """),
+        Arguments.of(
+            "hybridLimits and rerankCandidateLimit",
+            SINGLE_LEG_SORT,
+            """
+            {"rerankQuery": "q", "rerankOn": "body", "hybridLimits": 30,
+             "rerankCandidateLimit": 50}
+            """));
+  }
+
+  /** rerankCandidateLimit cannot be used with a $hybrid sort, whatever its value is. */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("rerankCandidateLimitWithHybridSortCases")
+  void rejectsRerankCandidateLimitWithHybridSort(String description, String sort, String options)
+      throws Exception {
+    assertPlanFails(
+        description,
+        command(sort, options),
+        Collection.VECTORIZE_LEXICAL,
+        RequestException.class,
+        RequestException.Code.UNSUPPORTED_RERANK_CANDIDATE_LIMIT_WITH_HYBRID_SORT);
+  }
+
+  static Stream<Arguments> rerankCandidateLimitWithHybridSortCases() {
+    var hybridText =
+        """
+        {"$hybrid": "cheese"}
+        """;
+    return Stream.of(
+        Arguments.of("$hybrid text", hybridText, rerankCandidateLimitOptions("50")),
+        Arguments.of(
+            "$hybrid object",
+            """
+            {"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}
+            """,
+            rerankCandidateLimitOptions("50")),
+        Arguments.of(
+            "rerankCandidateLimit outside the bounds",
+            hybridText,
+            rerankCandidateLimitOptions("101")),
+        Arguments.of(
+            "rerankCandidateLimit not an integer", hybridText, rerankCandidateLimitOptions("1.5")),
+        Arguments.of(
+            "rerankCandidateLimit and hybridLimits",
+            hybridText,
+            """
+            {"rerankQuery": "q", "rerankOn": "body", "hybridLimits": 30,
+             "rerankCandidateLimit": 50}
+            """));
+  }
+
+  /**
+   * rerankCandidateLimit that is not an integer inside the bounds in the config, the error names
+   * the field and the value.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("rerankCandidateLimitErrorCases")
+  void rejectsRerankCandidateLimitNotIntegerInBounds(
+      String description, String limit, String fieldAndValue) throws Exception {
+    var ex =
+        assertPlanFails(
+            description,
+            command(SINGLE_LEG_SORT, rerankCandidateLimitOptions(limit)),
+            Collection.VECTORIZE_LEXICAL,
+            RequestException.class,
+            RequestException.Code.COMMAND_FIELD_VALUE_INVALID);
+
+    assertThat(ex)
+        .as(description)
+        .hasMessageContaining(fieldAndValue)
+        .hasMessageContaining("must be an integer between 2 and 100 (inclusive)");
+  }
+
+  static Stream<Arguments> rerankCandidateLimitErrorCases() {
+    return Stream.of(
+        Arguments.of(
+            "below the min", "1", "Command field 'rerankCandidateLimit' value 1 not valid"),
+        Arguments.of("zero", "0", "Command field 'rerankCandidateLimit' value 0 not valid"),
+        Arguments.of("negative", "-5", "Command field 'rerankCandidateLimit' value -5 not valid"),
+        Arguments.of(
+            "above the max", "101", "Command field 'rerankCandidateLimit' value 101 not valid"),
+        Arguments.of(
+            "too big for an int",
+            "5000000000",
+            "Command field 'rerankCandidateLimit' value 5000000000 not valid"),
+        Arguments.of(
+            "fraction, below the min",
+            "1.5",
+            "Command field 'rerankCandidateLimit' value 1.5 not valid"),
+        Arguments.of(
+            "fraction, inside the bounds",
+            "50.5",
+            "Command field 'rerankCandidateLimit' value 50.5 not valid"),
+        Arguments.of(
+            "integer with an exponent, above the max",
+            "1e3",
+            "Command field 'rerankCandidateLimit' value 1E+3 not valid"));
+  }
+
+  /**
+   * A rerankCandidateLimit that is an integer inside the bounds passes its checks. Until GH #2602
+   * and GH #2603 a single leg sort cannot be planned, so the command then fails for the sort.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("validRerankCandidateLimitCases")
+  void rejectsSingleLegSortAfterValidRerankCandidateLimit(
+      String description, String sort, String limit) throws Exception {
+    assertPlanFails(
+        description,
+        command(sort, rerankCandidateLimitOptions(limit)),
+        Collection.VECTORIZE_LEXICAL,
+        SortException.class,
+        SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT);
+  }
+
+  static Stream<Arguments> validRerankCandidateLimitCases() {
+    return Stream.of(
+        Arguments.of("at the min of the bounds", SINGLE_LEG_SORT, "2"),
+        Arguments.of("inside the bounds", SINGLE_LEG_SORT, "50"),
+        Arguments.of("at the max of the bounds", SINGLE_LEG_SORT, "100"),
+        Arguments.of("integer with a zero fraction", SINGLE_LEG_SORT, "50.0"),
+        Arguments.of("integer with an exponent", SINGLE_LEG_SORT, "1e2"),
+        Arguments.of("null, the option is not set", SINGLE_LEG_SORT, "null"),
+        Arguments.of(
+            "$vector sort",
+            """
+            {"$vector": [0.1, 0.2, 0.3]}
+            """,
+            "50"),
+        Arguments.of(
+            "$lexical sort",
+            """
+            {"$lexical": "cows"}
+            """,
+            "50"),
+        Arguments.of(
+            "field sort",
+            """
+            {"age": -1}
+            """,
+            "50"),
+        Arguments.of("no sort", null, "50"),
+        Arguments.of(
+            "sort empty",
+            """
+            {}
+            """,
+            "50"));
+  }
+
   @Test
   void usesVectorizeTextWhenRerankOptionsAreBlank() throws Exception {
     var plan =
@@ -794,6 +1024,15 @@ class FindAndRerankPlannerTest {
     return command(sort, options, null);
   }
 
+  /** Options with a rerank query, a field to rerank on and the rerankCandidateLimit. */
+  private static String rerankCandidateLimitOptions(String limit) {
+    return
+        """
+        {"rerankQuery": "q", "rerankOn": "body", "rerankCandidateLimit": %s}
+        """
+        .formatted(limit);
+  }
+
   /** A findAndRerank command, a <code>null</code> sort, options or projection is left out. */
   private FindAndRerankCommand command(String sort, String options, String projection)
       throws Exception {
@@ -828,7 +1067,10 @@ class FindAndRerankPlannerTest {
     return commandContext;
   }
 
-  /** The config the planner reads, with the default hybridLimits bounds and limit. */
+  /**
+   * The config the planner reads, with the default bounds of hybridLimits and rerankCandidateLimit,
+   * and the default limit.
+   */
   private static CommandConfig commandConfig() {
     var hybridLimitBounds =
         new IntConfigWithBounds(
@@ -838,6 +1080,12 @@ class FindAndRerankPlannerTest {
     var operationsConfig = mock(OperationsConfig.class);
     when(operationsConfig.hybridSearchVectorLimit()).thenReturn(hybridLimitBounds);
     when(operationsConfig.hybridSearchLexicalLimit()).thenReturn(hybridLimitBounds);
+    when(operationsConfig.rerankCandidateLimit())
+        .thenReturn(
+            new IntConfigWithBounds(
+                RerankingConstants.RerankCandidateLimits.MIN,
+                RerankingConstants.RerankCandidateLimits.DEFAULT,
+                RerankingConstants.RerankCandidateLimits.MAX));
     when(operationsConfig.defaultFindAndRerankLimit())
         .thenReturn(OperationsConfig.DEFAULT_FIND_AND_RERANK_LIMIT);
 

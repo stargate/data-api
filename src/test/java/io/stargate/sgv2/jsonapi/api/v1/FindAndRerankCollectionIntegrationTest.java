@@ -329,6 +329,89 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
             "errors[0].errorCode", is(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.name()));
   }
 
+  /** Each limit option is for one kind of sort, it is rejected with the other kind. */
+  @Test
+  void failOnLimitOptionForOtherKindOfSort() {
+    // the collection has a lexical index, so skip on DSE
+    Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+    var collectionName = "find_rerank_limit_option_sort";
+    createCollectionWithCleanup(collectionName, VECTORIZE_LEXICAL_AND_RERANK_SPEC);
+
+    // rerankCandidateLimit with a $hybrid sort
+    findAndRerankWithSort(
+            collectionName,
+            """
+            {"$hybrid": "hello"}
+            """,
+            "\"rerankCandidateLimit\": 50")
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode",
+            is(RequestException.Code.UNSUPPORTED_RERANK_CANDIDATE_LIMIT_WITH_HYBRID_SORT.name()));
+
+    // hybridLimits with a sort that does not use $hybrid
+    findAndRerankWithSort(
+            collectionName,
+            """
+            {"$vectorize": "hello"}
+            """,
+            "\"hybridLimits\": 10")
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode",
+            is(RequestException.Code.UNSUPPORTED_HYBRID_LIMITS_WITHOUT_HYBRID_SORT.name()));
+
+    // hybridLimits with no sort
+    findAndRerankWithSort(collectionName, null, "\"hybridLimits\": 10")
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode",
+            is(RequestException.Code.UNSUPPORTED_HYBRID_LIMITS_WITHOUT_HYBRID_SORT.name()));
+  }
+
+  @Test
+  void failOnRerankCandidateLimitNotIntegerInBounds() {
+    // the collection has a lexical index, so skip on DSE
+    Assumptions.assumeTrue(isLexicalAvailableForDB());
+
+    var collectionName = "find_rerank_candidate_limit";
+    createCollectionWithCleanup(collectionName, VECTORIZE_LEXICAL_AND_RERANK_SPEC);
+
+    var sort =
+        """
+        {"$vectorize": "hello"}
+        """;
+
+    // not an integer
+    findAndRerankWithSort(collectionName, sort, "\"rerankCandidateLimit\": 1.5")
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
+        .body(
+            "errors[0].message",
+            containsString("Command field 'rerankCandidateLimit' value 1.5 not valid"))
+        .body(
+            "errors[0].message",
+            containsString("must be an integer between 2 and 100 (inclusive)"));
+
+    // above the max
+    findAndRerankWithSort(collectionName, sort, "\"rerankCandidateLimit\": 101")
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
+        .body(
+            "errors[0].message",
+            containsString("Command field 'rerankCandidateLimit' value 101 not valid"))
+        .body(
+            "errors[0].message",
+            containsString("must be an integer between 2 and 100 (inclusive)"));
+
+    // a valid limit passes its checks, then the sort is rejected until GH #2602 and GH #2603
+    findAndRerankWithSort(collectionName, sort, "\"rerankCandidateLimit\": 50")
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode", is(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.name()));
+  }
+
   /**
    * Sends a findAndRerank command with the sort. The command has the rerankQuery and rerankOn
    * options, so the sort is checked before anything fails for missing them.
@@ -336,16 +419,30 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
    * @param sort The JSON for the sort, or <code>null</code> to send no sort.
    */
   private ValidatableResponse findAndRerankWithSort(String collectionName, String sort) {
+    return findAndRerankWithSort(collectionName, sort, null);
+  }
+
+  /**
+   * Sends a findAndRerank command with the sort and a limit option. The command also has the
+   * rerankQuery and rerankOn options, so nothing fails for missing them.
+   *
+   * @param sort The JSON for the sort, or <code>null</code> to send no sort.
+   * @param limitOption The JSON for the limit option, e.g. <code>"hybridLimits": 10</code>, or
+   *     <code>null</code> to send no limit option.
+   */
+  private ValidatableResponse findAndRerankWithSort(
+      String collectionName, String sort, String limitOption) {
     var sortField = sort == null ? "" : "\"sort\": %s,".formatted(sort);
+    var limitOptionField = limitOption == null ? "" : ", " + limitOption;
     var commandTemplate =
         """
         {"findAndRerank": {
             %s
-            "options": {"rerankQuery": "hello", "rerankOn": "content"}
+            "options": {"rerankQuery": "hello", "rerankOn": "content"%s}
         }}
         """;
     return givenHeadersPostJsonThen(
-        keyspaceName, collectionName, commandTemplate.formatted(sortField));
+        keyspaceName, collectionName, commandTemplate.formatted(sortField, limitOptionField));
   }
 
   private void errorOnNotEnabled(
