@@ -164,20 +164,6 @@ public record FindAndRerankCommand(
     public static final String REF = SCHEMA_REF_PREFIX + NAME;
   }
 
-  /**
-   * Schema of the rerankCandidateLimit option, an integer. The option is a {@link BigDecimal} in
-   * Java, so its schema is set here and not taken from the Java type.
-   */
-  @Schema(
-      name = RerankCandidateLimitSchema.NAME,
-      type = SchemaType.INTEGER,
-      implementation = Integer.class,
-      nullable = true)
-  public static class RerankCandidateLimitSchema {
-    public static final String NAME = "RerankCandidateLimit";
-    public static final String REF = SCHEMA_REF_PREFIX + NAME;
-  }
-
   @JsonDeserialize(using = HybridLimitsDeserializer.class)
   @Schema(
       name = HybridLimits.NAME,
