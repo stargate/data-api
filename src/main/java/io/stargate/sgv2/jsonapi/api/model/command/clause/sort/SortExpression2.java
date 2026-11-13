@@ -83,6 +83,7 @@ public sealed interface SortExpression2 extends Recordable
       return dataRecorder.append("vector", Arrays.toString(vector));
     }
 
+    // NOTE: we override equals() and hashCode() to compare the vector by value, not by reference.
     @Override
     public boolean equals(Object obj) {
       return (obj instanceof VectorSortExpression other) && Arrays.equals(vector, other.vector);
