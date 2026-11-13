@@ -53,7 +53,6 @@ Other Quarkus properties that are specifically relevant for the service:
 | `stargate.jsonapi.operations.database-config.ddl-retry-delay-millis`    | `int`     | `1000`   | Delay time in seconds for DDL timeout.                                                                                                                                                             |
 | `stargate.jsonapi.operations.database-config.ddl-delay-millis`          | `int`     | `2000`   | Delay between create table and create index to get the schema sync.                                                                                                                                |
 | `stargate.jsonapi.operations.vectorize-enabled`                         | `boolean` | `false`  | Flag to enable server side vectorization.                                                                                                                                              |
-| `stargate.jsonapi.operations.rerank-candidate-limit`                    | `string`  | `2,50,100` | The minimum, default and maximum for the `rerankCandidateLimit` option of `findAndRerank`, written as `min,default,max`.                                                                           |
 
 
 ## Jsonapi metering configuration
