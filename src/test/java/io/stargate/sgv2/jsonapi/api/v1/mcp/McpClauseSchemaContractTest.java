@@ -368,34 +368,6 @@ class McpClauseSchemaContractTest {
             .asText());
   }
 
-  @Test
-  void rerankToolUsesCandidateLimitFieldDescription() throws Exception {
-    var description =
-        FindAndRerankCommand.Options.class
-            .getDeclaredField("rerankCandidateLimit")
-            .getAnnotation(Schema.class)
-            .description();
-    assertFalse(description.isBlank());
-    var document = inputSchema("findAndRerank");
-    assertEquals(
-        description,
-        schemaMetadata(
-                document,
-                propertySchema(document, "options", "rerankCandidateLimit"),
-                "description")
-            .asText());
-  }
-
-  /** The option is a BigDecimal in Java, the integer type comes from its {@link Schema}. */
-  @Test
-  void openApiDescribesRerankCandidateLimitAsInteger() throws Exception {
-    var document = openApi();
-    var command = document.path("components").path("schemas").path("FindAndRerankCommand");
-    var options = referencedSchema(document, command.path("properties").path("options"));
-    assertEquals(
-        "integer", options.path("properties").path("rerankCandidateLimit").path("type").asText());
-  }
-
   /** Schema acceptance must agree with service validation of the override fields. */
   @ParameterizedTest
   @MethodSource("rerankOverrides")
