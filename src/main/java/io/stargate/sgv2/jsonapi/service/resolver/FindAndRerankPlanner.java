@@ -133,13 +133,11 @@ class FindAndRerankPlanner {
     }
 
     var bounds = operationsConfig.rerankCandidateLimit();
-    // NOTE: the limit is checked as a BigDecimal, because it can have a fraction or be too big for
-    // an int. A limit such as 50.0 is an integer, the same as in JSON Schema.
-    var isInteger = limit.stripTrailingZeros().scale() <= 0;
-    var isInBounds =
-        limit.compareTo(BigDecimal.valueOf(bounds.min())) >= 0
-            && limit.compareTo(BigDecimal.valueOf(bounds.max())) <= 0;
-    if (isInteger && isInBounds) {
+    // NOTE: intValue() drops a fraction and wraps a number that is too big for an int. The limit
+    // is an int only when the int converts back to the same number.
+    var intLimit = limit.intValue();
+    var isInt = BigDecimal.valueOf(intLimit).compareTo(limit) == 0;
+    if (isInt && bounds.isValid(intLimit)) {
       return;
     }
     throw errorForInvalidLimit(

@@ -795,6 +795,10 @@ class FindAndRerankPlannerTest {
             "5000000000",
             "Command field 'rerankCandidateLimit' value 5000000000 not valid"),
         Arguments.of(
+            "too big for an int, wraps to 50 inside the bounds",
+            "4294967346",
+            "Command field 'rerankCandidateLimit' value 4294967346 not valid"),
+        Arguments.of(
             "fraction, below the min",
             "1.5",
             "Command field 'rerankCandidateLimit' value 1.5 not valid"),
