@@ -8,6 +8,8 @@ import io.quarkiverse.mcp.server.MetaKey;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkiverse.mcp.server.test.McpAssured;
 import io.quarkiverse.mcp.server.test.McpAssured.McpStreamableTestClient;
+import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.core.MultiMap;
@@ -64,6 +66,8 @@ public abstract class McpIntegrationTestBase {
 
     mcpClient =
         McpAssured.newStreamableClient()
+            // The server admits only 2026-07-28, which has no initialize handshake or session.
+            .setStateless()
             .setBaseUri(URI.create(MCP_HOSTNAME + getTestPort()))
             .setMcpPath(MCP_PATH)
             .setAdditionalHeaders(msg -> authHeaders())
@@ -97,6 +101,23 @@ public abstract class McpIntegrationTestBase {
             + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
     return MultiMap.caseInsensitiveMultiMap()
         .add(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, credential);
+  }
+
+  /**
+   * Starts a raw HTTP request with the same credentials, so a mistake shared by the test client and
+   * the server cannot hide a wire problem.
+   */
+  protected RequestSpecification rawRequest(String method) {
+    var request = McpHttpTestSupport.request(method);
+    authHeaders().forEach(header -> request.header(header.getKey(), header.getValue()));
+    return request;
+  }
+
+  protected Response rawToolCall(int id, String tool, Map<String, Object> arguments) {
+    return rawRequest("tools/call")
+        .header("Mcp-Name", tool)
+        .body(McpHttpTestSupport.toolPayload(id, tool, arguments))
+        .post(MCP_PATH);
   }
 
   /** Create a keyspace via the MCP createKeyspace tool. */
