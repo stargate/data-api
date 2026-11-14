@@ -8,6 +8,8 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.Ticker;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +18,8 @@ import org.junit.jupiter.api.Test;
 
 /** Tests for {@link DynamicTTLCache}. */
 public class DynamicTTLCacheTests extends CacheTestsBase {
+  private static final Duration LOOKUP_TIMEOUT = Duration.ofSeconds(5);
+
   private final String KEY = "key-" + TEST_CONSTANTS.CORRELATION_ID;
   private final String VALUE = "value-" + TEST_CONSTANTS.CORRELATION_ID;
   private final TestDynamicTTLCache.TestKey CACHE_KEY =
@@ -278,6 +282,59 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
     assertThat(fixture.cache.peekValue(longKey))
         .as("Value is not present in cache when peeking with Long TTL - after Long TTL expiry")
         .isNotPresent();
+  }
+
+  @Test
+  public void valueLoadedFromUniStageReachesEveryLookup() {
+    var fixture = newFixture();
+
+    // The schema cache loads this way, and gets a SmallRye contextual future rather than a plain
+    // one because context propagation is on the classpath.
+    when(fixture.valueFactory.apply(CACHE_KEY))
+        .thenReturn(Uni.createFrom().item(fixture.expectedValue).subscribeAsCompletionStage());
+
+    assertThat(fixture.cache.get(CACHE_KEY).await().atMost(LOOKUP_TIMEOUT))
+        .as("Lookup that loads the value returns it")
+        .isSameAs(fixture.expectedValue);
+    assertThat(fixture.cache.get(CACHE_KEY).await().atMost(LOOKUP_TIMEOUT))
+        .as("Lookup of the cached value returns it")
+        .isSameAs(fixture.expectedValue);
+  }
+
+  @Test
+  public void cancelingOneWaiterKeepsValueLoadedFromUniStage() {
+    var fixture = newFixture();
+    var pendingValue = new CompletableFuture<String>();
+    when(fixture.valueFactory.apply(CACHE_KEY))
+        .thenReturn(Uni.createFrom().completionStage(pendingValue).subscribeAsCompletionStage());
+
+    var canceled =
+        fixture.cache.get(CACHE_KEY).subscribe().withSubscriber(UniAssertSubscriber.create());
+    var otherRequest =
+        fixture.cache.get(CACHE_KEY).subscribe().withSubscriber(UniAssertSubscriber.create());
+
+    canceled.cancel();
+    otherRequest.assertNotTerminated();
+    pendingValue.complete(fixture.expectedValue);
+
+    otherRequest.awaitItem(LOOKUP_TIMEOUT).assertItem(fixture.expectedValue);
+    assertThat(fixture.cache.peekValue(CACHE_KEY))
+        .as("Load is still cached after one waiter canceled")
+        .contains(fixture.expectedValue);
+    verify(fixture.valueFactory).apply(CACHE_KEY);
+  }
+
+  @Test
+  public void failedLoadKeepsItsExceptionType() {
+    var fixture = newFixture();
+    var loadFailure = new IllegalStateException("Load failed");
+    when(fixture.valueFactory.apply(CACHE_KEY))
+        .thenReturn(Uni.createFrom().<String>failure(loadFailure).subscribeAsCompletionStage());
+
+    // Callers such as the schema cache recover by matching on the exception type.
+    assertThat(catchThrowable(() -> fixture.cache.get(CACHE_KEY).await().atMost(LOOKUP_TIMEOUT)))
+        .as("Failure reaches the lookup unwrapped")
+        .isSameAs(loadFailure);
   }
 
   // =======================================================

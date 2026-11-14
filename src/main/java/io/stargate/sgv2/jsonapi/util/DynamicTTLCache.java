@@ -140,8 +140,12 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     // which will not be null however it is
     // technically possible for the value loader to return a completed stage that has a null value
     // so extra check just in case.
+    // Each subscriber waits on its own copy, so a canceled request cannot cancel the shared load.
+    // That would orphan the eventual value. minimalCompletionStage() does not work here: on a
+    // SmallRye contextual future it returns a stage that never completes.
+    var sharedLoad = cache.get(key);
     return Uni.createFrom()
-        .completionStage(cache.get(key))
+        .completionStage(sharedLoad::copy)
         .map(valueHolder -> valueHolder != null ? valueHolder.value() : null);
   }
 
