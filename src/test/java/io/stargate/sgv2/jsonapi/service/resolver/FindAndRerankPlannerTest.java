@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests for {@link FindAndRerankPlanner}: the legs it plans for each kind of sort, and the error
@@ -317,6 +318,68 @@ class FindAndRerankPlannerTest {
             null
             """,
             SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT));
+  }
+
+  /**
+   * Until GH #2602 and GH #2603, a sort without $hybrid parses but cannot be planned. The error
+   * must not tell the user they sent no sort. The collection is not checked for a sort that is
+   * rejected, so the error is the same on a collection that cannot run the sort.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("singleLegSorts")
+  void rejectsSingleLegSort(String description, String sort, Collection collection)
+      throws Exception {
+    var ex =
+        assertPlanFails(
+            description,
+            command(sort, RERANK_OPTIONS),
+            collection,
+            SortException.class,
+            SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT);
+
+    assertThat(ex)
+        .hasMessageContaining(
+            "The command attempted to run findAndRerank without a `$hybrid` sort.");
+  }
+
+  static Stream<Arguments> singleLegSorts() {
+    return Stream.of(
+        Arguments.of(
+            "vector leg, $vectorize",
+            """
+            {"$vectorize": "cheese"}
+            """,
+            Collection.VECTORIZE_LEXICAL),
+        Arguments.of(
+            "vector leg, $vector",
+            """
+            {"$vector": [0.1, 0.2, 0.3]}
+            """,
+            Collection.VECTORIZE_LEXICAL),
+        Arguments.of(
+            "lexical leg",
+            """
+            {"$lexical": "cows"}
+            """,
+            Collection.VECTORIZE_LEXICAL),
+        Arguments.of(
+            "filter leg",
+            """
+            {"age": -1}
+            """,
+            Collection.VECTORIZE_LEXICAL),
+        Arguments.of(
+            "vector leg, collection without vector",
+            """
+            {"$vector": [0.1, 0.2, 0.3]}
+            """,
+            Collection.LEXICAL_NO_VECTOR),
+        Arguments.of(
+            "lexical leg, collection without lexical index",
+            """
+            {"$lexical": "cows"}
+            """,
+            Collection.VECTORIZE_NO_LEXICAL));
   }
 
   // ===========================================================================================
@@ -606,6 +669,34 @@ class FindAndRerankPlannerTest {
             {"rerankOn": "body"}
             """),
         Collection.VECTOR_LEXICAL,
+        RequestException.class,
+        RequestException.Code.MISSING_RERANK_QUERY_TEXT);
+  }
+
+  /**
+   * A single leg sort is rejected after the options are checked, the same as a $hybrid sort is
+   * planned after them. These commands have no rerank query, they fail for the rerank query. This
+   * is also true for $vectorize: the text of a single leg sort is not used as the rerank query.
+   */
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        """
+        {"$lexical": "cows"}
+        """,
+        """
+        {"$vectorize": "cheese"}
+        """
+      })
+  void reportsMissingRerankQueryBeforeSingleLegSort(String sort) throws Exception {
+    assertPlanFails(
+        "no rerank query and a single leg sort",
+        command(
+            sort,
+            """
+            {"rerankOn": "body"}
+            """),
+        Collection.VECTORIZE_LEXICAL,
         RequestException.class,
         RequestException.Code.MISSING_RERANK_QUERY_TEXT);
   }
