@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.reranking.RerankingQuery;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,8 @@ class FindAndRerankPlanner {
 
     checkSortSupported(sort, schemaObject);
     validateHybridLimits(command, operationsConfig);
+    checkRerankCandidateLimit(command, operationsConfig);
+
     var rerankServiceDef = resolveRerankServiceDef(command, commandContext);
     var rerankingQuery =
         RerankingQuery.create(
@@ -91,14 +94,17 @@ class FindAndRerankPlanner {
   }
 
   /**
-   * Validate user-supplied hybridLimits against the dynamic OperationsConfig bounds. Cannot be done
-   * in the Jackson deserializer because it has no access to OperationsConfig (config-file and
-   * env-var overrides).
+   * Validate user-supplied hybridLimits: they can only be used with a $hybrid sort, and must be
+   * inside the dynamic OperationsConfig bounds. Cannot be done in the Jackson deserializer because
+   * it has no access to the sort or to OperationsConfig (config-file and env-var overrides).
    */
   private static void validateHybridLimits(
       FindAndRerankCommand command, OperationsConfig operationsConfig) {
     if (command.options() == null || command.options().hybridLimits() == null) {
       return;
+    }
+    if (command.sortClause() instanceof FindAndRerankSort.SingleLeg) {
+      throw RequestException.Code.UNSUPPORTED_HYBRID_LIMITS_WITHOUT_HYBRID_SORT.get();
     }
     var hybridLimits = command.options().hybridLimits();
     checkLimitInBounds(
@@ -111,18 +117,49 @@ class FindAndRerankPlanner {
         operationsConfig.hybridSearchLexicalLimit());
   }
 
+  /**
+   * Check the user-supplied rerankCandidateLimit: it cannot be used with a $hybrid sort, and must
+   * be an integer inside the dynamic OperationsConfig bounds.
+   */
+  private static void checkRerankCandidateLimit(
+      FindAndRerankCommand command, OperationsConfig operationsConfig) {
+    var limit =
+        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankCandidateLimit, null);
+    if (limit == null) {
+      return;
+    }
+    if (command.sortClause() instanceof FindAndRerankSort.MultiLeg) {
+      throw RequestException.Code.UNSUPPORTED_RERANK_CANDIDATE_LIMIT_WITH_HYBRID_SORT.get();
+    }
+
+    var bounds = operationsConfig.rerankCandidateLimit();
+    // NOTE: intValue() drops a fraction and wraps a number that is too big for an int. The limit
+    // is an int only when the int converts back to the same number.
+    var intLimit = limit.intValue();
+    var isInt = BigDecimal.valueOf(intLimit).compareTo(limit) == 0;
+    if (isInt && bounds.isValid(intLimit)) {
+      return;
+    }
+    throw errorForInvalidLimit(
+        FindAndRerankCommand.Options.RERANK_CANDIDATE_LIMIT_FIELD,
+        limit.toString(),
+        "must be an integer between %d and %d (inclusive)".formatted(bounds.min(), bounds.max()));
+  }
+
   private static void checkLimitInBounds(String field, int value, IntConfigWithBounds bounds) {
     if (bounds.isValid(value)) {
       return;
     }
-    throw RequestException.Code.COMMAND_FIELD_VALUE_INVALID.get(
-        Map.of(
-            "field",
-            field,
-            "value",
-            String.valueOf(value),
-            "message",
-            "must be between %d and %d (inclusive)".formatted(bounds.min(), bounds.max())));
+    throw errorForInvalidLimit(
+        field,
+        String.valueOf(value),
+        "must be between %d and %d (inclusive)".formatted(bounds.min(), bounds.max()));
+  }
+
+  /** The error for a limit option whose value is not valid, it names the field and the value. */
+  private static RequestException errorForInvalidLimit(String field, String value, String message) {
+    return RequestException.Code.COMMAND_FIELD_VALUE_INVALID.get(
+        Map.of("field", field, "value", value, "message", message));
   }
 
   /**

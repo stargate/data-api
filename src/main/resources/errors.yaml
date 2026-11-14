@@ -99,6 +99,12 @@ snippets:
       - The vector as a base64-encoded `{"$binary": "base64-encoded-vector"}` object.
       - A string to be vectorized if enabled for the column.
 
+  - name: FIND_AND_RERANK_LIMIT_OPTIONS_EXPLANATION
+    body: |-
+      The findAndRerank command has one limit option for each kind of sort:
+      - `hybridLimits` for a `$hybrid` sort. It sets how many documents the vector sort and the lexical sort read, e.g. `{"hybridLimits": 50}` or `{"hybridLimits": {"$vector": 50, "$lexical": 10}}`.
+      - `rerankCandidateLimit` for a sort without `$hybrid`. It sets how many documents the command reads, e.g. `{"rerankCandidateLimit": 50}`.
+
   - name: CURRENTLY_UNSUPPORTED
     body: |-
       Currently API tables have limited support for: 
@@ -316,6 +322,28 @@ request-errors:
       When specified the `rerankQuery` option takes priority. In all cases the query text must be a non blank text value. 
       
       Resend the command including the query text for reranking.
+
+  # unscoped because this touches both the sort and the options
+  - scope:
+    code: UNSUPPORTED_HYBRID_LIMITS_WITHOUT_HYBRID_SORT
+    title: Option hybridLimits cannot be used without a $hybrid sort
+    body: |-
+      The command attempted to use the `hybridLimits` option without a `$hybrid` sort.
+
+      ${SNIPPET.FIND_AND_RERANK_LIMIT_OPTIONS_EXPLANATION}
+
+      Resend the command without the `hybridLimits` option, or with a `$hybrid` sort.
+
+  # unscoped because this touches both the sort and the options
+  - scope:
+    code: UNSUPPORTED_RERANK_CANDIDATE_LIMIT_WITH_HYBRID_SORT
+    title: Option rerankCandidateLimit cannot be used with a $hybrid sort
+    body: |-
+      The command attempted to use the `rerankCandidateLimit` option with a `$hybrid` sort.
+
+      ${SNIPPET.FIND_AND_RERANK_LIMIT_OPTIONS_EXPLANATION}
+
+      Resend the command without the `rerankCandidateLimit` option.
 
   # ================================================================================================================
   # Family: REQUEST         Scope: SECURITY
