@@ -32,24 +32,35 @@ public class ErrorChallengeSender
   /** Object mapper for custom response. */
   private final ObjectMapper objectMapper;
 
-  /** Result is always constant */
-  private final CommandResult commandResult;
+  private final CommandResult missingTokenResult;
+  private final CommandResult invalidTokenResult;
 
   @Inject
   public ErrorChallengeSender(ObjectMapper objectMapper) {
 
     this.objectMapper = objectMapper;
-    commandResult =
+    missingTokenResult =
         CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
             .addThrowable(
                 APISecurityException.Code.MISSING_AUTHENTICATION_TOKEN.get(
                     "authHeader", HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME))
+            .build();
+    invalidTokenResult =
+        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+            .addThrowable(APISecurityException.Code.UNAUTHENTICATED_REQUEST.get())
             .build();
   }
 
   /** {@inheritDoc} */
   @Override
   public Uni<Boolean> apply(RoutingContext context, ChallengeData challengeData) {
+    var commandResult =
+        context.request().getHeader(HttpHeaders.AUTHORIZATION) == null
+            ? missingTokenResult
+            : invalidTokenResult;
+    challengeData
+        .getHeaders()
+        .forEach((name, value) -> context.response().headers().set(name, value));
     try {
       // try to serialize
       String response = objectMapper.writeValueAsString(commandResult);
