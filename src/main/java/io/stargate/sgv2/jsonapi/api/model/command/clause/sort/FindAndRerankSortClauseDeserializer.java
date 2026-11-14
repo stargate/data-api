@@ -32,13 +32,7 @@ import java.util.*;
  * {@link StdDeserializer} for the {@link FindAndRerankSort}.
  *
  * <p>NOTE1: some single leg checks are a copy of the checks in {@link CollectionSortClauseBuilder}.
- *
- * <ul>
- *   <li>The copied checks are for $lexical, $vector and $vectorize.
- *   <li>That class checks them in one method together with the lexical index of the collection.
- *       This class does not have the collection, so it cannot call that method.
- *   <li>For field sorts and $binary vectors, this class calls it.
- * </ul>
+ * See deserializeSingleLeg() for more details.
  *
  * <p>TODO: remove the copy when find and findAndRerank parse the sort with the same code.
  *
@@ -251,6 +245,24 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
   /**
    * Deserialize a sort without $hybrid: $lexical, $vector or $vectorize must be the only field in
    * the sort, any other field is a field sort with the value <code>1</code> or <code>-1</code>.
+   *
+   * <p>NOTE: the checks for $lexical, $vector and $vectorize are a copy of the checks in {@link
+   * CollectionSortClauseBuilder#buildClauseFromDefinition(ObjectNode)}.
+   *
+   * <ul>
+   *   <li>That method checks them together with the lexical index of the collection. This class
+   *       does not have the collection, so it cannot call that method.
+   *   <li>The copy does not use {@link JsonFieldMatcher} like the $hybrid code. It throws {@link
+   *       SortException} codes like find, not a {@link JsonMappingException}.
+   *   <li>Keep the copy close to that method, so the two can be compared when that method changes.
+   *   <li>The copy is not exact. It trims the text and rejects text that is blank after the trim. A
+   *       $lexical value that is not text gets SORT_CLAUSE_VALUE_INVALID, not SORT_CLAUSE_INVALID.
+   *       Most error messages are different.
+   *   <li>For field sorts and $binary vectors, this method calls the code that find uses.
+   * </ul>
+   *
+   * <p>TODO: remove the copy when find and findAndRerank parse the sort with the same code, see the
+   * design in GH #2673.
    */
   private static FindAndRerankSort.SingleLeg deserializeSingleLeg(ObjectNode sort) {
 
