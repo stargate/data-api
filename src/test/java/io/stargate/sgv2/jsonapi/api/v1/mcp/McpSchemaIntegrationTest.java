@@ -12,7 +12,10 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import io.vertx.core.json.JsonObject;
+import java.util.HashSet;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Checks the schemas clients receive from the packaged application's tools/list endpoint. */
 @QuarkusIntegrationTest
@@ -145,6 +148,52 @@ class McpSchemaIntegrationTest extends McpIntegrationTestBase {
                   .getJsonObject("hybridLimits")
                   .remove("$lexical");
               assertRejects(schema, missingLimit);
+            })
+        .thenAssertResults();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"updateOne", "updateMany", "findOneAndUpdate"})
+  void updateToolsAdvertiseAcceptedOperatorSyntax(String tool) {
+    mcpClient
+        .when()
+        .toolsList(
+            page -> {
+              var schema = schemaFor(page, tool);
+              var document = json(page.findByName(tool).inputSchema());
+              var update = document.path("properties").path("update");
+              var visited = new HashSet<String>();
+              while (update.has("$ref")) {
+                var reference = update.path("$ref").asText();
+                assertTrue(reference.startsWith("#/"), reference);
+                assertTrue(visited.add(reference), "Circular update schema reference");
+                update = document.at(reference.substring(1));
+                assertFalse(update.isMissingNode(), reference);
+              }
+              var examples = update.path("examples");
+              assertFalse(examples.isEmpty(), "Update tools must advertise usable examples");
+              var arguments =
+                  new JsonObject()
+                      .put("keyspace", "default_keyspace")
+                      .put("collection", "schema_test");
+              for (var example : examples) {
+                arguments.put("update", new JsonObject(example.toString()));
+                assertAccepts(schema, arguments);
+                assertAccepts(schema, arguments.copy().putNull("filter"));
+              }
+              for (var malformed :
+                  new String[] {
+                    "{\"updateOperationDefs\":{}}",
+                    "{\"$unknown\":{}}",
+                    "{\"$set\":null}",
+                    "{\"$set\":5}",
+                    "{\"$set\":[]}"
+                  }) {
+                assertRejects(schema, arguments.copy().put("update", new JsonObject(malformed)));
+              }
+              arguments.remove("update");
+              assertRejects(schema, arguments);
+              assertRejects(schema, arguments.copy().putNull("update"));
             })
         .thenAssertResults();
   }
