@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.config.IntConfigWithBounds;
@@ -584,6 +585,33 @@ class FindAndRerankPlannerTest {
             """,
             ProjectionException.class,
             ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM));
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {0, -1})
+  void nonPositiveUserLimitsReturnRequestErrors(int limit) throws Exception {
+    for (var limitsJson :
+        List.of(
+            String.valueOf(limit),
+            "{\"$vector\": %d, \"$lexical\": 10}".formatted(limit),
+            "{\"$vector\": 10, \"$lexical\": %d}".formatted(limit))) {
+      var error =
+          assertPlanFails(
+              "non-positive hybridLimits: " + limitsJson,
+              command(
+                  """
+                  {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
+                  """,
+                      """
+                  {"rerankQuery": "q", "rerankOn": "body", "hybridLimits": %s}
+                  """
+                      .formatted(limitsJson)),
+              Collection.VECTOR_LEXICAL,
+              RequestException.class,
+              RequestException.Code.COMMAND_FIELD_VALUE_INVALID);
+      assertThat(CommandErrorFactory.create(error).errorCode())
+          .isEqualTo(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name());
+    }
   }
 
   /** hybridLimits outside the bounds in the config, the error names the field and the value. */
