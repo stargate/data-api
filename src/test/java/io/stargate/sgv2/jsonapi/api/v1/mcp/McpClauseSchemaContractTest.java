@@ -19,20 +19,17 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.exception.UpdateException;
-import jakarta.validation.Validator;
-import java.util.Set;
-import java.util.stream.StreamSupport;
 import io.stargate.sgv2.jsonapi.api.model.command.JsonDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
@@ -45,13 +42,16 @@ import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvide
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import jakarta.validation.Validator;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.IndexReader;
@@ -159,10 +159,11 @@ class McpClauseSchemaContractTest {
         assertNotNull(filter.build(new TestConstants().collectionContext()));
       } else if (clause instanceof SortDefinition sort) {
         assertNotNull(sort.build(new TestConstants().collectionContext()));
-      } else if (clause instanceof UpdateClause update
-          && !example.has(UpdateOperator.PULL_ALL.apiName())) {
+      } else if (clause instanceof UpdateClause update) {
         // $pullAll is table only, so the collection operations cannot build it.
-        assertNotNull(update.buildOperations());
+        if (!example.has(UpdateOperator.PULL_ALL.apiName())) {
+          assertNotNull(update.buildOperations());
+        }
       }
     }
   }
@@ -708,8 +709,7 @@ class McpClauseSchemaContractTest {
               "nested": {"values": [null, true, 1.25, {"name": "Ada"}]}},
              "$unset": {"obsolete": 1}}
             """);
-    return UPDATE_TOOLS.stream()
-        .flatMap(tool -> updates.stream().map(json -> Arguments.of(tool, json)));
+    return forUpdateTools(updates);
   }
 
   @ParameterizedTest
@@ -749,19 +749,18 @@ class McpClauseSchemaContractTest {
             """
             {"$set": "value"}
             """);
-    return UPDATE_TOOLS.stream()
-        .flatMap(tool -> updates.stream().map(json -> Arguments.of(tool, json)));
+    return forUpdateTools(updates);
   }
 
   // updateOne is the only update tool that also serves tables.
   @Test
   void updateOneAcceptsTableOnlyPullAll() throws Exception {
-    var payload =
-        updateToolInput(
-            objectMapper.readTree(
-                """
-                {"$pullAll": {"listColumn": [1]}}
-                """));
+    var update =
+        objectMapper.readTree(
+            """
+            {"$pullAll": {"listColumn": [1]}}
+            """);
+    var payload = updateToolInput(update);
     assertSchemaAccepts(inputSchema("updateOne"), payload);
     assertEquals(
         Set.of(UpdateOperator.PULL_ALL),
@@ -785,6 +784,10 @@ class McpClauseSchemaContractTest {
     payload.putNull("update");
     assertSchemaRejects(schema, payload);
     assertFalse(validator.validate(command(tool, payload)).isEmpty());
+  }
+
+  private static Stream<Arguments> forUpdateTools(List<String> updates) {
+    return UPDATE_TOOLS.stream().flatMap(t -> updates.stream().map(u -> Arguments.of(t, u)));
   }
 
   private ObjectNode updateToolInput(JsonNode update) throws Exception {
