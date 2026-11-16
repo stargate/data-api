@@ -9,83 +9,83 @@ import java.util.Map;
 public enum UpdateOperator {
   ADD_TO_SET(Names.ADD_TO_SET) {
     @Override
-    public UpdateOperation resolveOperation(ObjectNode arguments) {
+    public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
       return AddToSetOperation.construct(arguments);
     }
   },
 
   CURRENT_DATE(Names.CURRENT_DATE) {
     @Override
-    public UpdateOperation resolveOperation(ObjectNode arguments) {
+    public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
       return CurrentDateOperation.construct(arguments);
     }
   },
 
   INC(Names.INC) {
     @Override
-    public UpdateOperation resolveOperation(ObjectNode arguments) {
+    public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
       return IncOperation.construct(arguments);
     }
   },
 
   MAX(Names.MAX) {
     @Override
-    public UpdateOperation resolveOperation(ObjectNode arguments) {
+    public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
       return MinMaxOperation.constructMax(arguments);
     }
   },
 
   MIN(Names.MIN) {
     @Override
-    public UpdateOperation resolveOperation(ObjectNode arguments) {
+    public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
       return MinMaxOperation.constructMin(arguments);
     }
   },
 
   MUL(Names.MUL) {
     @Override
-    public UpdateOperation resolveOperation(ObjectNode arguments) {
+    public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
       return MulOperation.construct(arguments);
     }
   },
 
   POP(Names.POP) {
     @Override
-    public UpdateOperation resolveOperation(ObjectNode arguments) {
+    public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
       return PopOperation.construct(arguments);
     }
   },
 
   PUSH(Names.PUSH) {
     @Override
-    public UpdateOperation resolveOperation(ObjectNode arguments) {
+    public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
       return PushOperation.construct(arguments);
     }
   },
 
   RENAME(Names.RENAME) {
     @Override
-    public UpdateOperation resolveOperation(ObjectNode arguments) {
+    public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
       return RenameOperation.construct(arguments);
     }
   },
 
   SET(Names.SET) {
     @Override
-    public UpdateOperation resolveOperation(ObjectNode arguments) {
+    public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
       return SetOperation.constructSet(arguments);
     }
   },
   SET_ON_INSERT(Names.SET_ON_INSERT) {
     @Override
-    public UpdateOperation resolveOperation(ObjectNode arguments) {
+    public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
       return SetOperation.constructSetOnInsert(arguments);
     }
   },
 
   UNSET(Names.UNSET) {
     @Override
-    public UpdateOperation resolveOperation(ObjectNode arguments) {
+    public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
       return UnsetOperation.construct(arguments);
     }
   },
@@ -120,7 +120,7 @@ public enum UpdateOperator {
     return apiName;
   }
 
-  public UpdateOperation resolveOperation(ObjectNode arguments) {
+  public UpdateOperation<?> resolveOperation(ObjectNode arguments) {
     throw UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION.get(
         Map.of("errorMessage", "Unsupported update operator '%s'".formatted(apiName)));
   }

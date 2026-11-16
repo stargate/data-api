@@ -19,13 +19,18 @@ import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.JsonDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.UpdateException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfig;
@@ -38,13 +43,16 @@ import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvide
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import jakarta.validation.Validator;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.IndexReader;
@@ -68,9 +76,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 class McpClauseSchemaContractTest {
+  private static final List<String> UPDATE_TOOLS =
+      List.of("updateOne", "updateMany", "findOneAndUpdate");
+
   @Inject ObjectMapper objectMapper;
   @Inject GlobalInputSchemaGenerator schemaGenerator;
   @Inject ToolManager toolManager;
+  @Inject Validator validator;
 
   record WireNames(
       @JsonProperty("wireName") String internalName, @JsonIgnore CommandFeatures commandFeatures) {}
@@ -143,11 +155,16 @@ class McpClauseSchemaContractTest {
       assertSchemaAccepts(schema, example);
       var clause = objectMapper.treeToValue(example, clauseType);
       assertNotNull(clause);
-      // These two clauses defer parsing until build, so deserialization alone cannot validate them.
+      // These clauses defer parsing until build, so deserialization alone cannot validate them.
       if (clause instanceof FilterDefinition filter) {
         assertNotNull(filter.build(new TestConstants().collectionContext()));
       } else if (clause instanceof SortDefinition sort) {
         assertNotNull(sort.build(new TestConstants().collectionContext()));
+      } else if (clause instanceof UpdateClause update) {
+        // $pullAll is table only, so the collection operations cannot build it.
+        if (!example.has(UpdateOperator.PULL_ALL.apiName())) {
+          assertNotNull(update.buildOperations());
+        }
       }
     }
   }
@@ -674,6 +691,183 @@ class McpClauseSchemaContractTest {
         Arguments.of(FindAndRerankCommand.HybridLimits.class, "{\"$vector\": 50}"),
         Arguments.of(
             FindAndRerankCommand.HybridLimits.class, "{\"$vector\": 50, \"$lexical\": \"10\"}"));
+  }
+
+  @ParameterizedTest
+  @EnumSource(UpdateOperator.class)
+  void everyUpdateOperatorHasAnAdvertisedExample(UpdateOperator operator) {
+    var schema = schemaFor(UpdateClause.class);
+    var examples = schemaMetadata(schema, schema, "examples");
+    assertTrue(
+        StreamSupport.stream(examples.spliterator(), false)
+            .anyMatch(example -> example.has(operator.apiName())),
+        () -> "Missing example for " + operator.apiName());
+  }
+
+  @ParameterizedTest
+  @MethodSource("supportedUpdates")
+  void updateToolsAcceptSupportedUpdates(String tool, String json) throws Exception {
+    var payload = updateToolInput(objectMapper.readTree(json));
+    assertSchemaAccepts(inputSchema(tool), payload);
+    assertNotNull(parseUpdateCommand(tool, payload).updateClause().buildOperations());
+  }
+
+  static Stream<Arguments> supportedUpdates() {
+    // Nonempty arguments exercise each operation's parser, including supported array modifiers.
+    var updates =
+        List.of(
+            "{}",
+            """
+            {"$set": {}}
+            """,
+            """
+            {"$set": {"profile.name": "Ada", "optional": null}}
+            """,
+            """
+            {"$unset": {"obsolete": null}}
+            """,
+            """
+            {"$setOnInsert": {"created": true}}
+            """,
+            """
+            {"$inc": {"score": 0.25}}
+            """,
+            """
+            {"$mul": {"score": 1.5}}
+            """,
+            """
+            {"$min": {"score": 2.5}}
+            """,
+            """
+            {"$max": {"score": 9.5}}
+            """,
+            """
+            {"$rename": {"oldName": "newName"}}
+            """,
+            """
+            {"$currentDate": {"updated": true, "reviewed": {"$type": "date"}}}
+            """,
+            """
+            {"$pop": {"first": -1, "last": 1}}
+            """,
+            """
+            {"$push": {"items": {"$each": [1, 2], "$position": 0}}}
+            """,
+            """
+            {"$addToSet": {"tags": {"$each": ["a", "b"]}}}
+            """,
+            """
+            {"$set": {"created": {"$date": 123456},
+              "owner": {"$uuid": "550e8400-e29b-41d4-a716-446655440000"},
+              "nested": {"values": [null, true, 1.25, {"name": "Ada"}]}},
+             "$unset": {"obsolete": 1}}
+            """);
+    return forUpdateTools(updates);
+  }
+
+  @ParameterizedTest
+  @MethodSource("malformedUpdates")
+  void updateToolsRejectMalformedUpdates(String tool, String json) throws Exception {
+    var update = objectMapper.readTree(json);
+    assertSchemaRejects(inputSchema(tool), updateToolInput(update));
+    assertThrows(UpdateException.class, () -> objectMapper.treeToValue(update, UpdateClause.class));
+  }
+
+  static Stream<Arguments> malformedUpdates() {
+    var updates =
+        List.of(
+            "[]",
+            "5",
+            """
+            "update"
+            """,
+            """
+            {"name": "Ada"}
+            """,
+            """
+            {"updateOperationDefs": {}}
+            """,
+            """
+            {"$unknown": {}}
+            """,
+            """
+            {"$set": null}
+            """,
+            """
+            {"$set": 5}
+            """,
+            """
+            {"$set": []}
+            """,
+            """
+            {"$set": "value"}
+            """);
+    return forUpdateTools(updates);
+  }
+
+  // updateOne is the only update tool that also serves tables.
+  @Test
+  void updateOneAcceptsTableOnlyPullAll() throws Exception {
+    var update =
+        objectMapper.readTree(
+            """
+            {"$pullAll": {"listColumn": [1]}}
+            """);
+    var payload = updateToolInput(update);
+    assertSchemaAccepts(inputSchema("updateOne"), payload);
+    assertEquals(
+        Set.of(UpdateOperator.PULL_ALL),
+        parseUpdateCommand("updateOne", payload).updateClause().updateOperationDefs().keySet());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"updateOne", "updateMany", "findOneAndUpdate"})
+  void updateIsRequiredAndFilterMayBeOmittedOrNull(String tool) throws Exception {
+    var schema = inputSchema(tool);
+    var payload = updateToolInput(objectMapper.readTree("{}"));
+    assertSchemaAccepts(schema, payload);
+    assertNotNull(parseUpdateCommand(tool, payload).updateClause().buildOperations());
+    payload.putNull("filter");
+    assertSchemaAccepts(schema, payload);
+    assertNotNull(parseUpdateCommand(tool, payload).updateClause().buildOperations());
+
+    payload.remove("update");
+    assertSchemaRejects(schema, payload);
+    assertFalse(validator.validate(command(tool, payload)).isEmpty());
+    payload.putNull("update");
+    assertSchemaRejects(schema, payload);
+    assertFalse(validator.validate(command(tool, payload)).isEmpty());
+  }
+
+  private static Stream<Arguments> forUpdateTools(List<String> updates) {
+    return UPDATE_TOOLS.stream().flatMap(t -> updates.stream().map(u -> Arguments.of(t, u)));
+  }
+
+  private ObjectNode updateToolInput(JsonNode update) throws Exception {
+    return toolInput("{}").set("update", update);
+  }
+
+  private Updatable parseUpdateCommand(String tool, ObjectNode payload) throws Exception {
+    var command = command(tool, payload);
+    assertTrue(validator.validate(command).isEmpty());
+    return (Updatable) command;
+  }
+
+  /** Builds the command a tool call runs, without the MCP routing arguments. */
+  private Command command(String tool, ObjectNode payload) throws Exception {
+    var arguments = payload.deepCopy();
+    arguments.remove(List.of("keyspace", "collection"));
+    return objectMapper.treeToValue(
+        objectMapper.createObjectNode().set(tool, arguments), Command.class);
+  }
+
+  private void assertSchemaRejects(JsonNode schema, JsonNode payload) {
+    assertFalse(
+        JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012)
+            .getSchema(schema)
+            .validate(payload)
+            .isEmpty(),
+        () -> "Schema accepted malformed payload " + payload);
   }
 
   private void assertSchemaAccepts(JsonNode schema, JsonNode example) {
