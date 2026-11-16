@@ -297,17 +297,27 @@ class McpOpenApiSchemaAdapterTest {
     assertEquals("#/components/schemas/A~1B~0C", McpOpenApiSchemaAdapter.componentRef("A/B~C"));
   }
 
+  /**
+   * Checks that copying an OpenAPI component into {@code $defs} keeps decimal numbers exact. The
+   * test adds this component to the fixture document and bundles a reference to it.
+   *
+   * <pre>
+   * "Decimal": {"type": "number", "minimum": 0.25, "maximum": 1.75, "default": 0.5}
+   * </pre>
+   *
+   * <p>The bundled copy must keep those three values, accept the bounds, and reject values just
+   * outside them.
+   */
   @Test
-  void shouldPreserveFractionalSchemaBoundsAndDefault() throws Exception {
+  void shouldPreserveDecimalSchemaBoundsAndDefault() throws Exception {
     var document = fixtureDocument();
     ((ObjectNode) document.path("components").path("schemas"))
-        .putObject("Fractional")
+        .putObject("Decimal")
         .put("type", "number")
         .put("minimum", 0.25)
         .put("maximum", 1.75)
         .put("default", 0.5);
-    var schema =
-        bundle(MAPPER.readTree("{\"$ref\":\"#/components/schemas/Fractional\"}"), document);
+    var schema = bundle(MAPPER.readTree("{\"$ref\":\"#/components/schemas/Decimal\"}"), document);
     var component = schema.at(schema.path("$ref").asText().substring(1));
 
     assertEquals(0.25, component.path("minimum").doubleValue());
