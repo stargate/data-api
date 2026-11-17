@@ -17,9 +17,4 @@ public interface RerankingConstants {
     int DEFAULT = 50;
     int MAX = 100;
   }
-
-  interface CollectionRerankingOptions {
-    String ENABLED = "enabled";
-    String SERVICE = ServiceDescConstants.SERVICE;
-  }
 }
