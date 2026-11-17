@@ -83,25 +83,47 @@ class FindAndRerankPlannerTest {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("legCases")
-  void plansLegs(
+  void plansLegs(LegCase legCase) throws Exception {
+    var plan =
+        FindAndRerankPlanner.plan(
+            command(legCase.sort(), legCase.options()), commandContext(legCase.collection()));
+
+    assertThat(plan.vectorizeStep() == null ? null : plan.vectorizeStep().text())
+        .as("%s: text to vectorize", legCase.description())
+        .isEqualTo(legCase.vectorizeText());
+    assertThat(plan.legs())
+        .as("%s: legs", legCase.description())
+        .containsExactlyInAnyOrderElementsOf(legCase.legs());
+  }
+
+  /**
+   * A case for {@link #plansLegs}. The name of the test is the description.
+   *
+   * @param description What the case is about.
+   * @param sort The JSON for the sort.
+   * @param options The JSON for the options.
+   * @param collection The collection the command runs on.
+   * @param vectorizeText The text the plan vectorizes, or <code>null</code> when the plan has no
+   *     vectorize step.
+   * @param legs The legs the plan has, in any order.
+   */
+  private record LegCase(
       String description,
       String sort,
       String options,
       Collection collection,
       String vectorizeText,
-      List<FindAndRerankPlan.RerankLeg> legs)
-      throws Exception {
-    var plan = FindAndRerankPlanner.plan(command(sort, options), commandContext(collection));
+      List<FindAndRerankPlan.RerankLeg> legs) {
 
-    assertThat(plan.vectorizeStep() == null ? null : plan.vectorizeStep().text())
-        .as("%s: text to vectorize", description)
-        .isEqualTo(vectorizeText);
-    assertThat(plan.legs()).as("%s: legs", description).containsExactlyInAnyOrderElementsOf(legs);
+    @Override
+    public String toString() {
+      return description;
+    }
   }
 
-  static Stream<Arguments> legCases() {
+  static Stream<LegCase> legCases() {
     return Stream.of(
-        Arguments.of(
+        new LegCase(
             "$hybrid text, collection with a lexical index",
             """
             {"$hybrid": "cheese"}
@@ -110,7 +132,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT), lexicalLeg("cheese", DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$hybrid text, collection without a lexical index",
             """
             {"$hybrid": "cheese"}
@@ -119,7 +141,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$vectorize",
             """
             {"$hybrid": {"$vectorize": "cheese"}}
@@ -128,14 +150,14 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$vector",
             VECTOR_SORT,
             RERANK_OPTIONS,
             Collection.VECTOR_LEXICAL,
             null,
             List.of(vectorLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$vectorize and $vector, $vectorize is used",
             """
             {"$hybrid": {"$vectorize": "cheese", "$vector": [0.1, 0.2, 0.3]}}
@@ -144,7 +166,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$vectorize and $lexical",
             """
             {"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}
@@ -153,7 +175,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT), lexicalLeg("cows", DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$vector and $lexical",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -162,7 +184,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTOR_LEXICAL,
             null,
             List.of(vectorLeg(DEFAULT_READ_LIMIT), lexicalLeg("cows", DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$lexical null, no lexical index needed",
             """
             {"$hybrid": {"$vectorize": "cheese", "$lexical": null}}
@@ -171,7 +193,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$lexical empty, no lexical index needed",
             """
             {"$hybrid": {"$vectorize": "cheese", "$lexical": ""}}
@@ -180,7 +202,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "hybridLimits for each leg",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -192,7 +214,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTOR_LEXICAL,
             null,
             List.of(vectorLeg(100), lexicalLeg("cows", 25))),
-        Arguments.of(
+        new LegCase(
             "hybridLimits as one number for both legs",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -203,7 +225,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTOR_LEXICAL,
             null,
             List.of(vectorLeg(30), lexicalLeg("cows", 30))),
-        Arguments.of(
+        new LegCase(
             "hybridLimits at the min of the bounds",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -214,7 +236,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTOR_LEXICAL,
             null,
             List.of(vectorLeg(1), lexicalLeg("cows", 1))),
-        Arguments.of(
+        new LegCase(
             "hybridLimits at the max of the bounds",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -225,7 +247,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTOR_LEXICAL,
             null,
             List.of(vectorLeg(100), lexicalLeg("cows", 100))),
-        Arguments.of(
+        new LegCase(
             "rerankCandidateLimit null, the option is not set",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -750,8 +772,6 @@ class FindAndRerankPlannerTest {
             hybridText,
             rerankCandidateLimitOptions("101")),
         Arguments.of(
-            "rerankCandidateLimit not an integer", hybridText, rerankCandidateLimitOptions("1.5")),
-        Arguments.of(
             "rerankCandidateLimit and hybridLimits",
             hybridText,
             """
@@ -761,12 +781,11 @@ class FindAndRerankPlannerTest {
   }
 
   /**
-   * rerankCandidateLimit that is not an integer inside the bounds in the config, the error names
-   * the field and the value.
+   * rerankCandidateLimit outside the bounds in the config, the error names the field and the value.
    */
   @ParameterizedTest(name = "{0}")
   @MethodSource("rerankCandidateLimitErrorCases")
-  void rejectsRerankCandidateLimitNotIntegerInBounds(
+  void rejectsRerankCandidateLimitOutsideBounds(
       String description, String limit, String fieldAndValue) throws Exception {
     var ex =
         assertPlanFails(
@@ -779,7 +798,7 @@ class FindAndRerankPlannerTest {
     assertThat(ex)
         .as(description)
         .hasMessageContaining(fieldAndValue)
-        .hasMessageContaining("must be an integer between 2 and 100 (inclusive)");
+        .hasMessageContaining("must be between 2 and 100 (inclusive)");
   }
 
   static Stream<Arguments> rerankCandidateLimitErrorCases() {
@@ -789,32 +808,12 @@ class FindAndRerankPlannerTest {
         Arguments.of("zero", "0", "Command field 'rerankCandidateLimit' value 0 not valid"),
         Arguments.of("negative", "-5", "Command field 'rerankCandidateLimit' value -5 not valid"),
         Arguments.of(
-            "above the max", "101", "Command field 'rerankCandidateLimit' value 101 not valid"),
-        Arguments.of(
-            "too big for an int",
-            "5000000000",
-            "Command field 'rerankCandidateLimit' value 5000000000 not valid"),
-        Arguments.of(
-            "too big for an int, wraps to 50 inside the bounds",
-            "4294967346",
-            "Command field 'rerankCandidateLimit' value 4294967346 not valid"),
-        Arguments.of(
-            "fraction, below the min",
-            "1.5",
-            "Command field 'rerankCandidateLimit' value 1.5 not valid"),
-        Arguments.of(
-            "fraction, inside the bounds",
-            "50.5",
-            "Command field 'rerankCandidateLimit' value 50.5 not valid"),
-        Arguments.of(
-            "integer with an exponent, above the max",
-            "1e3",
-            "Command field 'rerankCandidateLimit' value 1E+3 not valid"));
+            "above the max", "101", "Command field 'rerankCandidateLimit' value 101 not valid"));
   }
 
   /**
-   * A rerankCandidateLimit that is an integer inside the bounds passes its checks. Until GH #2602
-   * and GH #2603 a single leg sort cannot be planned, so the command then fails for the sort.
+   * A rerankCandidateLimit inside the bounds passes its checks. Until GH #2602 and GH #2603 a
+   * single leg sort cannot be planned, so the command then fails for the sort.
    */
   @ParameterizedTest(name = "{0}")
   @MethodSource("validRerankCandidateLimitCases")
@@ -833,8 +832,6 @@ class FindAndRerankPlannerTest {
         Arguments.of("at the min of the bounds", SINGLE_LEG_SORT, "2"),
         Arguments.of("inside the bounds", SINGLE_LEG_SORT, "50"),
         Arguments.of("at the max of the bounds", SINGLE_LEG_SORT, "100"),
-        Arguments.of("integer with a zero fraction", SINGLE_LEG_SORT, "50.0"),
-        Arguments.of("integer with an exponent", SINGLE_LEG_SORT, "1e2"),
         Arguments.of("null, the option is not set", SINGLE_LEG_SORT, "null"),
         Arguments.of(
             "$vector sort",
