@@ -159,13 +159,17 @@ class McpLoggingTest {
             .getJsonObject("TraceSession")
             .getString("requestId");
     assertThat(requestId).matches("[a-f0-9-]{36}").isNotEqualTo(clientRequestId);
-    assertThat(logsSince(start))
-        .contains(
-            "MCP request completed requestId=" + requestId,
-            "MCP command completed requestId="
-                + requestId
-                + " command=findEmbeddingProviders isError=false")
-        .doesNotContain(clientRequestId);
+    await()
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () ->
+                assertThat(logsSince(start))
+                    .contains(
+                        "MCP request completed requestId=" + requestId,
+                        "MCP command completed requestId="
+                            + requestId
+                            + " command=findEmbeddingProviders isError=false")
+                    .doesNotContain(clientRequestId));
   }
 
   @Test
