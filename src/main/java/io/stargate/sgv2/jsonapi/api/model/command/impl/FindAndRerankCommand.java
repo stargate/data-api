@@ -30,7 +30,6 @@ import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -78,14 +77,16 @@ public record FindAndRerankCommand(
       /** ---- */
       @Schema(ref = HybridLimits.REF) HybridLimits hybridLimits,
       /** ---- */
-      // NOTE: a BigDecimal, so the command keeps a number with a fraction such as 1.5. Jackson
-      // turns 1.5 into 1 when it reads an Integer.
+      // TODO: an Integer like the other limits, so Jackson turns 1.5 into 1. Change all the
+      // limits together later, so a number with a fraction gets an error.
       @Schema(
+              name = Names.RERANK_CANDIDATE_LIMIT,
               description =
                   "Optional maximum number of candidate documents to read for reranking when the sort does not use $hybrid. Defaults to the configured limit. It cannot be used with a $hybrid sort. Use hybridLimits with a $hybrid sort.",
               type = SchemaType.INTEGER,
               implementation = Integer.class)
-          BigDecimal rerankCandidateLimit,
+          @JsonProperty(Names.RERANK_CANDIDATE_LIMIT)
+          Integer rerankCandidateLimit,
       /** ---- */
       @Schema(
               description =
@@ -129,8 +130,13 @@ public record FindAndRerankCommand(
           @JsonProperty("rerank")
           CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {
 
-    /** The name of the rerankCandidateLimit option, for error messages. */
-    public static final String RERANK_CANDIDATE_LIMIT_FIELD = "rerankCandidateLimit";
+    // TODO: add every option name here. Bind each option to its name with @JsonProperty and
+    // @Schema(name=). Names with the same meaning in other commands, e.g. limit, go in one shared
+    // interface.
+    /** The names of the options in the command JSON. */
+    public interface Names {
+      String RERANK_CANDIDATE_LIMIT = "rerankCandidateLimit";
+    }
   }
 
   // Matches the override validation in CollectionRerankDef. Update both together.
