@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.mcp;
 import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.MissingNode;
@@ -276,6 +277,44 @@ class McpClauseSchemaContractTest {
         assertNull(document.findParent(name), () -> tool.name() + " schema shows " + name);
       }
     }
+  }
+
+  /** MCP clients choose argument values from these descriptions, so a bare name is not enough. */
+  @Test
+  void everyToolDescribesEveryArgument() throws Exception {
+    for (var tool : toolManager) {
+      var document = inputSchema(tool.name());
+      for (var argument : document.path("properties").properties()) {
+        var label = tool.name() + "." + argument.getKey();
+        var description = schemaMetadata(document, argument.getValue(), "description").asText();
+        assertFalse(description.isBlank(), label);
+        assertNotEquals(argument.getKey(), description.toLowerCase(), label);
+      }
+    }
+  }
+
+  /** An example at the end of an argument description must parse as that argument. */
+  @Test
+  void argumentDescriptionExamplesDeserialize() throws Exception {
+    var marker = "for example ";
+    // Trailing text after the example would mean the example is not the whole JSON value.
+    var reader = objectMapper.reader().with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
+    var checked = 0;
+    for (var tool : toolManager) {
+      for (var argument : tool.arguments()) {
+        var start = argument.description().indexOf(marker);
+        if (start < 0) {
+          continue;
+        }
+        var label = tool.name() + "." + argument.name();
+        var example = reader.readTree(argument.description().substring(start + marker.length()));
+        var type = objectMapper.constructType(argument.type());
+        assertNotNull(
+            assertDoesNotThrow(() -> objectMapper.treeToValue(example, type), label), label);
+        checked++;
+      }
+    }
+    assertTrue(checked > 0, "No argument description has an example");
   }
 
   /**

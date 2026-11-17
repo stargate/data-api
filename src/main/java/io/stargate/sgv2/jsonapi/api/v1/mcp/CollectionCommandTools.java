@@ -36,7 +36,7 @@ public class CollectionCommandTools {
       @ToolArg(description = "Name of the table") String table,
       @ToolArg(
               description =
-                  "One change to the table, keyed by add, drop, addVectorize, or dropVectorize, for example {\"add\": {\"columns\": {\"rating\": \"int\"}}}")
+                  "Alters the schema of a Table, to add or drop columns or configure vectorization, for example {\"add\": {\"columns\": {\"rating\": \"int\"}}}")
           AlterTableOperation operation) {
 
     var command = new AlterTableCommand(operation);
@@ -58,21 +58,16 @@ public class CollectionCommandTools {
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
       @ToolArg(description = "Name of the new index") String indexName,
-      @ToolArg(
-              description =
-                  "Column to index and its index options, for example {\"column\": \"status\"}")
+      @ToolArg(description = "Definition of the index to create")
           RegularIndexDefinitionDesc definition,
       @ToolArg(
               description =
-                  "Type of the index to create. The only supported value is '"
+                  "Optional type of the index to create. The only supported value is '"
                       + ApiIndexType.Constants.REGULAR
                       + "'.",
               required = false)
           String indexType,
-      @ToolArg(
-              description =
-                  "Set ifNotExists to true to succeed when an index with this name already exists",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           CreateIndexCommand.CreateIndexCommandOptions options) {
 
     var command = new CreateIndexCommand(indexName, definition, indexType, options);
@@ -86,21 +81,16 @@ public class CollectionCommandTools {
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
       @ToolArg(description = "Name of the new index") String indexName,
-      @ToolArg(
-              description =
-                  "Column to index and its index options, for example {\"column\": \"title\"}")
+      @ToolArg(description = "Definition of the index to create")
           TextIndexDefinitionDesc definition,
       @ToolArg(
               description =
-                  "Type of the index to create. The only supported value is '"
+                  "Optional type of the index to create. The only supported value is '"
                       + ApiIndexType.Constants.TEXT
                       + "'.",
               required = false)
           String indexType,
-      @ToolArg(
-              description =
-                  "Set ifNotExists to true to succeed when an index with this name already exists",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           CreateTextIndexCommand.CommandOptions options) {
 
     var command = new CreateTextIndexCommand(indexName, definition, indexType, options);
@@ -112,21 +102,16 @@ public class CollectionCommandTools {
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
       @ToolArg(description = "Name of the new index") String indexName,
-      @ToolArg(
-              description =
-                  "Column to index and its index options, for example {\"column\": \"embedding\", \"options\": {\"metric\": \"cosine\"}}")
+      @ToolArg(description = "Definition of the index to create")
           VectorIndexDefinitionDesc definition,
       @ToolArg(
               description =
-                  "Type of the index to create. The only supported value is '"
+                  "Optional type of the index to create. The only supported value is '"
                       + ApiIndexType.Constants.VECTOR
                       + "'.",
               required = false)
           String indexType,
-      @ToolArg(
-              description =
-                  "Set ifNotExists to true to succeed when an index with this name already exists",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           CreateVectorIndexCommand.CreateVectorIndexCommandOptions options) {
 
     var command = new CreateVectorIndexCommand(indexName, definition, indexType, options);
@@ -176,9 +161,7 @@ public class CollectionCommandTools {
               required = false)
           JsonNode projection,
       @ToolArg(required = false) FindAndRerankSort sort,
-      @ToolArg(
-              description = "Options for result limits, reranking, and what the response includes",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           FindAndRerankCommand.Options options) {
 
     var command = new FindAndRerankCommand(filter, projection, sort, options);
@@ -196,9 +179,7 @@ public class CollectionCommandTools {
               required = false)
           JsonNode projection,
       @ToolArg(required = false) SortDefinition sort,
-      @ToolArg(
-              description = "Options for result limits, paging, and what the response includes",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           FindCommand.Options options) {
 
     var command = new FindCommand(filter, projection, sort, options);
@@ -236,14 +217,8 @@ public class CollectionCommandTools {
                   "Fields to include or exclude in the returned document, for example {\"title\": 1}",
               required = false)
           JsonNode projection,
-      @ToolArg(
-              description =
-                  "Document that replaces the matching document, for example {\"title\": \"Dune\", \"status\": \"active\"}")
-          ObjectNode replacement,
-      @ToolArg(
-              description =
-                  "Options for upsert and whether to return the document before or after the replacement",
-              required = false)
+      @ToolArg(description = "Document that replaces the matching document") ObjectNode replacement,
+      @ToolArg(description = "Options for the command.", required = false)
           FindOneAndReplaceCommand.Options options) {
 
     var command = new FindOneAndReplaceCommand(filter, sort, projection, replacement, options);
@@ -264,10 +239,7 @@ public class CollectionCommandTools {
           JsonNode projection,
       @ToolArg(required = false) SortDefinition sort,
       @ToolArg UpdateClause update,
-      @ToolArg(
-              description =
-                  "Options for upsert and whether to return the document before or after the update",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           FindOneAndUpdateCommand.Options options) {
 
     var command = new FindOneAndUpdateCommand(filter, projection, sort, update, options);
@@ -285,7 +257,7 @@ public class CollectionCommandTools {
               required = false)
           JsonNode projection,
       @ToolArg(required = false) SortDefinition sort,
-      @ToolArg(description = "Options for what the response includes", required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           FindOneCommand.Options options) {
 
     var command = new FindOneCommand(filter, projection, sort, options);
@@ -296,9 +268,7 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> listIndexes(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table") String table,
-      @ToolArg(
-              description = "Set explain to true to include the properties of each index",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           ListIndexesCommand.Options options) {
 
     var command = new ListIndexesCommand(options);
@@ -309,11 +279,8 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> insertMany(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection or table") String collection,
-      @ToolArg(
-              description =
-                  "Documents or rows to insert, for example [{\"title\": \"Dune\"}, {\"title\": \"Emma\"}]")
-          List<JsonNode> documents,
-      @ToolArg(description = "Options for insert order and per-document results", required = false)
+      @ToolArg(description = "Documents or rows to insert") List<JsonNode> documents,
+      @ToolArg(description = "Options for the command.", required = false)
           InsertManyCommand.Options options) {
 
     var command = new InsertManyCommand(documents, options);
@@ -324,10 +291,7 @@ public class CollectionCommandTools {
   public Uni<ToolResponse> insertOne(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the collection or table") String collection,
-      @ToolArg(
-              description =
-                  "Document or row to insert, for example {\"title\": \"Dune\", \"status\": \"active\"}")
-          JsonNode document) {
+      @ToolArg(description = "Document or row to insert") JsonNode document) {
 
     var command = new InsertOneCommand(document);
     return mcpResource.processCollectionCommand(keyspace, collection, command);
@@ -341,7 +305,7 @@ public class CollectionCommandTools {
       @ToolArg(description = "Name of the collection") String collection,
       @ToolArg(required = false) FilterDefinition filter,
       @ToolArg UpdateClause update,
-      @ToolArg(description = "Options for upsert and paging", required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           UpdateManyCommand.Options options) {
 
     var command = new UpdateManyCommand(filter, update, options);
@@ -357,9 +321,7 @@ public class CollectionCommandTools {
       @ToolArg(required = false) FilterDefinition filter,
       @ToolArg UpdateClause update,
       @ToolArg(required = false) SortDefinition sort,
-      @ToolArg(
-              description = "Set upsert to true to insert a document when none matches the filter",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           UpdateOneCommand.Options options) {
 
     var command = new UpdateOneCommand(filter, update, sort, options);

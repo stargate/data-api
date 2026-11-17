@@ -23,7 +23,7 @@ public class GeneralCommandTools {
   @Tool(description = "Command that creates a keyspace.")
   public Uni<ToolResponse> createKeyspace(
       @ToolArg(description = "Name of the new keyspace") String name,
-      @ToolArg(description = "Replication settings for the new keyspace", required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           CreateKeyspaceCommand.Options options) {
 
     var command = new CreateKeyspaceCommand(name, options);
@@ -47,10 +47,7 @@ public class GeneralCommandTools {
 
   @Tool(description = "Lists the available Embedding Providers for this database.")
   public Uni<ToolResponse> findEmbeddingProviders(
-      @ToolArg(
-              description =
-                  "Set filterModelStatus to SUPPORTED, DEPRECATED, or END_OF_LIFE to list models with that status, or to an empty string to list all models. Without options, only SUPPORTED models are listed.",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           FindEmbeddingProvidersCommand.Options options) {
 
     var command = new FindEmbeddingProvidersCommand(options);
@@ -59,10 +56,7 @@ public class GeneralCommandTools {
 
   @Tool(description = "Lists the available Reranking Providers for this database.")
   public Uni<ToolResponse> findRerankingProviders(
-      @ToolArg(
-              description =
-                  "Set filterModelStatus to SUPPORTED, DEPRECATED, or END_OF_LIFE to list models with that status, or to an empty string to list all models. Without options, only SUPPORTED models are listed.",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           FindRerankingProvidersCommand.Options options) {
 
     var command = new FindRerankingProvidersCommand(options);

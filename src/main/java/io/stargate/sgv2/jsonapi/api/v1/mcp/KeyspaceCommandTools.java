@@ -26,10 +26,7 @@ public class KeyspaceCommandTools {
   public Uni<ToolResponse> createCollection(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the new collection") String collection,
-      @ToolArg(
-              description =
-                  "Collection settings for document IDs, vector search, indexing, lexical search, and reranking",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           CreateCollectionCommand.Options options) {
 
     var command = new CreateCollectionCommand(collection, options);
@@ -48,9 +45,7 @@ public class KeyspaceCommandTools {
   @Tool(description = "Command that lists all available collections in a keyspace.")
   public Uni<ToolResponse> findCollections(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(
-              description = "Set explain to true to include the properties of each collection",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           FindCollectionsCommand.Options options) {
 
     var command = new FindCollectionsCommand(options);
@@ -64,15 +59,8 @@ public class KeyspaceCommandTools {
   public Uni<ToolResponse> alterType(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the type to alter") String name,
-      @ToolArg(
-              description =
-                  "Fields to rename, mapping old names to new names, for example {\"fields\": {\"zip\": \"postcode\"}}",
-              required = false)
-          RenameTypeFieldsDesc rename,
-      @ToolArg(
-              description =
-                  "Fields to add to the type, for example {\"fields\": {\"country\": \"text\"}}",
-              required = false)
+      @ToolArg(description = "Fields to rename", required = false) RenameTypeFieldsDesc rename,
+      @ToolArg(description = "Fields to add to the type", required = false)
           TypeDefinitionDesc add) {
 
     var command = new AlterTypeCommand(name, rename, add);
@@ -83,13 +71,8 @@ public class KeyspaceCommandTools {
   public Uni<ToolResponse> createTable(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the new table") String table,
-      @ToolArg(
-              description =
-                  "Columns and primary key of the new table, for example {\"columns\": {\"id\": \"text\", \"title\": \"text\"}, \"primaryKey\": \"id\"}")
-          TableDefinitionDesc definition,
-      @ToolArg(
-              description = "Set ifNotExists to true to succeed when the table already exists",
-              required = false)
+      @ToolArg(description = "Definition of the new table") TableDefinitionDesc definition,
+      @ToolArg(description = "Options for the command.", required = false)
           CreateTableCommand.Options options) {
 
     var command = new CreateTableCommand(table, definition, options);
@@ -100,13 +83,8 @@ public class KeyspaceCommandTools {
   public Uni<ToolResponse> createType(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the new type") String name,
-      @ToolArg(
-              description =
-                  "Fields of the new type, for example {\"fields\": {\"city\": \"text\", \"postcode\": \"int\"}}")
-          TypeDefinitionDesc definition,
-      @ToolArg(
-              description = "Set ifNotExists to true to succeed when the type already exists",
-              required = false)
+      @ToolArg(description = "Fields of the new type") TypeDefinitionDesc definition,
+      @ToolArg(description = "Options for the command.", required = false)
           CreateTypeCommand.Options options) {
 
     var command = new CreateTypeCommand(name, definition, options);
@@ -117,9 +95,7 @@ public class KeyspaceCommandTools {
   public Uni<ToolResponse> dropIndex(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the index to drop") String name,
-      @ToolArg(
-              description = "Set ifExists to true to succeed when the index does not exist",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           DropIndexCommand.Options options) {
 
     var command = new DropIndexCommand(name, options);
@@ -130,9 +106,7 @@ public class KeyspaceCommandTools {
   public Uni<ToolResponse> dropTable(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the table to drop") String table,
-      @ToolArg(
-              description = "Set ifExists to true to succeed when the table does not exist",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           DropTableCommand.Options options) {
 
     var command = new DropTableCommand(table, options);
@@ -143,9 +117,7 @@ public class KeyspaceCommandTools {
   public Uni<ToolResponse> dropType(
       @ToolArg(description = "Name of the keyspace") String keyspace,
       @ToolArg(description = "Name of the type to drop") String name,
-      @ToolArg(
-              description = "Set ifExists to true to succeed when the type does not exist",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           DropTypeCommand.Options options) {
 
     var command = new DropTypeCommand(name, options);
@@ -155,9 +127,7 @@ public class KeyspaceCommandTools {
   @Tool(description = "Command that lists all available tables in a keyspace")
   public Uni<ToolResponse> listTables(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(
-              description = "Set explain to true to include the properties of each table",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           ListTablesCommand.Options options) {
 
     var command = new ListTablesCommand(options);
@@ -167,9 +137,7 @@ public class KeyspaceCommandTools {
   @Tool(description = "Command that lists all available types in a keyspace")
   public Uni<ToolResponse> listTypes(
       @ToolArg(description = "Name of the keyspace") String keyspace,
-      @ToolArg(
-              description = "Set explain to true to include the fields of each type",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           ListTypesCommand.Options options) {
 
     var command = new ListTypesCommand(options);
