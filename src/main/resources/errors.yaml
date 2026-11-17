@@ -326,7 +326,7 @@ request-errors:
   # unscoped because this touches both the sort and the options
   - scope:
     code: UNSUPPORTED_HYBRID_LIMITS_WITHOUT_HYBRID_SORT
-    title: Option hybridLimits cannot be used without a $hybrid sort
+    title: hybridLimits option cannot be used without a $hybrid sort
     body: |-
       The command attempted to use the `hybridLimits` option without a `$hybrid` sort.
 
@@ -337,7 +337,7 @@ request-errors:
   # unscoped because this touches both the sort and the options
   - scope:
     code: UNSUPPORTED_RERANK_CANDIDATE_LIMIT_WITH_HYBRID_SORT
-    title: Option rerankCandidateLimit cannot be used with a $hybrid sort
+    title: rerankCandidateLimit option cannot be used with a $hybrid sort
     body: |-
       The command attempted to use the `rerankCandidateLimit` option with a `$hybrid` sort.
 
