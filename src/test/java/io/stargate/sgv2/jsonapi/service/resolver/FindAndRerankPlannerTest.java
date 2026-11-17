@@ -798,14 +798,13 @@ class FindAndRerankPlannerTest {
     assertThat(ex)
         .as(description)
         .hasMessageContaining(fieldAndValue)
-        .hasMessageContaining("must be between 2 and 100 (inclusive)");
+        .hasMessageContaining("must be between 1 and 100 (inclusive)");
   }
 
   static Stream<Arguments> rerankCandidateLimitErrorCases() {
     return Stream.of(
         Arguments.of(
-            "below the min", "1", "Command field 'rerankCandidateLimit' value 1 not valid"),
-        Arguments.of("zero", "0", "Command field 'rerankCandidateLimit' value 0 not valid"),
+            "below the min", "0", "Command field 'rerankCandidateLimit' value 0 not valid"),
         Arguments.of("negative", "-5", "Command field 'rerankCandidateLimit' value -5 not valid"),
         Arguments.of(
             "above the max", "101", "Command field 'rerankCandidateLimit' value 101 not valid"));
@@ -829,7 +828,7 @@ class FindAndRerankPlannerTest {
 
   static Stream<Arguments> validRerankCandidateLimitCases() {
     return Stream.of(
-        Arguments.of("at the min of the bounds", SINGLE_LEG_SORT, "2"),
+        Arguments.of("at the min of the bounds", SINGLE_LEG_SORT, "1"),
         Arguments.of("inside the bounds", SINGLE_LEG_SORT, "50"),
         Arguments.of("at the max of the bounds", SINGLE_LEG_SORT, "100"),
         Arguments.of("null, the option is not set", SINGLE_LEG_SORT, "null"),
