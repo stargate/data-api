@@ -33,6 +33,7 @@ class McpOAuthHostSuffixTest {
   private static final String HOST_SUFFIX = ".apps.example.test";
   private static final String FIRST_HOST = "db-one-us-east-2" + HOST_SUFFIX;
   private static final String SECOND_HOST = "db-two-us-east-2" + HOST_SUFFIX;
+  private static final String THIRD_HOST = "db-three-us-east-2" + HOST_SUFFIX;
   private static final String MCP_PATH = "/v1/mcp";
 
   @InjectMock CommandProcessor commandProcessor;
@@ -93,6 +94,32 @@ class McpOAuthHostSuffixTest {
     assertThat(response.jsonPath().getList("result.tools.name", String.class)).contains("findOne");
   }
 
+  // An authorization server may name several resources, one per database the user granted.
+  @ParameterizedTest
+  @ValueSource(strings = {FIRST_HOST, SECOND_HOST})
+  void aTokenIssuedForSeveralDatabasesListsToolsOnEachOfThem(String host) {
+    var response =
+        catalogRequest(host)
+            .header(
+                "Authorization", "Bearer " + tokenFor(resource(FIRST_HOST), resource(SECOND_HOST)))
+            .post(MCP_PATH);
+
+    assertResponseComplete(response, 1);
+    assertThat(response.jsonPath().getList("result.tools.name", String.class)).contains("findOne");
+  }
+
+  @Test
+  void aTokenIssuedForSeveralDatabasesCannotReachAnUnlistedDatabase() {
+    var response =
+        providerRequest(THIRD_HOST)
+            .header(
+                "Authorization", "Bearer " + tokenFor(resource(FIRST_HOST), resource(SECOND_HOST)))
+            .post(MCP_PATH);
+
+    assertChallenge(response, THIRD_HOST);
+    verifyNoInteractions(commandProcessor);
+  }
+
   @Test
   void aTokenIssuedForAnotherDatabaseCannotReachTheTool() {
     var response =
@@ -151,8 +178,8 @@ class McpOAuthHostSuffixTest {
     return "https://" + host + MCP_PATH;
   }
 
-  private static String tokenFor(String audience) {
-    return token(FIRST_SUBJECT, FIRST_ORG, "read-role", audience);
+  private static String tokenFor(String... audiences) {
+    return token(FIRST_SUBJECT, FIRST_ORG, "read-role", audiences);
   }
 
   private static RequestSpecification catalogRequest(String host) {

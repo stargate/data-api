@@ -26,8 +26,8 @@ final class McpOAuthTestSupport {
 
   private McpOAuthTestSupport() {}
 
-  static String token(String subject, String org, String role, String audience) {
-    return sign(claims(subject, org, role, audience), fixturePrivateKey());
+  static String token(String subject, String org, String role, String... audiences) {
+    return sign(claims(subject, org, role, List.of(audiences)), fixturePrivateKey());
   }
 
   static String invalidToken(InvalidToken kind, String audience) {
@@ -37,7 +37,7 @@ final class McpOAuthTestSupport {
     if (kind == InvalidToken.EMPTY) {
       return "";
     }
-    var claims = claims(FIRST_SUBJECT, FIRST_ORG, "read-role", audience);
+    var claims = claims(FIRST_SUBJECT, FIRST_ORG, "read-role", List.of(audience));
     switch (kind) {
       case UNSIGNED -> {
         return BASE64.encodeToString(
@@ -69,12 +69,13 @@ final class McpOAuthTestSupport {
     return sign(claims, fixturePrivateKey());
   }
 
-  private static JsonObject claims(String subject, String org, String role, String audience) {
+  private static JsonObject claims(
+      String subject, String org, String role, List<String> audiences) {
     long now = Instant.now().getEpochSecond();
     return new JsonObject()
         .put("iss", AUTH_SERVER)
         .put("sub", subject)
-        .put("aud", List.of(audience))
+        .put("aud", audiences)
         .put("iat", now - 60)
         .put("nbf", now - 60)
         .put("exp", now + 300)
