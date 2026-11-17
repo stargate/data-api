@@ -371,7 +371,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
   }
 
   @Test
-  void failOnRerankCandidateLimitNotIntegerInBounds() {
+  void failOnRerankCandidateLimitOutsideBounds() {
     // the collection has a lexical index, so skip on DSE
     Assumptions.assumeTrue(isLexicalAvailableForDB());
 
@@ -383,16 +383,14 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         {"$vectorize": "hello"}
         """;
 
-    // not an integer
-    findAndRerankWithSort(collectionName, sort, "\"rerankCandidateLimit\": 1.5")
+    // below the min
+    findAndRerankWithSort(collectionName, sort, "\"rerankCandidateLimit\": 1")
         .body("$", responseIsError())
         .body("errors[0].errorCode", is(RequestException.Code.COMMAND_FIELD_VALUE_INVALID.name()))
         .body(
             "errors[0].message",
-            containsString("Command field 'rerankCandidateLimit' value 1.5 not valid"))
-        .body(
-            "errors[0].message",
-            containsString("must be an integer between 2 and 100 (inclusive)"));
+            containsString("Command field 'rerankCandidateLimit' value 1 not valid"))
+        .body("errors[0].message", containsString("must be between 2 and 100 (inclusive)"));
 
     // above the max
     findAndRerankWithSort(collectionName, sort, "\"rerankCandidateLimit\": 101")
@@ -401,9 +399,7 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         .body(
             "errors[0].message",
             containsString("Command field 'rerankCandidateLimit' value 101 not valid"))
-        .body(
-            "errors[0].message",
-            containsString("must be an integer between 2 and 100 (inclusive)"));
+        .body("errors[0].message", containsString("must be between 2 and 100 (inclusive)"));
 
     // a valid limit passes its checks, then the sort is rejected until GH #2602 and GH #2603
     findAndRerankWithSort(collectionName, sort, "\"rerankCandidateLimit\": 50")
