@@ -8,8 +8,12 @@ public interface RerankingConstants {
     int MAX = 100;
   }
 
-  interface CollectionRerankingOptions {
-    String ENABLED = "enabled";
-    String SERVICE = ServiceDescConstants.SERVICE;
+  // TODO: this and HybridSearchLimits make the config complicated so we can override the injected
+  // config at test time. Either do not use injected config, or use the proper override.
+  /** The min, default and max for the rerankCandidateLimit option of findAndRerank. */
+  interface RerankCandidateLimits {
+    int MIN = 1;
+    int DEFAULT = 50;
+    int MAX = 100;
   }
 }

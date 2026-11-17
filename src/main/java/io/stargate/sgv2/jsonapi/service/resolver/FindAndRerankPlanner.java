@@ -49,8 +49,10 @@ class FindAndRerankPlanner {
     var schemaObject = commandContext.schemaObject();
     var operationsConfig = commandContext.config().get(OperationsConfig.class);
 
-    checkSortSupported(sort, schemaObject);
+    validateSortSupported(sort, schemaObject);
     validateHybridLimits(command, operationsConfig);
+    validateRerankCandidateLimit(command, operationsConfig);
+
     var rerankServiceDef = resolveRerankServiceDef(command, commandContext);
     var rerankingQuery =
         RerankingQuery.create(
@@ -91,27 +93,50 @@ class FindAndRerankPlanner {
   }
 
   /**
-   * Validate user-supplied hybridLimits against the dynamic OperationsConfig bounds. Cannot be done
-   * in the Jackson deserializer because it has no access to OperationsConfig (config-file and
-   * env-var overrides).
+   * Validate user-supplied hybridLimits: they can only be used with a $hybrid sort, and must be
+   * inside the dynamic OperationsConfig bounds. Cannot be done in the Jackson deserializer because
+   * it has no access to the sort or to OperationsConfig (config-file and env-var overrides).
    */
   private static void validateHybridLimits(
       FindAndRerankCommand command, OperationsConfig operationsConfig) {
     if (command.options() == null || command.options().hybridLimits() == null) {
       return;
     }
+    if (command.sortClause() instanceof FindAndRerankSort.SingleLeg) {
+      throw RequestException.Code.UNSUPPORTED_HYBRID_LIMITS_WITHOUT_HYBRID_SORT.get();
+    }
     var hybridLimits = command.options().hybridLimits();
-    checkLimitInBounds(
+    validateLimitInBounds(
         FindAndRerankCommand.HybridLimitsDeserializer.VECTOR_LIMIT_FIELD,
         hybridLimits.vectorLimit(),
         operationsConfig.hybridSearchVectorLimit());
-    checkLimitInBounds(
+    validateLimitInBounds(
         FindAndRerankCommand.HybridLimitsDeserializer.LEXICAL_LIMIT_FIELD,
         hybridLimits.lexicalLimit(),
         operationsConfig.hybridSearchLexicalLimit());
   }
 
-  private static void checkLimitInBounds(String field, int value, IntConfigWithBounds bounds) {
+  /**
+   * Validate the user-supplied rerankCandidateLimit: it cannot be used with a $hybrid sort, and
+   * must be inside the dynamic OperationsConfig bounds.
+   */
+  private static void validateRerankCandidateLimit(
+      FindAndRerankCommand command, OperationsConfig operationsConfig) {
+    var limit =
+        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankCandidateLimit, null);
+    if (limit == null) {
+      return;
+    }
+    if (command.sortClause() instanceof FindAndRerankSort.MultiLeg) {
+      throw RequestException.Code.UNSUPPORTED_RERANK_CANDIDATE_LIMIT_WITH_HYBRID_SORT.get();
+    }
+    validateLimitInBounds(
+        FindAndRerankCommand.Options.Names.RERANK_CANDIDATE_LIMIT,
+        limit,
+        operationsConfig.rerankCandidateLimit());
+  }
+
+  private static void validateLimitInBounds(String field, int value, IntConfigWithBounds bounds) {
     if (bounds.isValid(value)) {
       return;
     }
@@ -126,10 +151,10 @@ class FindAndRerankPlanner {
   }
 
   /**
-   * Check that collection supports the sort features the request uses (vector / vectorize /
+   * Validate that the collection supports the sort features the request uses (vector / vectorize /
    * lexical), throw if it does not.
    */
-  private static void checkSortSupported(
+  private static void validateSortSupported(
       FindAndRerankSort sort, CollectionSchemaObject schemaObject) {
 
     if (isVectorSort(sort) || isVectorizeSort(sort)) {
@@ -206,7 +231,7 @@ class FindAndRerankPlanner {
                 lexicalText(multiLeg),
                 hybridLimits.lexicalLimit()));
       } else if (isExplicitLexicalSort(multiLeg)) {
-        // error should have been caught in checkSortSupported() safety here
+        // error should have been caught in validateSortSupported() safety here
         throwIfNoLexicalIndex(schemaObject);
       }
     }
@@ -220,7 +245,7 @@ class FindAndRerankPlanner {
   private static FindAndRerankPlan.VectorizeStep planVectorizeStep(
       FindAndRerankSort sort, CollectionSchemaObject schemaObject) {
 
-    // sanity check, checkSortSupported() checked the collection has a vectorize column
+    // sanity check, validateSortSupported() checked the collection has a vectorize column
     var vectorizeColumn =
         schemaObject.vectorConfig().getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
     return new FindAndRerankPlan.VectorizeStep(
