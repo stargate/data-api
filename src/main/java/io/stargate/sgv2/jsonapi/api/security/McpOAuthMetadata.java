@@ -45,6 +45,8 @@ public class McpOAuthMetadata {
   private final String endpointPath;
   private final String metadataPath;
 
+  private final boolean bearerEnabled;
+
   /** True when Bearer authentication and MCP are both enabled in server configuration. */
   private final boolean published;
 
@@ -68,7 +70,7 @@ public class McpOAuthMetadata {
     this.transportPaths = McpEndpointConfigSourceFactory.transportPaths(endpointPath);
     this.endpointPath = endpointPath;
     this.metadataPath = metadataPath;
-    boolean bearerEnabled = authConfig.bearer().enabled();
+    this.bearerEnabled = authConfig.bearer().enabled();
     String httpRoot =
         metadataPath.substring(
             0, metadataPath.length() - ProtectedResourceMetadataResource.PATH.length());
@@ -86,29 +88,35 @@ public class McpOAuthMetadata {
         bearerEnabled
             && ApiFeatures.fromConfigAndRequest(featuresConfig, null)
                 .isFeatureEnabled(ApiFeature.MCP);
+    this.fixedBase =
+        bearerEnabled && hostSuffix == null ? config.publicBaseUrl().orElse(null) : null;
+    if (fixedBase != null) {
+      validateUrl(fixedBase, PUBLIC_BASE_URL, true);
+    }
     if (!published) {
-      fixedBase = null;
       authorizationServers = List.of();
       scopesSupported = List.of();
       return;
     }
 
-    URI publicBase = hostSuffix == null ? fixedBase(config) : null;
+    if (hostSuffix == null && fixedBase == null) {
+      throw new IllegalArgumentException(
+          PUBLIC_BASE_URL + " or " + PUBLIC_HOST_SUFFIX + " is required");
+    }
     URI authorizationServer =
         config
             .serverUrl()
             .orElseThrow(
                 () -> new IllegalArgumentException("stargate.mcp.auth.server-url is required"));
     validateUrl(authorizationServer, "stargate.mcp.auth.server-url", false);
-    if (publicBase != null
+    if (fixedBase != null
         && (jwtConfig.getExpectedAudience() == null
             || !jwtConfig
                 .getExpectedAudience()
-                .contains(publicBase.resolve(endpointPath).toString()))) {
+                .contains(fixedBase.resolve(endpointPath).toString()))) {
       throw new IllegalArgumentException(
           "mp.jwt.verify.audiences must include the configured public MCP resource");
     }
-    this.fixedBase = publicBase;
     this.authorizationServers = List.of(authorizationServer);
     this.scopesSupported = List.copyOf(config.scopesSupported().orElseGet(List::of));
   }
@@ -137,19 +145,22 @@ public class McpOAuthMetadata {
         .map(base -> "Bearer resource_metadata=\"" + base.resolve(metadataPath) + "\"");
   }
 
-  /**
-   * Whether a verified token with this {@code aud} claim may be used on the request's resource.
-   *
-   * <p>With a fixed public base the JWT verifier has already matched the token against {@code
-   * mp.jwt.verify.audiences}, which startup requires to include the resource. With a host suffix
-   * there is no static list, so the token must name the resource of the host it was sent to.
-   */
+  public String insufficientScopeChallenge(RoutingContext context, String scope) {
+    return challenge(context).map(value -> value + ", ").orElse("Bearer ")
+        + "error=\"insufficient_scope\", scope=\""
+        + scope
+        + "\"";
+  }
+
+  public boolean bearerEnabled() {
+    return bearerEnabled;
+  }
+
+  /** Requires a single audience matching the canonical MCP resource. */
   public boolean acceptsAudience(RoutingContext context, Set<String> audience) {
-    if (!audienceFromRequestHost()) {
-      return true;
-    }
     return audience != null
-        && requestBase(context)
+        && audience.size() == 1
+        && resourceBase(context)
             .map(base -> base.resolve(endpointPath).toString())
             .filter(audience::contains)
             .isPresent();
@@ -161,10 +172,11 @@ public class McpOAuthMetadata {
   }
 
   private Optional<URI> publicBase(RoutingContext context) {
-    if (!published) {
-      return Optional.empty();
-    }
-    return fixedBase != null ? Optional.of(fixedBase) : requestBase(context);
+    return published ? resourceBase(context) : Optional.empty();
+  }
+
+  private Optional<URI> resourceBase(RoutingContext context) {
+    return hostSuffix == null ? Optional.ofNullable(fixedBase) : requestBase(context);
   }
 
   /**
@@ -202,18 +214,6 @@ public class McpOAuthMetadata {
               + " must be a lowercase DNS suffix that starts with a dot and has at least two labels");
     }
     return suffix.get();
-  }
-
-  private static URI fixedBase(McpAuthConfig config) {
-    URI publicBase =
-        config
-            .publicBaseUrl()
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        PUBLIC_BASE_URL + " or " + PUBLIC_HOST_SUFFIX + " is required"));
-    validateUrl(publicBase, PUBLIC_BASE_URL, true);
-    return publicBase;
   }
 
   private static void validateUrl(URI uri, String property, boolean originOnly) {

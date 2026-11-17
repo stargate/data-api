@@ -28,6 +28,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsResolver;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.PrincipalTokenResolver;
+import io.stargate.sgv2.jsonapi.api.security.McpOAuthMetadata;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.metrics.JsonProcessingMetricsReporter;
@@ -298,6 +299,7 @@ class McpResourceTest {
     return new McpResource(
         mock(ObjectMapper.class),
         mock(Validator.class),
+        mock(McpOAuthMetadata.class),
         commandProcessor,
         mock(MeterRegistry.class),
         mock(JsonProcessingMetricsReporter.class),

@@ -94,29 +94,16 @@ class McpOAuthHostSuffixTest {
     assertThat(response.jsonPath().getList("result.tools.name", String.class)).contains("findOne");
   }
 
-  // An authorization server may name several resources, one per database the user granted.
   @ParameterizedTest
-  @ValueSource(strings = {FIRST_HOST, SECOND_HOST})
-  void aTokenIssuedForSeveralDatabasesListsToolsOnEachOfThem(String host) {
+  @ValueSource(strings = {FIRST_HOST, SECOND_HOST, THIRD_HOST})
+  void aTokenWithMultipleDatabaseAudiencesIsRejected(String host) {
     var response =
-        catalogRequest(host)
+        providerRequest(host)
             .header(
                 "Authorization", "Bearer " + tokenFor(resource(FIRST_HOST), resource(SECOND_HOST)))
             .post(MCP_PATH);
 
-    assertResponseComplete(response, 1);
-    assertThat(response.jsonPath().getList("result.tools.name", String.class)).contains("findOne");
-  }
-
-  @Test
-  void aTokenIssuedForSeveralDatabasesCannotReachAnUnlistedDatabase() {
-    var response =
-        providerRequest(THIRD_HOST)
-            .header(
-                "Authorization", "Bearer " + tokenFor(resource(FIRST_HOST), resource(SECOND_HOST)))
-            .post(MCP_PATH);
-
-    assertChallenge(response, THIRD_HOST);
+    assertChallenge(response, host);
     verifyNoInteractions(commandProcessor);
   }
 

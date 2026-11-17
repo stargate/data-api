@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.quarkiverse.mcp.server.Cancellation;
 import io.quarkiverse.mcp.server.InputRequiredException;
+import io.quarkiverse.mcp.server.JsonRpcErrorCodes;
 import io.quarkiverse.mcp.server.McpException;
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkus.security.AuthenticationException;
@@ -19,6 +20,7 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialsResolver;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
+import io.stargate.sgv2.jsonapi.api.security.McpOAuthMetadata;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -40,9 +42,12 @@ import jakarta.inject.Provider;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Validator;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.Response;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 import java.util.function.Supplier;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +62,7 @@ public class McpResource {
 
   private final ObjectMapper objectMapper;
   private final Validator validator;
+  private final McpOAuthMetadata oauthMetadata;
   private final MeteredCommandProcessor meteredCommandProcessor;
   private final CommandContext.BuilderSupplier contextBuilderSupplier;
   private final EmbeddingProviderFactory embeddingProviderFactory;
@@ -73,6 +79,7 @@ public class McpResource {
   public McpResource(
       ObjectMapper objectMapper,
       Validator validator,
+      McpOAuthMetadata oauthMetadata,
       MeteredCommandProcessor meteredCommandProcessor,
       MeterRegistry meterRegistry,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
@@ -90,6 +97,7 @@ public class McpResource {
     // KeyspaceResource, etc. We should refactor to avoid duplication later.
     this.objectMapper = objectMapper;
     this.validator = validator;
+    this.oauthMetadata = oauthMetadata;
     this.meteredCommandProcessor = meteredCommandProcessor;
     this.embeddingProviderFactory = embeddingProviderFactory;
     this.schemaObjectCacheSupplier = schemaObjectCacheSupplier;
@@ -239,8 +247,10 @@ public class McpResource {
             () -> {
               Uni<CommandContext<?>> contextUni;
               try {
+                var routingContext = routingContextProvider.get();
                 // Mutiny captures context when callbacks are assembled.
-                McpRequestLogging.activate(routingContextProvider.get());
+                McpRequestLogging.activate(routingContext);
+                requireOAuthScope(routingContext, command);
                 var violations = validator.validate(command);
                 if (!violations.isEmpty()) {
                   throw new ConstraintViolationException(violations);
@@ -261,6 +271,26 @@ public class McpResource {
                   .onFailure()
                   .invoke(failure -> McpRequestLogging.commandFailed(command));
             });
+  }
+
+  private void requireOAuthScope(RoutingContext context, Command command) {
+    if (!oauthMetadata.bearerEnabled()) {
+      return;
+    }
+    var requiredScope = McpOAuthScope.requiredFor(command.commandName());
+    if (securityIdentityProvider.get().getPrincipal() instanceof JsonWebToken jwt
+        && requiredScope.isGrantedBy(jwt.getClaim("scope"))) {
+      return;
+    }
+
+    // The transport writes the JSON-RPC error using this HTTP status and challenge.
+    context
+        .response()
+        .setStatusCode(Response.Status.FORBIDDEN.getStatusCode())
+        .putHeader(
+            HttpHeaders.WWW_AUTHENTICATE,
+            oauthMetadata.insufficientScopeChallenge(context, requiredScope.value()));
+    throw new McpException("Insufficient OAuth scope", JsonRpcErrorCodes.SECURITY_ERROR);
   }
 
   private Uni<CommandResult> executeCommand(CommandContext<?> context, Command command) {

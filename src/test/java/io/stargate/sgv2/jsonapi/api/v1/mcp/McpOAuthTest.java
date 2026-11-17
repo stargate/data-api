@@ -16,6 +16,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.PUBLIC_BAS
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.SECOND_ORG;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.SECOND_SUBJECT;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.token;
+import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.tokenWithScope;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -83,6 +84,61 @@ class McpOAuthTest {
       assertThat(response.jsonPath().getList("result.tools.name", String.class))
           .contains("findKeyspaces", "findEmbeddingProviders", "findOne", "insertOne");
     }
+  }
+
+  @Test
+  void fixedBaseRejectsMultipleAudiences() {
+    String jwt =
+        token(
+            FIRST_SUBJECT,
+            FIRST_ORG,
+            "read-role",
+            expectedResource(),
+            "https://other.example.test/v1/mcp");
+
+    assertChallenge(providerRequest(1).header("Authorization", "Bearer " + jwt).post(mcpPath()));
+    verifyNoInteractions(commandProcessor);
+  }
+
+  @Test
+  void readScopeCannotRunAWriteToolEvenWithAWriteRole() {
+    String jwt =
+        tokenWithScope(FIRST_SUBJECT, FIRST_ORG, "write-role", "astra:db:read", expectedResource());
+    var response =
+        toolRequest(
+                "insertOne",
+                Map.of("keyspace", "test", "collection", "test", "document", Map.of("x", 1)))
+            .header("Authorization", "Bearer " + jwt)
+            .post(mcpPath());
+
+    assertInsufficientScope(response, "astra:db:write");
+    verifyNoInteractions(commandProcessor);
+  }
+
+  @Test
+  void writeScopeCannotRunSchemaChanges() {
+    String jwt =
+        tokenWithScope(
+            FIRST_SUBJECT, FIRST_ORG, "admin-role", "astra:db:write", expectedResource());
+    var response =
+        toolRequest("createKeyspace", Map.of("name", "test"))
+            .header("Authorization", "Bearer " + jwt)
+            .post(mcpPath());
+
+    assertInsufficientScope(response, "astra:db:admin");
+    verifyNoInteractions(commandProcessor);
+  }
+
+  @ParameterizedTest
+  @NullSource
+  @ValueSource(strings = {"astra:db:read-extra", "astra:db:admin"})
+  void readToolsRequireReadOrWriteScope(String scope) {
+    String jwt = tokenWithScope(FIRST_SUBJECT, FIRST_ORG, "admin-role", scope, expectedResource());
+
+    assertInsufficientScope(
+        providerRequest(1).header("Authorization", "Bearer " + jwt).post(mcpPath()),
+        "astra:db:read");
+    verifyNoInteractions(commandProcessor);
   }
 
   @Test
@@ -256,7 +312,9 @@ class McpOAuthTest {
   @Test
   void overlappingJwtRequestsKeepSeparateCredentialsWhenCompletedInReverseOrder() throws Exception {
     String firstToken = firstToken();
-    String secondToken = token(SECOND_SUBJECT, SECOND_ORG, "write-role", expectedResource());
+    String secondToken =
+        tokenWithScope(
+            SECOND_SUBJECT, SECOND_ORG, "write-role", "astra:db:write", expectedResource());
     var firstCompletion = new CompletableFuture<Integer>();
     var secondCompletion = new CompletableFuture<Integer>();
     var completions = Map.of(firstToken, firstCompletion, secondToken, secondCompletion);
@@ -355,6 +413,23 @@ class McpOAuthTest {
     return request("tools/call")
         .header("Mcp-Name", "findEmbeddingProviders")
         .body(McpHttpTestSupport.toolPayload(id, "findEmbeddingProviders", Map.of()));
+  }
+
+  private RequestSpecification toolRequest(String name, Map<String, Object> args) {
+    return request("tools/call")
+        .header("Mcp-Name", name)
+        .body(McpHttpTestSupport.toolPayload(1, name, args));
+  }
+
+  private void assertInsufficientScope(Response response, String requiredScope) {
+    assertThat(assertRpcError(response, 403, JsonRpcErrorCodes.SECURITY_ERROR).getString("message"))
+        .isEqualTo("Insufficient OAuth scope");
+    assertThat(response.header("WWW-Authenticate"))
+        .contains(
+            "Bearer",
+            "error=\"insufficient_scope\"",
+            "scope=\"" + requiredScope + "\"",
+            "resource_metadata=\"" + expectedMetadataUrl() + "\"");
   }
 
   private void assertChallenge(Response response) {

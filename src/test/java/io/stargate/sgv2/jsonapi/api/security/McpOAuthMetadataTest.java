@@ -265,7 +265,7 @@ class McpOAuthMetadataTest {
     assertThat(metadata.audienceFromRequestHost()).isTrue();
     assertThat(metadata.acceptsAudience(request, Set.of(DATABASE_RESOURCE))).isTrue();
     assertThat(metadata.acceptsAudience(request, Set.of("another-audience", DATABASE_RESOURCE)))
-        .isTrue();
+        .isFalse();
     assertThat(
             metadata.acceptsAudience(
                 request, Set.of("https://db-two-eu-west-1.apps.example.test/v1/mcp")))
@@ -288,14 +288,20 @@ class McpOAuthMetadataTest {
         .isFalse();
   }
 
-  @Test
-  void fixedPublicBaseLeavesTheAudienceToTheConfiguredJwtVerifier() {
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void fixedPublicBaseAcceptsOnlyItsMcpResource(boolean mcpEnabled) {
+    String resource = PUBLIC_BASE + ENDPOINT;
+    String otherAudience = "https://other.example.test/v1/mcp";
     var metadata =
-        metadata(config(PUBLIC_BASE), ENDPOINT, METADATA, true, true, PUBLIC_BASE + ENDPOINT);
+        metadata(
+            config(PUBLIC_BASE), ENDPOINT, METADATA, true, mcpEnabled, resource, otherAudience);
+    var request = request(ENDPOINT);
     assertThat(metadata.audienceFromRequestHost()).isFalse();
-    assertThat(metadata.acceptsAudience(request(ENDPOINT), Set.of(PUBLIC_BASE + ENDPOINT)))
-        .isTrue();
-    assertThat(metadata.acceptsAudience(request(ENDPOINT), null)).isTrue();
+    assertThat(metadata.acceptsAudience(request, Set.of(resource))).isTrue();
+    assertThat(metadata.acceptsAudience(request, Set.of(otherAudience))).isFalse();
+    assertThat(metadata.acceptsAudience(request, Set.of(resource, otherAudience))).isFalse();
+    assertThat(metadata.acceptsAudience(request, null)).isFalse();
   }
 
   @ParameterizedTest

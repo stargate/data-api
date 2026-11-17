@@ -27,7 +27,16 @@ final class McpOAuthTestSupport {
   private McpOAuthTestSupport() {}
 
   static String token(String subject, String org, String role, String... audiences) {
-    return sign(claims(subject, org, role, List.of(audiences)), fixturePrivateKey());
+    return tokenWithScope(subject, org, role, "astra:db:read", audiences);
+  }
+
+  static String tokenWithScope(
+      String subject, String org, String role, String scope, String... audiences) {
+    var claims = claims(subject, org, role, List.of(audiences));
+    if (scope != null) {
+      claims.put("scope", scope);
+    }
+    return sign(claims, fixturePrivateKey());
   }
 
   static String invalidToken(InvalidToken kind, String audience) {
