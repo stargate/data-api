@@ -17,7 +17,6 @@ import io.stargate.sgv2.jsonapi.service.operation.reranking.RerankingQuery;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -50,9 +49,9 @@ class FindAndRerankPlanner {
     var schemaObject = commandContext.schemaObject();
     var operationsConfig = commandContext.config().get(OperationsConfig.class);
 
-    checkSortSupported(sort, schemaObject);
+    validateSortSupported(sort, schemaObject);
     validateHybridLimits(command, operationsConfig);
-    checkRerankCandidateLimit(command, operationsConfig);
+    validateRerankCandidateLimit(command, operationsConfig);
 
     var rerankServiceDef = resolveRerankServiceDef(command, commandContext);
     var rerankingQuery =
@@ -107,21 +106,21 @@ class FindAndRerankPlanner {
       throw RequestException.Code.UNSUPPORTED_HYBRID_LIMITS_WITHOUT_HYBRID_SORT.get();
     }
     var hybridLimits = command.options().hybridLimits();
-    checkLimitInBounds(
+    validateLimitInBounds(
         FindAndRerankCommand.HybridLimitsDeserializer.VECTOR_LIMIT_FIELD,
         hybridLimits.vectorLimit(),
         operationsConfig.hybridSearchVectorLimit());
-    checkLimitInBounds(
+    validateLimitInBounds(
         FindAndRerankCommand.HybridLimitsDeserializer.LEXICAL_LIMIT_FIELD,
         hybridLimits.lexicalLimit(),
         operationsConfig.hybridSearchLexicalLimit());
   }
 
   /**
-   * Check the user-supplied rerankCandidateLimit: it cannot be used with a $hybrid sort, and must
-   * be an integer inside the dynamic OperationsConfig bounds.
+   * Validate the user-supplied rerankCandidateLimit: it cannot be used with a $hybrid sort, and
+   * must be inside the dynamic OperationsConfig bounds.
    */
-  private static void checkRerankCandidateLimit(
+  private static void validateRerankCandidateLimit(
       FindAndRerankCommand command, OperationsConfig operationsConfig) {
     var limit =
         getOrDefault(command.options(), FindAndRerankCommand.Options::rerankCandidateLimit, null);
@@ -131,42 +130,31 @@ class FindAndRerankPlanner {
     if (command.sortClause() instanceof FindAndRerankSort.MultiLeg) {
       throw RequestException.Code.UNSUPPORTED_RERANK_CANDIDATE_LIMIT_WITH_HYBRID_SORT.get();
     }
-
-    var bounds = operationsConfig.rerankCandidateLimit();
-    // NOTE: intValue() drops a fraction and wraps a number that is too big for an int. The limit
-    // is an int only when the int converts back to the same number.
-    var intLimit = limit.intValue();
-    var isInt = BigDecimal.valueOf(intLimit).compareTo(limit) == 0;
-    if (isInt && bounds.isValid(intLimit)) {
-      return;
-    }
-    throw errorForInvalidLimit(
-        FindAndRerankCommand.Options.RERANK_CANDIDATE_LIMIT_FIELD,
-        limit.toString(),
-        "must be an integer between %d and %d (inclusive)".formatted(bounds.min(), bounds.max()));
+    validateLimitInBounds(
+        FindAndRerankCommand.Options.Names.RERANK_CANDIDATE_LIMIT,
+        limit,
+        operationsConfig.rerankCandidateLimit());
   }
 
-  private static void checkLimitInBounds(String field, int value, IntConfigWithBounds bounds) {
+  private static void validateLimitInBounds(String field, int value, IntConfigWithBounds bounds) {
     if (bounds.isValid(value)) {
       return;
     }
-    throw errorForInvalidLimit(
-        field,
-        String.valueOf(value),
-        "must be between %d and %d (inclusive)".formatted(bounds.min(), bounds.max()));
-  }
-
-  /** The error for a limit option whose value is not valid, it names the field and the value. */
-  private static RequestException errorForInvalidLimit(String field, String value, String message) {
-    return RequestException.Code.COMMAND_FIELD_VALUE_INVALID.get(
-        Map.of("field", field, "value", value, "message", message));
+    throw RequestException.Code.COMMAND_FIELD_VALUE_INVALID.get(
+        Map.of(
+            "field",
+            field,
+            "value",
+            String.valueOf(value),
+            "message",
+            "must be between %d and %d (inclusive)".formatted(bounds.min(), bounds.max())));
   }
 
   /**
-   * Check that collection supports the sort features the request uses (vector / vectorize /
+   * Validate that the collection supports the sort features the request uses (vector / vectorize /
    * lexical), throw if it does not.
    */
-  private static void checkSortSupported(
+  private static void validateSortSupported(
       FindAndRerankSort sort, CollectionSchemaObject schemaObject) {
 
     if (isVectorSort(sort) || isVectorizeSort(sort)) {
@@ -243,7 +231,7 @@ class FindAndRerankPlanner {
                 lexicalText(multiLeg),
                 hybridLimits.lexicalLimit()));
       } else if (isExplicitLexicalSort(multiLeg)) {
-        // error should have been caught in checkSortSupported() safety here
+        // error should have been caught in validateSortSupported() safety here
         throwIfNoLexicalIndex(schemaObject);
       }
     }
@@ -257,7 +245,7 @@ class FindAndRerankPlanner {
   private static FindAndRerankPlan.VectorizeStep planVectorizeStep(
       FindAndRerankSort sort, CollectionSchemaObject schemaObject) {
 
-    // sanity check, checkSortSupported() checked the collection has a vectorize column
+    // sanity check, validateSortSupported() checked the collection has a vectorize column
     var vectorizeColumn =
         schemaObject.vectorConfig().getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
     return new FindAndRerankPlan.VectorizeStep(
