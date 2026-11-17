@@ -6,14 +6,16 @@ import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
 import java.util.Objects;
 
 /**
- * The reranking query to use for a reranking operation. Either from the $vectorize sort clause or
- * manually specified by the user.
+ * The reranking query to use for a reranking operation. Either from the $vectorize or $lexical sort
+ * clause, or manually specified by the user.
  */
 public class RerankingQuery implements Recordable {
 
   public enum Source {
     /** Query came from the $vectorize sort in the user query. This is the default. */
     VECTORIZE,
+    /** Query came from the $lexical sort in the user query, when the sort is only $lexical. */
+    LEXICAL,
     /** Query came from the options.rerankQuery property in the user query. */
     OPTIONS,
   }
@@ -46,14 +48,33 @@ public class RerankingQuery implements Recordable {
    * @return Constructed RerankingQuery, with the source indicating where the query came from.
    */
   public static RerankingQuery create(String rerankQuery, String vectorizeText) {
+    return create(rerankQuery, vectorizeText, Source.VECTORIZE);
+  }
+
+  /**
+   * Creates a new RerankingQuery for a $lexical sort: the <code>rerankQuery</code> option when it
+   * is not blank, otherwise the text of the $lexical sort.
+   *
+   * <p>Throws {@link RequestException.Code#MISSING_RERANK_QUERY_TEXT} if both are null or blank.
+   *
+   * @param rerankQuery The <code>rerankQuery</code> option, may be <code>null</code>.
+   * @param lexicalText The text of the $lexical sort.
+   * @return Constructed RerankingQuery, with the source indicating where the query came from.
+   */
+  public static RerankingQuery createForLexicalSort(String rerankQuery, String lexicalText) {
+    return create(rerankQuery, lexicalText, Source.LEXICAL);
+  }
+
+  /** The rerankQuery option when it is not blank, otherwise the sort text and its source. */
+  private static RerankingQuery create(String rerankQuery, String sortText, Source sortSource) {
 
     if (rerankQuery != null && !rerankQuery.isBlank()) {
       return new RerankingQuery(rerankQuery, Source.OPTIONS);
     }
 
     // will never be blank, but double-checking for safety
-    if (vectorizeText != null && !vectorizeText.isBlank()) {
-      return new RerankingQuery(vectorizeText, Source.VECTORIZE);
+    if (sortText != null && !sortText.isBlank()) {
+      return new RerankingQuery(sortText, sortSource);
     }
 
     throw RequestException.Code.MISSING_RERANK_QUERY_TEXT.get();

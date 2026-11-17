@@ -12,10 +12,14 @@ import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Integration tests for the {@link
@@ -327,6 +331,16 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         .body("$", responseIsError())
         .body(
             "errors[0].errorCode", is(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.name()));
+
+    // field sort
+    findAndRerankWithSort(
+            collectionName,
+            """
+            {"age": -1}
+            """)
+        .body("$", responseIsError())
+        .body(
+            "errors[0].errorCode", is(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.name()));
   }
 
   /** Each limit option is for one kind of sort, it is rejected with the other kind. */
@@ -400,12 +414,144 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
             "errors[0].message",
             containsString("Command field 'rerankCandidateLimit' value 101 not valid"))
         .body("errors[0].message", containsString("must be between 1 and 100 (inclusive)"));
+  }
 
-    // a valid limit passes its checks, then the sort is rejected until GH #2602 and GH #2603
-    findAndRerankWithSort(collectionName, sort, "\"rerankCandidateLimit\": 50")
+  /**
+   * A sort without $hybrid needs the same collection support as the same sort in $hybrid. A
+   * $lexical sort without $hybrid always needs a lexical index.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("sortsWithoutHybridTheCollectionCannotRun")
+  void failOnSortWithoutHybridTheCollectionCannotRun(
+      String collectionName,
+      String collectionSpec,
+      String sort,
+      String errorCode,
+      String errorMessageContains) {
+    var command =
+            """
+        {"findAndRerank": {
+            "sort": %s,
+            "options": {"rerankQuery": "hello", "rerankOn": "content"}
+        }}
+        """
+            .formatted(sort);
+    errorOnNotEnabled(collectionName, collectionSpec, errorCode, errorMessageContains, command);
+  }
+
+  static Stream<Arguments> sortsWithoutHybridTheCollectionCannotRun() {
+    return Stream.of(
+        Arguments.of(
+            "vector_sort_vector_not_enabled",
+            """
+            {
+              "name" : "%s",
+              "options": {}
+            }
+            """,
+            """
+            {"$vector": [0.1, 0.2, 0.3]}
+            """,
+            SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION.name(),
+            "The collection %s.%s does not have vectors enabled."),
+        Arguments.of(
+            "vectorize_sort_vectorize_not_enabled",
+            """
+            {
+              "name" : "%s",
+              "options": {
+                "vector": {
+                  "metric": "cosine",
+                  "dimension": 1024
+                }
+              }
+            }
+            """,
+            """
+            {"$vectorize": "hello"}
+            """,
+            SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION.name(),
+            "The collection %s.%s does not have vectorize enabled."),
+        Arguments.of(
+            "lexical_sort_lexical_not_enabled",
+            """
+            {
+              "name" : "%s",
+              "options": {
+                "vector": {
+                  "metric": "cosine",
+                  "dimension": 1024,
+                  "service": {
+                    "provider": "openai",
+                    "modelName": "text-embedding-3-small"
+                  }
+                },
+                "lexical": {
+                  "enabled": false
+                }
+              }
+            }
+            """,
+            """
+            {"$lexical": "hello"}
+            """,
+            SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.name(),
+            "The collection without a lexical index: %s.%s."));
+  }
+
+  /**
+   * A $vector sort without $hybrid has no text to rerank with and no field to rerank on, so the
+   * command must have the rerankQuery and rerankOn options.
+   */
+  @Test
+  void failOnVectorSortWithoutRerankOptions() {
+    var collectionName = "find_rerank_vector_sort_no_options";
+    createCollectionWithCleanup(
+        collectionName,
+        """
+        {
+          "name" : "%s",
+          "options": {
+            "vector": {
+              "metric": "cosine",
+              "dimension": 3
+            },
+            "rerank": {
+              "enabled": true
+            }
+          }
+        }
+        """);
+
+    var command =
+        """
+        {"findAndRerank": {
+            "sort": {"$vector": [0.1, 0.2, 0.3]},
+            "options": %s
+        }}
+        """;
+
+    // no rerankQuery
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            command.formatted(
+                """
+                {"rerankOn": "content"}
+                """))
         .body("$", responseIsError())
-        .body(
-            "errors[0].errorCode", is(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.name()));
+        .body("errors[0].errorCode", is(RequestException.Code.MISSING_RERANK_QUERY_TEXT.name()));
+
+    // no rerankOn
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            command.formatted(
+                """
+                {"rerankQuery": "hello"}
+                """))
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.MISSING_RERANK_ON.name()));
   }
 
   /**

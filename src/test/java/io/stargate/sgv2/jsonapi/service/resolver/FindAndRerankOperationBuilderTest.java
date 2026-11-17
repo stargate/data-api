@@ -97,7 +97,7 @@ class FindAndRerankOperationBuilderTest {
           DocumentProjector.defaultProjector(),
           10);
 
-  /** The builder only reads the filter and the hybridLimits of the command. */
+  /** The builder only reads the filter, the sort and the hybridLimits of the command. */
   private static final String EMPTY_COMMAND =
       """
       {"findAndRerank": {}}
@@ -213,7 +213,7 @@ class FindAndRerankOperationBuilderTest {
             "vectorize, then the vector and lexical legs",
             plan(VECTORIZE_STEP, vectorizedLeg(50), lexicalLeg(25)),
             List.of(vectorRead(VECTORIZED, 50), lexicalRead(25))),
-        // the planner does not make this plan yet, a single $lexical sort will (GH #2602)
+        // the plan of a $lexical sort without $hybrid
         Arguments.of("lexical leg", plan(null, lexicalLeg(25)), List.of(lexicalRead(25))));
   }
 
@@ -300,7 +300,8 @@ class FindAndRerankOperationBuilderTest {
     var command =
         command(
             """
-            {"findAndRerank": {"options": {"hybridLimits": {"$vector": 100, "$lexical": 25}}}}
+            {"findAndRerank": {"sort": {"$hybrid": "cheese"},
+             "options": {"hybridLimits": {"$vector": 100, "$lexical": 25}}}}
             """);
 
     build(commandContext, command, plan(null, vectorLeg(100), lexicalLeg(25)));
@@ -308,6 +309,50 @@ class FindAndRerankOperationBuilderTest {
     assertThat(commandContext.getHybridLimits().vectorLimit())
         .isEqualTo(RerankingConstants.HybridSearchLimits.MAX);
     assertThat(commandContext.getHybridLimits().lexicalLimit()).isEqualTo(25);
+  }
+
+  /**
+   * A sort without $hybrid has no hybridLimits, so both limits on the command context are the read
+   * limit of its one leg. The read limits are not the hybridLimits default, so the test fails if
+   * the builder copies the default.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("plansOfSortsWithoutHybrid")
+  void setsReadLimitOfOneLegAsHybridLimitsOnCommandContext(
+      String description, String sort, FindAndRerankPlan plan, int readLimit) throws Exception {
+    var commandContext = commandContext();
+    var commandJson =
+            """
+        {"findAndRerank": {"sort": %s}}
+        """
+            .formatted(sort);
+
+    build(commandContext, command(commandJson), plan);
+
+    assertThat(commandContext.getHybridLimits().vectorLimit())
+        .as("%s: vector limit", description)
+        .isEqualTo(readLimit);
+    assertThat(commandContext.getHybridLimits().lexicalLimit())
+        .as("%s: lexical limit", description)
+        .isEqualTo(readLimit);
+  }
+
+  static Stream<Arguments> plansOfSortsWithoutHybrid() {
+    return Stream.of(
+        Arguments.of(
+            "$vector sort",
+            """
+            {"$vector": [0.1, 0.2, 0.3]}
+            """,
+            plan(null, vectorLeg(80)),
+            80),
+        Arguments.of(
+            "$lexical sort",
+            """
+            {"$lexical": "cows"}
+            """,
+            plan(null, lexicalLeg(30)),
+            30));
   }
 
   // ===========================================================================================

@@ -11,6 +11,7 @@ public class RerankingQueryTests {
 
   private static final String VECTORIZE_QUERY = "vetorize-query-" + System.currentTimeMillis();
   private static final String OPTIONS_QUERY = "options-query-" + System.currentTimeMillis();
+  private static final String LEXICAL_QUERY = "lexical-query-" + System.currentTimeMillis();
 
   @Test
   public void createFromVectorize() {
@@ -38,6 +39,27 @@ public class RerankingQueryTests {
     assertThat(query2.source()).as("source is options").isEqualTo(RerankingQuery.Source.OPTIONS);
 
     assertMissingQueryText("error when blank options.rerankQuery", "", null);
+  }
+
+  @Test
+  public void createFromLexical() {
+
+    var query = RerankingQuery.createForLexicalSort(null, LEXICAL_QUERY);
+    assertThat(query.query()).as("lexical text used as rerank query").isEqualTo(LEXICAL_QUERY);
+    assertThat(query.source()).as("source is lexical").isEqualTo(RerankingQuery.Source.LEXICAL);
+
+    var query2 = RerankingQuery.createForLexicalSort("  ", LEXICAL_QUERY);
+    assertThat(query2.query())
+        .as("lexical text used as rerank query when options.rerankQuery is blank")
+        .isEqualTo(LEXICAL_QUERY);
+    assertThat(query2.source()).as("source is lexical").isEqualTo(RerankingQuery.Source.LEXICAL);
+
+    var query3 = RerankingQuery.createForLexicalSort(OPTIONS_QUERY, LEXICAL_QUERY);
+    assertThat(query3.query())
+        .as(
+            "use the options.rerankQuery when both lexical text and options.rerankQuery are present")
+        .isEqualTo(OPTIONS_QUERY);
+    assertThat(query3.source()).as("source is options").isEqualTo(RerankingQuery.Source.OPTIONS);
   }
 
   @Test
