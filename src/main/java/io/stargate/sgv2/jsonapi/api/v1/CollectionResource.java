@@ -7,6 +7,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.ConfigPreLoader;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
@@ -138,6 +139,7 @@ public class CollectionResource {
                         InsertManyCommand.class,
                         UpdateManyCommand.class,
                         UpdateOneCommand.class,
+                        AlterCollectionCommand.class,
                         // Table Only commands
                         AlterTableCommand.class,
                         CreateIndexCommand.class,

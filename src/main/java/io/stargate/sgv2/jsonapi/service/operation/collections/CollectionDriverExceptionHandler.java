@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexExceptionHandler;
@@ -52,7 +53,9 @@ public class CollectionDriverExceptionHandler
     if (exception
         .getMessage()
         .contains(
-            "analyzed size for column query_lexical_value exceeds the cumulative limit for index")) {
+            "analyzed size for column "
+                + DocumentConstants.Columns.LEXICAL_INDEX_COLUMN_NAME
+                + " exceeds the cumulative limit for index")) {
       return DocumentException.Code.LEXICAL_CONTENT_TOO_LONG.get(errVars(schemaObject, exception));
     }
 
