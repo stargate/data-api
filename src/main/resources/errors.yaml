@@ -504,7 +504,7 @@ request-errors:
     code: UNKNOWN_TABLE_COLUMNS
     title: Columns in documents are not defined in the table schema
     body: |-
-      Only columns defined in the table schema can be included when inserted a row into a table.
+      Only columns defined in the table schema can be included when inserting a row into a table.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command included the following unknown columns: ${unknownColumns}.
@@ -515,7 +515,7 @@ request-errors:
     code: UNSUPPORTED_COLUMN_TYPES
     title: Column types in documents are not supported
     body: |-
-      Only supported column types can be included when inserting a document into a table.
+      Only supported column types can be included when inserting a row into a table.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command included the following columns that have unsupported data types: ${unsupportedColumns}.
@@ -792,8 +792,8 @@ request-errors:
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
       
       The filter has the following issues: 
-        - Missing Partition Keys: ${missingPartitionKeys}.
-        - Out of order Partition Sort Keys: ${outOfOrderClusteringKeys}.
+        - Missing partition keys: ${missingPartitionKeys}.
+        - Out of order partition sort keys: ${outOfOrderClusteringKeys}.
       
       Resend the command using a filter that includes all partitioning keys and, optionally, the partition sort keys in order.
 
