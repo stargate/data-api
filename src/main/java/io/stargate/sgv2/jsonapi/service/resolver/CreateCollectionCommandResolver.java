@@ -101,7 +101,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     return new CreateCollectionOperation(
         context,
         dbLimitsConfig,
-        context.cqlSessionCache(),
         collectionName,
         operationsConfig.databaseConfig().ddlDelayMillis(),
         operationsConfig.tooManyIndexesRollbackEnabled(),

@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.provider.ApiModelSupport;
+import io.stargate.sgv2.jsonapi.service.schema.DatabaseSchemaObject;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -20,7 +21,9 @@ import java.util.stream.Collectors;
  * CommandStatus#EXISTING_EMBEDDING_PROVIDERS} command status.
  */
 public record FindEmbeddingProvidersOperation(
-    FindEmbeddingProvidersCommand command, EmbeddingProvidersConfig config) implements Operation {
+    FindEmbeddingProvidersCommand command, EmbeddingProvidersConfig config)
+    implements Operation<DatabaseSchemaObject> {
+
   @Override
   public Uni<Supplier<CommandResult>> execute(
       RequestContext dataApiRequestInfo, QueryExecutor queryExecutor) {
