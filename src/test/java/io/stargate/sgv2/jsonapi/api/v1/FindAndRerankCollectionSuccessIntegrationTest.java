@@ -186,6 +186,27 @@ public class FindAndRerankCollectionSuccessIntegrationTest
   }
 
   @Test
+  void nonStringPassagesAreExcluded() {
+    insertDocuments(
+        collectionName,
+        List.of(
+            Map.of("_id", "text", "$vector", VECTOR, "content", "score:1 text passage"),
+            Map.of("_id", "number", "$vector", VECTOR, "content", 42),
+            Map.of("_id", "boolean", "$vector", VECTOR, "content", true),
+            Map.of("_id", "array", "$vector", VECTOR, "content", List.of("score:2 array")),
+            Map.of("_id", "object", "$vector", VECTOR, "content", Map.of("text", "score:3"))));
+
+    findAndRerank(
+            collectionName,
+            Map.of(
+                "sort", Map.of("$hybrid", Map.of("$vector", VECTOR)),
+                "options", Map.of("rerankQuery", "query", "rerankOn", "content")))
+        .body("data.documents._id", contains("text"));
+
+    assertThat(requestedPassages()).containsExactly("score:1 text passage");
+  }
+
+  @Test
   @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
   void hybridCandidatesAreDeduplicatedBeforeReranking() {
     var hybridCollection = collectionName + "_hybrid";
