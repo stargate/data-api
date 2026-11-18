@@ -12,23 +12,53 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import io.stargate.sgv2.jsonapi.api.model.command.builders.CollectionSortClauseBuilder;
+import io.stargate.sgv2.jsonapi.api.model.command.builders.SortClauseBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.FieldSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorizeSortExpression;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeature;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.util.JsonFieldMatcher;
+import io.stargate.sgv2.jsonapi.util.JsonUtil;
+import io.stargate.sgv2.jsonapi.util.StringUtil;
 import java.io.IOException;
 import java.util.*;
 
 /**
  * {@link StdDeserializer} for the {@link FindAndRerankSort}.
  *
- * <p>Note: There is no validation, this is handled when resolving the command to an operation.
+ * <p>NOTE1: some single leg checks are a copy of the checks in {@link CollectionSortClauseBuilder}.
+ * See deserializeSingleLeg() for more details.
+ *
+ * <p>TODO: remove the copy when find and findAndRerank parse the sort with the same code.
+ *
+ * <p>NOTE2: an error thrown here reaches HTTP users with its error code and message. MCP users get
+ * a different error:
+ *
+ * <ul>
+ *   <li>quarkus-mcp-server converts the tool arguments with Jackson before it calls the tool.
+ *   <li>The MCP server catches only a Jackson mapping error. It reports it as "Invalid argument
+ *       [sort] - unable to convert value".
+ *   <li>It does not catch any other error, such as a {@link SortException}. It reports the error as
+ *       "Internal error" and logs it as an ERROR.
+ *   <li>Neither error has the error code or tells the agent how to fix the request.
+ *   <li>See <a
+ *       href="https://github.com/quarkiverse/quarkus-mcp-server/blob/2.0.3/core/runtime/src/main/java/io/quarkiverse/mcp/server/runtime/FeatureManagerBase.java#L297-L314">FeatureManagerBase.handleParam()</a>
+ *       in quarkus-mcp-server 2.0.3.
+ * </ul>
+ *
+ * <p>TODO: parse the sort when the command is resolved. Then MCP users also get the error code and
+ * message.
  */
 public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAndRerankSort> {
 
   private static final String ERROR_CONTEXT = "`sort` clause";
 
-  // the only field we accept at top level is $hybrid
+  // when the sort has $hybrid it must be the only field at top level
   // can be string or object
   // { "sort" : { "$hybrid" : "i like cheese" } }
   // { "sort" : { "$hybrid" : { "$vectorize" : "i like cheese", "$lexical" : "cows"} } }
@@ -71,28 +101,25 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
    * Deserialize the sort clause from an object node.
    *
    * @param sort The sort clause as an object node, no check for nulls.
-   * @return The {@link FindAndRerankSort} that reflects the request without validation, e.g.
-   *     checking that a vectorize or vector sort is provided but not both.
+   * @return The {@link FindAndRerankSort} for the request.
    */
   private static FindAndRerankSort deserialize(JsonParser jsonParser, ObjectNode sort)
       throws JsonMappingException {
-
-    // { "sort" : { } }
-    if (sort.isEmpty()) {
-      return FindAndRerankSort.NO_ARG_SORT;
+    if (sort.has(HYBRID_FIELD)) {
+      return deserializeMultiLeg(jsonParser, sort);
     }
+    return deserializeSingleLeg(sort);
+  }
 
+  /** Deserialize a sort with $hybrid, which must be the only field in the sort. */
+  private static FindAndRerankSort.MultiLeg deserializeMultiLeg(
+      JsonParser jsonParser, ObjectNode sort) throws JsonMappingException {
     var hybridMatch = MATCH_HYBRID_FIELD.matchAndThrow(sort, jsonParser, ERROR_CONTEXT);
 
     return switch (hybridMatch.matched().get(HYBRID_FIELD)) {
-      case TextNode textNode -> {
-        // using the same text for vectorize and for lexical, no vector
-        var normalizedText = normalizedText(textNode.asText().trim());
-        // NOTE: commandFeatures flags are used to determine user intent, changing
-        // impacts FindAndRerankOperationBuilder
-        yield new FindAndRerankSort(
-            normalizedText, normalizedText, null, CommandFeatures.of(CommandFeature.HYBRID));
-      }
+      case TextNode textNode ->
+          new FindAndRerankSort.HybridText(
+              normalizedText(textNode.asText()), CommandFeatures.of(CommandFeature.HYBRID));
       case ObjectNode objectNode -> deserializeHybridObject(jsonParser, objectNode);
       case JsonNode node ->
           throw JsonFieldMatcher.errorForWrongType(
@@ -100,7 +127,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
     };
   }
 
-  private static FindAndRerankSort deserializeHybridObject(
+  private static FindAndRerankSort.HybridObject deserializeHybridObject(
       JsonParser jsonParser, ObjectNode hybridObject) throws JsonMappingException {
 
     var sortMatch = MATCH_SORT_FIELDS.matchAndThrow(hybridObject, jsonParser, ERROR_CONTEXT);
@@ -123,7 +150,7 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$vectorize" : "I like cheese",
             commandFeatures.addFeature(CommandFeature.VECTORIZE);
-            yield normalizedText(textNode.asText().trim());
+            yield normalizedText(textNode.asText());
           }
           case JsonNode node ->
               throw JsonFieldMatcher.errorForWrongType(
@@ -145,17 +172,13 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
           case NullNode ignored -> {
             // explict setting to null is allowed
             // { "sort" : { "$hybrid" : { "$lexical" : null,
-            // NOTE: commandFeatures flags are used to determine user intent, changing
-            // impacts FindAndRerankOperationBuilder
             commandFeatures.addFeature(CommandFeature.LEXICAL);
             yield null;
           }
           case TextNode textNode -> {
             // { "sort" : { "$hybrid" : { "$lexical" : "cheese",
-            // NOTE: commandFeatures flags are used to determine user intent, changing
-            // impacts FindAndRerankOperationBuilder
             commandFeatures.addFeature(CommandFeature.LEXICAL);
-            yield normalizedText(textNode.asText().trim());
+            yield normalizedText(textNode.asText());
           }
           case JsonNode node ->
               throw JsonFieldMatcher.errorForWrongType(
@@ -216,7 +239,111 @@ public class FindAndRerankSortClauseDeserializer extends StdDeserializer<FindAnd
                   ObjectNode.class);
         };
 
-    return new FindAndRerankSort(vectorizeText, lexicalText, vector, commandFeatures);
+    return new FindAndRerankSort.HybridObject(vectorizeText, lexicalText, vector, commandFeatures);
+  }
+
+  /**
+   * Deserialize a sort without $hybrid: $lexical, $vector or $vectorize must be the only field in
+   * the sort, any other field is a field sort with the value <code>1</code> or <code>-1</code>.
+   *
+   * <p>NOTE: the checks for $lexical, $vector and $vectorize are a copy of the checks in {@link
+   * CollectionSortClauseBuilder#buildClauseFromDefinition(ObjectNode)}.
+   *
+   * <ul>
+   *   <li>That method checks them together with the lexical index of the collection. This class
+   *       does not have the collection, so it cannot call that method.
+   *   <li>The copy does not use {@link JsonFieldMatcher} like the $hybrid code. It throws {@link
+   *       SortException} codes like find, not a {@link JsonMappingException}.
+   *   <li>Keep the copy close to that method, so the two can be compared when that method changes.
+   *   <li>The copy is not exact. It trims the text and rejects text that is blank after the trim. A
+   *       $lexical value that is not text gets SORT_CLAUSE_VALUE_INVALID, not SORT_CLAUSE_INVALID.
+   *       Most error messages are different.
+   *   <li>For field sorts and $binary vectors, this method calls the code that find uses.
+   * </ul>
+   *
+   * <p>TODO: remove the copy when find and findAndRerank parse the sort with the same code, see the
+   * design in GH #2673.
+   */
+  private static FindAndRerankSort.SingleLeg deserializeSingleLeg(ObjectNode sort) {
+
+    // $lexical, $vector and $vectorize are checked in the same order as find, so a sort with more
+    // than one of them gets the same error
+
+    // { "sort" : { "$lexical" : "cows" } }
+    if (sort.has(LEXICAL_CONTENT_FIELD)) {
+      return new FindAndRerankSort.LexicalLeg(
+          new LexicalSortExpression(singleLegText(sort, LEXICAL_CONTENT_FIELD)));
+    }
+
+    // { "sort" : { "$vector" : [0.1, 0.2, 0.3] } }
+    if (sort.has(VECTOR_EMBEDDING_FIELD)) {
+      return new FindAndRerankSort.VectorLeg(new VectorSortExpression(singleLegVector(sort)));
+    }
+
+    // { "sort" : { "$vectorize" : "cheese" } }
+    if (sort.has(VECTOR_EMBEDDING_TEXT_FIELD)) {
+      return new FindAndRerankSort.VectorLeg(
+          new VectorizeSortExpression(singleLegText(sort, VECTOR_EMBEDDING_TEXT_FIELD)));
+    }
+
+    // { "sort" : { "age" : -1, "name" : 1 } }
+    // an empty sort { "sort" : { } } gives the filter leg with no sorts
+    // every path is checked before any value, the same as find
+    sort.fieldNames().forEachRemaining(CollectionSortClauseBuilder::validateSortExpressionPath);
+    var sorts = new ArrayList<FieldSortExpression>(sort.size());
+    for (var field : sort.properties()) {
+      sorts.add(
+          new FieldSortExpression(
+              field.getKey(),
+              CollectionSortClauseBuilder.parseAscending(field.getKey(), field.getValue())));
+    }
+    return new FindAndRerankSort.FilterLeg(sorts);
+  }
+
+  /** The value of $lexical, $vector or $vectorize, which must be the only field in the sort. */
+  private static JsonNode onlySortField(ObjectNode sort, String field) {
+    if (sort.size() > 1) {
+      throw SortException.Code.SORT_CLAUSE_INVALID.get(
+          Map.of(
+              "problem",
+              "when sorting by field '%s' no other sort expressions allowed".formatted(field)));
+    }
+    return sort.get(field);
+  }
+
+  /** The trimmed text of $lexical or $vectorize, which must not be blank. */
+  private static String singleLegText(ObjectNode sort, String field) {
+    var value = onlySortField(sort, field);
+    // textValue() is null when the value is not text
+    var text = normalizedText(value.textValue());
+    // NOTE: checks for blank as well as null. The trimmed text can be blank when the value is not,
+    // because trim() also removes control characters
+    if (StringUtil.isNullOrBlank(text)) {
+      throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+          Map.of(
+              "path",
+              field,
+              "problem",
+              "value must be a non-blank String, not %s".formatted(value)));
+    }
+    return text;
+  }
+
+  /** The vector of $vector: an array of numbers, or a $binary vector. */
+  private static float[] singleLegVector(ObjectNode sort) {
+    return switch (onlySortField(sort, VECTOR_EMBEDDING_FIELD)) {
+      case ArrayNode arrayNode -> arrayNodeToVector(arrayNode);
+      case ObjectNode objectNode ->
+          SortClauseBuilder.tryDecodeBinaryVector(VECTOR_EMBEDDING_FIELD, objectNode);
+      case JsonNode node ->
+          throw SortException.Code.SORT_CLAUSE_VALUE_INVALID.get(
+              Map.of(
+                  "path",
+                  VECTOR_EMBEDDING_FIELD,
+                  "problem",
+                  "value must be an Array of numbers or a $binary vector, not %s"
+                      .formatted(JsonUtil.nodeTypeAsString(node))));
+    };
   }
 
   /**

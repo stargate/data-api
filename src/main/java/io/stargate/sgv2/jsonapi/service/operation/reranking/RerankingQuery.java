@@ -1,8 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation.reranking;
 
-import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
-
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.util.recordable.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.recordable.Recordable;
@@ -38,27 +35,25 @@ public class RerankingQuery implements Recordable {
   }
 
   /**
-   * Creates a new RerankingQuery from the users command.
+   * Creates a new RerankingQuery: the <code>rerankQuery</code> option when it is not blank,
+   * otherwise the text the command vectorizes.
    *
-   * <p>Throws {@link RequestException.Code#MISSING_RERANK_QUERY_TEXT} if it cannot be determined.
+   * <p>Throws {@link RequestException.Code#MISSING_RERANK_QUERY_TEXT} if both are null or blank.
    *
-   * @param command Command the user sent.
+   * @param rerankQuery The <code>rerankQuery</code> option, may be <code>null</code>.
+   * @param vectorizeText The text the command vectorizes, <code>null</code> when it does not
+   *     vectorize.
    * @return Constructed RerankingQuery, with the source indicating where the query came from.
    */
-  public static RerankingQuery create(FindAndRerankCommand command) {
+  public static RerankingQuery create(String rerankQuery, String vectorizeText) {
 
-    Objects.requireNonNull(command, "command must not be null");
-
-    var rerankQuery =
-        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankQuery, "");
     if (rerankQuery != null && !rerankQuery.isBlank()) {
       return new RerankingQuery(rerankQuery, Source.OPTIONS);
     }
 
-    var vectorizeQuery = command.sortClause().vectorizeSort();
     // will never be blank, but double-checking for safety
-    if (vectorizeQuery != null && !vectorizeQuery.isBlank()) {
-      return new RerankingQuery(vectorizeQuery, Source.VECTORIZE);
+    if (vectorizeText != null && !vectorizeText.isBlank()) {
+      return new RerankingQuery(vectorizeText, Source.VECTORIZE);
     }
 
     throw RequestException.Code.MISSING_RERANK_QUERY_TEXT.get();

@@ -99,6 +99,12 @@ snippets:
       - The vector as a base64-encoded `{"$binary": "base64-encoded-vector"}` object.
       - A string to be vectorized if enabled for the column.
 
+  - name: FIND_AND_RERANK_LIMIT_OPTIONS_EXPLANATION
+    body: |-
+      The findAndRerank command has one limit option for each kind of sort:
+      - `hybridLimits` for a `$hybrid` sort. It sets how many documents the vector sort and the lexical sort read, e.g. `{"hybridLimits": 50}` or `{"hybridLimits": {"$vector": 50, "$lexical": 10}}`.
+      - `rerankCandidateLimit` for a sort without `$hybrid`. It sets how many documents the command reads, e.g. `{"rerankCandidateLimit": 50}`.
+
   - name: CURRENTLY_UNSUPPORTED
     body: |-
       Currently API tables have limited support for: 
@@ -316,6 +322,28 @@ request-errors:
       When specified the `rerankQuery` option takes priority. In all cases the query text must be a non blank text value. 
       
       Resend the command including the query text for reranking.
+
+  # unscoped because this touches both the sort and the options
+  - scope:
+    code: UNSUPPORTED_HYBRID_LIMITS_WITHOUT_HYBRID_SORT
+    title: hybridLimits option cannot be used without a $hybrid sort
+    body: |-
+      The command attempted to use the `hybridLimits` option without a `$hybrid` sort.
+
+      ${SNIPPET.FIND_AND_RERANK_LIMIT_OPTIONS_EXPLANATION}
+
+      Resend the command without the `hybridLimits` option, or with a `$hybrid` sort.
+
+  # unscoped because this touches both the sort and the options
+  - scope:
+    code: UNSUPPORTED_RERANK_CANDIDATE_LIMIT_WITH_HYBRID_SORT
+    title: rerankCandidateLimit option cannot be used with a $hybrid sort
+    body: |-
+      The command attempted to use the `rerankCandidateLimit` option with a `$hybrid` sort.
+
+      ${SNIPPET.FIND_AND_RERANK_LIMIT_OPTIONS_EXPLANATION}
+
+      Resend the command without the `rerankCandidateLimit` option.
 
   # ================================================================================================================
   # Family: REQUEST         Scope: SECURITY
@@ -2282,6 +2310,26 @@ request-errors:
       Resend the command with valid vector/vectorize sort expression.
 
   - scope: SORT
+    code: MISSING_HYBRID_SORT_VALUE
+    title: Hybrid sort has no value
+    body: |-
+      The command attempted to use a `$hybrid` sort that has no value to sort with.
+
+      A `$hybrid` sort needs either non blank text, e.g. `{"$hybrid": "query text"}`, or a value for `$vectorize` or `$vector`, optionally with a value for `$lexical`, e.g. `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`. Blank text and JSON null are not values.
+
+      Resend the command with a value in the `$hybrid` sort.
+
+  - scope: SORT
+    code: MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT
+    title: Hybrid sort requires $vector or $vectorize
+    body: |-
+      The command attempted to use a `$hybrid` sort that has a value for `$lexical`, but no value for `$vectorize` or `$vector`.
+
+      A `$hybrid` sort always finds documents with a vector search, and also with a lexical search when it has a value for `$lexical`. The vector search uses either the `$vectorize` text, e.g. `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`, or the `$vector` value, e.g. `{"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "query text"}}`. A `$hybrid` sort that is text, e.g. `{"$hybrid": "query text"}`, uses the text for the vector search, and for the lexical search when the collection has a lexical index. Blank text and JSON null are not values.
+
+      Resend the command with a value for `$vectorize` or `$vector` in the `$hybrid` sort.
+
+  - scope: SORT
     code: SORT_CLAUSE_INVALID
     title: Sort clause used by command not valid
     body: |-
@@ -2313,6 +2361,16 @@ request-errors:
       Value used for sort expression on path '${path}' not valid: ${problem}.
       
       Resend the command with valid sort expression value.
+
+  - scope: SORT
+    code: UNSUPPORTED_FIND_AND_RERANK_SORT
+    title: Hybrid sort required by findAndRerank
+    body: |-
+      The command attempted to run findAndRerank without a `$hybrid` sort.
+
+      The findAndRerank command finds the documents to rerank with a `$hybrid` sort, e.g. `{"$hybrid": "query text"}` or `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`. Sorting by only one of `$vectorize`, `$vector` or `$lexical`, sorting by document fields, and reranking the documents matched by the filter alone are not supported.
+
+      Resend the command with a `$hybrid` sort.
 
   - scope: SORT
     code: UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND
