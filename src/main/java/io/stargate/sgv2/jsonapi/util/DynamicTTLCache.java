@@ -140,9 +140,11 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
     // which will not be null however it is
     // technically possible for the value loader to return a completed stage that has a null value
     // so extra check just in case.
-    // Each subscriber waits on its own copy, so a canceled request cannot cancel the shared load.
-    // That would orphan the eventual value. minimalCompletionStage() does not work here: on a
-    // SmallRye contextual future it returns a stage that never completes.
+    // Each subscriber waits on its own copy of the shared load. Canceling a subscription cancels
+    // the future the Uni waits on, and Caffeine drops a canceled entry while the loader keeps
+    // running. The value would then never be cached or reach the removal listeners, which leaks
+    // connections for sessions. Do not use minimalCompletionStage(). On SmallRye's
+    // ContextualCompletableFuture it returns a new stage that never completes.
     var sharedLoad = cache.get(key);
     return Uni.createFrom()
         .completionStage(sharedLoad::copy)

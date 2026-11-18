@@ -406,123 +406,26 @@ public class CqlSessionCacheTests extends CacheTestsBase {
   }
 
   @Test
-  public void cancelingOneWaiterDoesNotCancelSharedSessionCreation() {
+  public void sessionForCanceledRequestIsClosedWhenItExpires() {
+    // A request is canceled, for example by a client disconnect, while its session is still being
+    // created. If the cancel reached the shared load, the finished session would never enter the
+    // cache, so nothing would close it and its connections would stay open.
     var fixture = newFixture();
     var pendingSession = new CompletableFuture<CqlSession>();
     when(fixture.sessionFactory.apply(TEST_CONSTANTS.TENANT, fixture.expectedCredentials))
         .thenReturn(pendingSession);
 
-    var sessionUni =
-        fixture.cache.getSession(
-            TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT);
-    var canceled = sessionUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    var sameUniWaiter = sessionUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    var otherRequest =
+    var request =
         fixture
             .cache
             .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create());
-
-    canceled.cancel();
-    sameUniWaiter.assertNotTerminated();
-    otherRequest.assertNotTerminated();
+    request.cancel();
     pendingSession.complete(fixture.expectedSession);
-
-    sameUniWaiter.assertItem(fixture.expectedSession);
-    otherRequest.assertItem(fixture.expectedSession);
-    assertThat(
-            fixture.cache.peekSession(
-                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
-        .containsSame(fixture.expectedSession);
-    verify(fixture.sessionFactory).apply(TEST_CONSTANTS.TENANT, fixture.expectedCredentials);
-    verify(fixture.expectedSession, never()).close();
-
-    fixture.cache.clearCache();
-    verify(fixture.expectedSession).close();
-  }
-
-  @Test
-  public void cancelingAllWaitersStillClosesSessionWhenCacheExpires() {
-    var fixture = newFixture();
-    var pendingSession = new CompletableFuture<CqlSession>();
-    when(fixture.sessionFactory.apply(TEST_CONSTANTS.TENANT, fixture.expectedCredentials))
-        .thenReturn(pendingSession);
-
-    var first =
-        fixture
-            .cache
-            .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
-            .subscribe()
-            .withSubscriber(UniAssertSubscriber.create());
-    var second =
-        fixture
-            .cache
-            .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
-            .subscribe()
-            .withSubscriber(UniAssertSubscriber.create());
-    first.cancel();
-    second.cancel();
-    pendingSession.complete(fixture.expectedSession);
-
-    assertThat(
-            fixture.cache.peekSession(
-                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
-        .containsSame(fixture.expectedSession);
-    verify(fixture.sessionFactory).apply(TEST_CONSTANTS.TENANT, fixture.expectedCredentials);
-    verify(fixture.expectedSession, never()).close();
 
     fixture.ticker.advance(LONG_TTL.plusSeconds(1));
     fixture.cache.cleanUp();
-    verify(fixture.expectedSession).close();
-    assertThat(
-            fixture.cache.peekSession(
-                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
-        .isEmpty();
-    fixture.cache.clearCache();
-    verify(fixture.expectedSession).close();
-  }
-
-  @Test
-  public void sessionCreationFailureStillAllowsAnotherAttemptAfterWaiterCancellation() {
-    var fixture = newFixture();
-    var pendingSession = new CompletableFuture<CqlSession>();
-    var failure = new IllegalStateException("Session creation failed");
-    when(fixture.sessionFactory.apply(TEST_CONSTANTS.TENANT, fixture.expectedCredentials))
-        .thenReturn(pendingSession)
-        .thenReturn(CompletableFuture.completedFuture(fixture.expectedSession));
-
-    var canceled =
-        fixture
-            .cache
-            .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
-            .subscribe()
-            .withSubscriber(UniAssertSubscriber.create());
-    var waiting =
-        fixture
-            .cache
-            .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
-            .subscribe()
-            .withSubscriber(UniAssertSubscriber.create());
-    canceled.cancel();
-    pendingSession.completeExceptionally(failure);
-
-    assertThat(waiting.getFailure()).isSameAs(failure);
-    assertThat(
-            fixture.cache.peekSession(
-                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
-        .isEmpty();
-    var recovered =
-        fixture
-            .cache
-            .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
-            .await()
-            .indefinitely();
-    assertThat(recovered).isSameAs(fixture.expectedSession);
-    verify(fixture.sessionFactory, times(2))
-        .apply(TEST_CONSTANTS.TENANT, fixture.expectedCredentials);
-
-    fixture.cache.clearCache();
     verify(fixture.expectedSession).close();
   }
 

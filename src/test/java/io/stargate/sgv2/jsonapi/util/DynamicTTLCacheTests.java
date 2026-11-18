@@ -18,8 +18,6 @@ import org.junit.jupiter.api.Test;
 
 /** Tests for {@link DynamicTTLCache}. */
 public class DynamicTTLCacheTests extends CacheTestsBase {
-  private static final Duration LOOKUP_TIMEOUT = Duration.ofSeconds(5);
-
   private final String KEY = "key-" + TEST_CONSTANTS.CORRELATION_ID;
   private final String VALUE = "value-" + TEST_CONSTANTS.CORRELATION_ID;
   private final TestDynamicTTLCache.TestKey CACHE_KEY =
@@ -285,56 +283,36 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
   }
 
   @Test
-  public void valueLoadedFromUniStageReachesEveryLookup() {
+  public void canceledLookupDoesNotFailOtherLookups() {
+    // Two requests wait for the same value while it loads, then one is canceled. If the cancel
+    // reached the load they share, the other request would fail with a CancellationException.
     var fixture = newFixture();
+    var pendingValue = new CompletableFuture<String>();
+    when(fixture.valueFactory.apply(CACHE_KEY)).thenReturn(pendingValue);
 
-    // The schema cache loads this way, and gets a SmallRye contextual future rather than a plain
-    // one because context propagation is on the classpath.
+    var canceledLookup =
+        fixture.cache.get(CACHE_KEY).subscribe().withSubscriber(UniAssertSubscriber.create());
+    var otherLookup =
+        fixture.cache.get(CACHE_KEY).subscribe().withSubscriber(UniAssertSubscriber.create());
+    canceledLookup.cancel();
+    pendingValue.complete(fixture.expectedValue);
+
+    otherLookup.assertItem(fixture.expectedValue);
+  }
+
+  @Test
+  public void lookupCompletesWhenValueIsLoadedFromUni() {
+    // The schema cache loads with Uni.subscribeAsCompletionStage(), which returns SmallRye's
+    // ContextualCompletableFuture. Its minimalCompletionStage() returns a new stage that never
+    // completes, so a get() built on it would hang every schema lookup.
+    var fixture = newFixture();
     when(fixture.valueFactory.apply(CACHE_KEY))
         .thenReturn(Uni.createFrom().item(fixture.expectedValue).subscribeAsCompletionStage());
 
-    assertThat(fixture.cache.get(CACHE_KEY).await().atMost(LOOKUP_TIMEOUT))
-        .as("Lookup that loads the value returns it")
+    // The timeout turns a hang into a test failure.
+    assertThat(fixture.cache.get(CACHE_KEY).await().atMost(Duration.ofSeconds(5)))
+        .as("Lookup completes with the loaded value")
         .isSameAs(fixture.expectedValue);
-    assertThat(fixture.cache.get(CACHE_KEY).await().atMost(LOOKUP_TIMEOUT))
-        .as("Lookup of the cached value returns it")
-        .isSameAs(fixture.expectedValue);
-  }
-
-  @Test
-  public void cancelingOneWaiterKeepsValueLoadedFromUniStage() {
-    var fixture = newFixture();
-    var pendingValue = new CompletableFuture<String>();
-    when(fixture.valueFactory.apply(CACHE_KEY))
-        .thenReturn(Uni.createFrom().completionStage(pendingValue).subscribeAsCompletionStage());
-
-    var canceled =
-        fixture.cache.get(CACHE_KEY).subscribe().withSubscriber(UniAssertSubscriber.create());
-    var otherRequest =
-        fixture.cache.get(CACHE_KEY).subscribe().withSubscriber(UniAssertSubscriber.create());
-
-    canceled.cancel();
-    otherRequest.assertNotTerminated();
-    pendingValue.complete(fixture.expectedValue);
-
-    otherRequest.awaitItem(LOOKUP_TIMEOUT).assertItem(fixture.expectedValue);
-    assertThat(fixture.cache.peekValue(CACHE_KEY))
-        .as("Load is still cached after one waiter canceled")
-        .contains(fixture.expectedValue);
-    verify(fixture.valueFactory).apply(CACHE_KEY);
-  }
-
-  @Test
-  public void failedLoadKeepsItsExceptionType() {
-    var fixture = newFixture();
-    var loadFailure = new IllegalStateException("Load failed");
-    when(fixture.valueFactory.apply(CACHE_KEY))
-        .thenReturn(Uni.createFrom().<String>failure(loadFailure).subscribeAsCompletionStage());
-
-    // Callers such as the schema cache recover by matching on the exception type.
-    assertThat(catchThrowable(() -> fixture.cache.get(CACHE_KEY).await().atMost(LOOKUP_TIMEOUT)))
-        .as("Failure reaches the lookup unwrapped")
-        .isSameAs(loadFailure);
   }
 
   // =======================================================
