@@ -502,7 +502,7 @@ request-errors:
   # NOTE: UNKNOWN_TABLE_COLUMNS is also in the FILTER scope
   - scope: DOCUMENT
     code: UNKNOWN_TABLE_COLUMNS
-    title: Columns in documents are not defined in the table schema
+    title: Columns in rows are not defined in the table schema
     body: |-
       Only columns defined in the table schema can be included when inserting a row into a table.
       
@@ -513,7 +513,7 @@ request-errors:
 
   - scope: DOCUMENT
     code: UNSUPPORTED_COLUMN_TYPES
-    title: Column types in documents are not supported
+    title: Column types in rows are not supported
     body: |-
       Only supported column types can be included when inserting a row into a table.
       
@@ -526,7 +526,7 @@ request-errors:
 
   - scope: DOCUMENT
     code: INVALID_COLUMN_VALUES
-    title: Column values in documents are not valid
+    title: Column values in rows are not valid
     body: |-
       Only values that are supported by the column data type can be included when inserting a row into a table.
       
@@ -1116,7 +1116,7 @@ request-errors:
 
   - scope: WARNING
     code: IN_MEMORY_SORTING_DUE_TO_NON_PARTITION_SORTING
-    title: Sorting by non partition sorting columns
+    title: Sorting by non-partition sorting columns
     body: |-
       The command used columns in the sort clause that are not part of the partition sorting, and so the query was sorted in memory.
             
@@ -1258,7 +1258,7 @@ request-errors:
 
   - scope: SCHEMA
     code: CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS
-    title: Can not create index on map column with index function entries and specify analyze options
+    title: Cannot create index on map column with index function entries and specify analyze options
     body: |-
       The index function `entries` cannot apply to a map column when analyze options are specified.
       
@@ -1595,7 +1595,7 @@ request-errors:
 
   - scope: SCHEMA
     code: UNKNOWN_KEYSPACE
-    title: Keyspace does not exist in the Database
+    title: Keyspace does not exist in the database
     body: |-
       The command tried to use a keyspace that does not exist in the database.
 
@@ -1605,7 +1605,7 @@ request-errors:
 
   - scope: SCHEMA
     code: UNKNOWN_COLLECTION_OR_TABLE
-    title: Collection or Table does not exist in the Keyspace
+    title: Collection or table does not exist in the keyspace
     body: |-
       The command tried to get a collection or table ${table} that does not exist in the keyspace ${keyspace}.
 
@@ -1825,7 +1825,7 @@ request-errors:
 
   - scope: SCHEMA
     code: UNSUPPORTED_TEXT_ANALYSIS_FOR_DATA_TYPES
-    title: Analysed text index not supported by data types
+    title: Analyzed text index not supported by data types
     body: |-
       The command attempted to create an index that specified text analysis on a column that uses a data type not supported for text analysis.
       
@@ -2283,7 +2283,7 @@ request-errors:
 
   - scope: SORT
     code: CANNOT_VECTOR_SORT_NON_INDEXED_VECTOR_COLUMNS
-    title: Vector sort cannot be used for non indexed vector columns
+    title: Vector sort cannot be used for non-indexed vector columns
     body: |-
       The command attempted to vector sort vector columns that are not indexed.
       
@@ -2299,7 +2299,7 @@ request-errors:
 
   - scope: SORT
     code: CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS
-    title: Vector sort cannot be used with non vector sorting
+    title: Vector sort cannot be used with non-vector sorting
     body: |-
       The command attempted to vector sort vector columns and other non-vector columns.
       
@@ -2685,7 +2685,7 @@ server-errors:
 
   - scope: DATABASE
     code: FAILED_TRUNCATION
-    title: Failed database Truncate operation
+    title: Failed database truncate operation
     body: |-
       The Data API command generated a database query to truncate the table, but the database was either unable to start or complete the operation.     
       
@@ -2810,35 +2810,35 @@ server-errors:
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_GATEWAY_NOT_AVAILABLE
-    title: Embedding Gateway not available
+    title: Embedding gateway not available
     body: |-
       The embedding gateway is not available.
       Underlying problem: ${errorMessage}.
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_GATEWAY_REQUEST_PROCESSING_ERROR
-    title: Embedding Gateway failed to process request
+    title: Embedding gateway failed to process request
     body: |-
       The embedding gateway failed to process the request.
       Underlying problem: ${errorMessage}.         
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_GATEWAY_RATE_LIMITED
-    title: Embedding Gateway rate limited the request
+    title: Embedding gateway rate limited the request
     body: |-
       The embedding gateway rate limited the request
       Underlying problem: ${errorMessage}.   
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_GATEWAY_UNABLE_RESOLVE_AUTHENTICATION_TYPE
-    title: Embedding Gateway unable to resolve authentication type
+    title: Embedding gateway unable to resolve authentication type
     body: |-
       The embedding gateway was unable to resolve the authentication type.
       Underlying problem: ${errorMessage}.      
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_GATEWAY_UNEXPECTED_RESPONSE
-    title: Embedding Gateway returned an unexpected response.
+    title: Embedding gateway returned an unexpected response.
     body: |-
       The embedding gateway returned an unexpected response.
       Underlying problem: ${errorMessage}.      
@@ -2876,7 +2876,7 @@ server-errors:
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_CLIENT_ERROR
-    title: The Embedding Provider returned a HTTP client error
+    title: The embedding provider returned a HTTP client error
     body: |-
       The embedding provider '${provider}' returned a HTTP client error with HTTP ${httpStatus}; error message: ${errorMessage}
       
@@ -2888,13 +2888,13 @@ server-errors:
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_SERVER_ERROR
-    title: The Embedding Provider returned a HTTP server error
+    title: The embedding provider returned a HTTP server error
     body: |-
       The embedding provider '${provider}' returned a HTTP server error with HTTP ${httpStatus}; error message: ${errorMessage}
       
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_TIMEOUT
-    title: The Embedding Provider request timed out
+    title: The embedding provider request timed out
     body: |-
       The command called an embedding provider to vectorize text, but the provider did not respond within the allowed time.
       
@@ -2906,14 +2906,14 @@ server-errors:
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_UNAVAILABLE
-    title: The Embedding Provider is unavailable
+    title: The embedding provider is unavailable
     body: |-
       The embedding provider is unavailable.
       Underlying problem: ${errorMessage}
 
   - scope: EMBEDDING_PROVIDER
     code: EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE
-    title: The Embedding Provider returned an unexpected response
+    title: The embedding provider returned an unexpected response
     body: |-
       The embedding provider returned an unexpected response.
       Underlying problem: ${errorMessage}.
