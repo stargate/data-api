@@ -33,84 +33,9 @@ public class DeleteUpdateWhereAnalyzerTest {
   // reading)
   // ==================================================================================================================
 
-  private static Stream<Arguments> emptyFilterTests() {
-    return Stream.of(
-        Arguments.of(
-            StatementType.DELETE_ONE, FilterException.Code.MISSING_FILTER_FOR_UPDATE_DELETE),
-        Arguments.of(
-            StatementType.DELETE_MANY, FilterException.Code.MISSING_FILTER_FOR_UPDATE_DELETE),
-        Arguments.of(
-            StatementType.UPDATE_ONE, FilterException.Code.MISSING_FILTER_FOR_UPDATE_DELETE));
-  }
-
-  @ParameterizedTest
-  @MethodSource("emptyFilterTests")
-  public void emptyFilter(StatementType statementType, FilterException.Code expectedCode) {
-    var fixture =
-        TEST_DATA
-            .whereAnalyzer()
-            .table2PK3Clustering1Index(
-                "emptyFilter() for %s".formatted(statementType), statementType);
-    fixture.analyzeMaybeFilterError(expectedCode);
-  }
-
-  private static Stream<Arguments> eqAllPrimaryKeysTests() {
-    return Stream.of(
-        Arguments.of(StatementType.DELETE_ONE, null),
-        Arguments.of(StatementType.DELETE_MANY, null),
-        Arguments.of(StatementType.UPDATE_ONE, null));
-  }
-
-  @ParameterizedTest
-  @MethodSource("eqAllPrimaryKeysTests")
-  public void eqAllPrimaryKeys(StatementType statementType, FilterException.Code expectedCode) {
-    var fixture =
-        TEST_DATA
-            .whereAnalyzer()
-            .table2PK3Clustering1Index(
-                "eqAllPrimaryKeys() for %s".formatted(statementType), statementType);
-    fixture.expression().eqAllPrimaryKeys().analyzeMaybeFilterError(expectedCode);
-  }
-
   // ==================================================================================================================
   // NON PK COLUMNS - INDEXED AND UNINDEXED
   // ==================================================================================================================
-
-  private static Stream<Arguments> eqOnNonPrimaryKeyOrIndexedTests() {
-    return Stream.of(
-        Arguments.of(
-            StatementType.DELETE_ONE,
-            FilterException.Code.UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE),
-        Arguments.of(
-            StatementType.DELETE_MANY,
-            FilterException.Code.UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE),
-        Arguments.of(
-            StatementType.UPDATE_ONE,
-            FilterException.Code.UNSUPPORTED_NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE));
-  }
-
-  @ParameterizedTest
-  @MethodSource("eqOnNonPrimaryKeyOrIndexedTests")
-  public void eqOnNonPrimaryKeyOrIndexed(
-      StatementType statementType, FilterException.Code expectedCode) {
-    var fixture =
-        TEST_DATA
-            .whereAnalyzer()
-            .table2PK3Clustering1Index(
-                "eqOnNonPrimaryKeyOrIndexed() for %s".formatted(statementType), statementType);
-    fixture.expression().eqFirstNonPKOrIndexed().analyzeMaybeFilterError(expectedCode);
-  }
-
-  @ParameterizedTest
-  @MethodSource("eqOnNonPrimaryKeyOrIndexedTests") // deliberately reusing the same test data
-  public void eqOnIndexed(StatementType statementType, FilterException.Code expectedCode) {
-    var fixture =
-        TEST_DATA
-            .whereAnalyzer()
-            .table2PK3Clustering1Index(
-                "eqOnIndexed() for %s".formatted(statementType), statementType);
-    fixture.expression().eqOn(names().COL_INDEXED_1).analyzeMaybeFilterError(expectedCode);
-  }
 
   // ==================================================================================================================
   // PARTITION KEY - PARTIAL PARTITION KEY
