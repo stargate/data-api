@@ -353,8 +353,8 @@ class FindAndRerankPlanner {
     }
   }
 
-  // NOTE: the helpers below list every kind of sort and have no default, so the compiler checks
-  // each helper when a new kind of sort is added
+  // NOTE: the helpers below return null or false for a SingleLeg sort, because plan() rejects
+  // single leg sorts until GH #2602 and GH #2603
 
   /** The text to vectorize: the $hybrid text, or the $vectorize value, or <code>null</code>. */
   private static String vectorizeText(FindAndRerankSort sort) {
