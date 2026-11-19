@@ -18,6 +18,7 @@ import warnings
 
 PROTOCOL = "2026-07-28"
 MAX_BODY = 2 * 1024 * 1024
+MAX_CATALOG_PAGES = 100
 
 
 class SmokeFailure(ValueError):
@@ -144,13 +145,26 @@ def smoke_test(endpoint, token, keyspace, collection, filter_value, expected_doc
         origin(server)
     print("PASS  Unauthenticated challenge and protected-resource metadata")
 
-    catalog = client.result("tools/list", {}, token)
-    tools = catalog.get("tools")
-    require(isinstance(tools, list) and bool(tools)
-            and all(isinstance(tool, dict) and isinstance(tool.get("name"), str)
-                    and bool(tool["name"]) for tool in tools), "Invalid tool catalog")
-    names = [tool["name"] for tool in tools]
-    require(len(names) == len(set(names)) and "findOne" in names and not catalog.get("nextCursor"),
+    names = []
+    seen_cursors = set()
+    params = {}
+    for _ in range(MAX_CATALOG_PAGES):
+        catalog = client.result("tools/list", params, token)
+        tools = catalog.get("tools")
+        require(isinstance(tools, list)
+                and all(isinstance(tool, dict) and isinstance(tool.get("name"), str)
+                        and tool["name"] for tool in tools), "Invalid tool catalog")
+        names.extend(tool["name"] for tool in tools)
+        cursor = catalog.get("nextCursor")
+        if cursor is None:
+            break
+        require(isinstance(cursor, str) and cursor and cursor not in seen_cursors,
+                "Invalid or repeated tool catalog cursor")
+        seen_cursors.add(cursor)
+        params = {"cursor": cursor}
+    else:
+        raise SmokeFailure("Tool catalog exceeded the page limit")
+    require(len(names) == len(set(names)) and "findOne" in names,
             "Expected a complete, unique catalog containing findOne")
     print(f"PASS  Authenticated catalog ({len(names)} tools): "
           + json.dumps(names).replace(token, "[REDACTED]"))

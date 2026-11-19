@@ -20,6 +20,7 @@ class OAuthSmokeTest(unittest.TestCase):
         self.mutation = lambda method, body: body
         self.redirect = False
         self.denied_status = 403
+        self.pages = {None: {"tools": [{"name": "findOne"}, {"name": "findKeyspaces"}]}}
         owner = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -53,7 +54,7 @@ class OAuthSmokeTest(unittest.TestCase):
                     return
                 status = 200
                 if body["method"] == "tools/list":
-                    result = {"tools": [{"name": "findOne"}, {"name": "findKeyspaces"}]}
+                    result = owner.pages[body["params"].get("cursor")]
                 elif body["params"]["arguments"]["keyspace"] == "denied":
                     status = owner.denied_status
                     result = {"isError": True, "structuredContent": {
@@ -96,6 +97,21 @@ class OAuthSmokeTest(unittest.TestCase):
                     "io.modelcontextprotocol/clientCapabilities": {}})
         self.assertEqual(self.requests[-1][2]["params"]["arguments"], {
             "keyspace": "denied", "collection": "messages", "filter": {"id": "hello"}})
+
+    def test_catalog_follows_cursor_to_find_one(self):
+        self.pages = {
+            None: {"tools": [{"name": "findKeyspaces"}], "nextCursor": "more"},
+            "more": {"tools": [{"name": "findOne"}]},
+        }
+        self.assertEqual(self.run_smoke(), ["findKeyspaces", "findOne"])
+
+    def test_catalog_rejects_a_repeated_cursor(self):
+        self.pages = {
+            None: {"tools": [{"name": "findOne"}], "nextCursor": "more"},
+            "more": {"tools": [{"name": "findKeyspaces"}], "nextCursor": "more"},
+        }
+        with self.assertRaisesRegex(smoke.SmokeFailure, "cursor"):
+            self.run_smoke()
 
     def test_database_denial_requires_http_403(self):
         self.denied_status = 200
