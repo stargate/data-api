@@ -47,7 +47,7 @@ public class RerankingQuery implements Recordable {
    *     vectorize.
    * @return Constructed RerankingQuery, with the source indicating where the query came from.
    */
-  public static RerankingQuery create(String rerankQuery, String vectorizeText) {
+  public static RerankingQuery createForVectorizeSort(String rerankQuery, String vectorizeText) {
     return create(rerankQuery, vectorizeText, Source.VECTORIZE);
   }
 

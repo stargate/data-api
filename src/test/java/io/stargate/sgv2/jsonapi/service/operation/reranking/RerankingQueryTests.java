@@ -16,7 +16,7 @@ public class RerankingQueryTests {
   @Test
   public void createFromVectorize() {
 
-    var query = RerankingQuery.create(null, VECTORIZE_QUERY);
+    var query = RerankingQuery.createForVectorizeSort(null, VECTORIZE_QUERY);
     assertThat(query.query()).as("vectorize query used as rerank query").isEqualTo(VECTORIZE_QUERY);
     assertThat(query.source()).as("source is vectorize").isEqualTo(RerankingQuery.Source.VECTORIZE);
 
@@ -26,13 +26,13 @@ public class RerankingQueryTests {
   @Test
   public void createFromOptions() {
 
-    var query = RerankingQuery.create(OPTIONS_QUERY, VECTORIZE_QUERY);
+    var query = RerankingQuery.createForVectorizeSort(OPTIONS_QUERY, VECTORIZE_QUERY);
     assertThat(query.query())
         .as("use the options.rerankQuery when both vectorize and options.rerankQuery are present")
         .isEqualTo(OPTIONS_QUERY);
     assertThat(query.source()).as("source is options").isEqualTo(RerankingQuery.Source.OPTIONS);
 
-    var query2 = RerankingQuery.create(OPTIONS_QUERY, null);
+    var query2 = RerankingQuery.createForVectorizeSort(OPTIONS_QUERY, null);
     assertThat(query2.query())
         .as("use the options.rerankQuery when no vectorize query is present")
         .isEqualTo(OPTIONS_QUERY);
@@ -72,7 +72,7 @@ public class RerankingQueryTests {
     var ex =
         assertThrowsExactly(
             RequestException.class,
-            () -> RerankingQuery.create(rerankQuery, vectorizeText),
+            () -> RerankingQuery.createForVectorizeSort(rerankQuery, vectorizeText),
             context);
 
     assertThat(ex.code)
@@ -82,7 +82,7 @@ public class RerankingQueryTests {
 
   @Test
   public void testToString() {
-    var query = RerankingQuery.create(null, VECTORIZE_QUERY);
+    var query = RerankingQuery.createForVectorizeSort(null, VECTORIZE_QUERY);
     assertThat(query.toString())
         .as("toString is correct")
         .isEqualTo("RerankingQuery{query=" + VECTORIZE_QUERY + ", source=VECTORIZE}");

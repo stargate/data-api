@@ -64,7 +64,7 @@ class FindAndRerankPlanner {
     var rerankingQuery =
         sort instanceof FindAndRerankSort.LexicalLeg(LexicalSortExpression(var lexicalText))
             ? RerankingQuery.createForLexicalSort(rerankQuery, lexicalText)
-            : RerankingQuery.create(rerankQuery, vectorizeText(sort));
+            : RerankingQuery.createForVectorizeSort(rerankQuery, vectorizeText(sort));
     var passageLocator = passageLocator(command);
     var projector = command.buildProjector();
 
