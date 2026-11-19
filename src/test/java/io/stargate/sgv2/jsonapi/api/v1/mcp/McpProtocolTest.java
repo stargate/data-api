@@ -112,6 +112,12 @@ class McpProtocolTest {
     toolManager.forEach(tool -> names.add(tool.name()));
     assertThat(names.size()).isGreaterThan(2 * TOOLS_PER_PAGE);
 
+    assertToolPages(names);
+    // A new listing starts from the same first page and follows the same order.
+    assertToolPages(names);
+  }
+
+  private void assertToolPages(List<String> names) {
     String cursor = null;
     for (int offset = 0; offset < names.size(); offset += TOOLS_PER_PAGE) {
       var params =
