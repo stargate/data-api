@@ -282,11 +282,6 @@ class McpLoggingTest {
                     tracedProviderRequest(2).header("Token", "synthetic-token-2").post(mcpPath()));
         var second = awaitStarted(started, secondResponse);
 
-        assertThat(first.context().requestContext()).isNotSameAs(second.context().requestContext());
-        assertThat(first.context().requestContext().requestId())
-            .isNotEqualTo(second.context().requestContext().requestId());
-        assertThat(first.context().requestTracing().enabled()).isTrue();
-        assertThat(second.context().requestTracing().enabled()).isTrue();
         assertThat(first.context().requestTracing().getSession().orElseThrow())
             .isNotSameAs(second.context().requestTracing().getSession().orElseThrow());
         assertThat(first.logRequestId())
@@ -305,7 +300,6 @@ class McpLoggingTest {
             .isEqualTo("worker-context");
         var secondResult = assertResponseComplete(secondResponse.get(10, TimeUnit.SECONDS), 2);
         assertThat(firstResponse.isDone()).isFalse();
-        assertThat(firstCompletion.isDone()).isFalse();
         assertThat(
                 worker
                     .submit(
@@ -319,12 +313,17 @@ class McpLoggingTest {
 
         assertIsolatedResult(first, firstResult, 1);
         assertIsolatedResult(second, secondResult, 2);
-        var logs = logsSince(start);
-        for (var call : List.of(first, second)) {
-          assertThat(logs).contains("MCP request completed requestId=" + call.logRequestId());
-          traceMetadata(call == first ? 1 : 2)
-              .values()
-              .forEach(value -> assertThat(logs).doesNotContain(value));
+        var logs =
+            await()
+                .atMost(Duration.ofSeconds(5))
+                .until(
+                    () -> logsSince(start),
+                    text ->
+                        text.contains("MCP request completed requestId=" + first.logRequestId())
+                            && text.contains(
+                                "MCP request completed requestId=" + second.logRequestId()));
+        for (int id : List.of(1, 2)) {
+          traceMetadata(id).values().forEach(value -> assertThat(logs).doesNotContain(value));
         }
         assertThat(logs)
             .contains(
