@@ -242,14 +242,19 @@ public class AlterCollectionCommandResolver implements CommandResolver<AlterColl
     opts.put("createIndexIfNotExists", "true");
     opts.put("unpackJsonFields", "doc_json");
     opts.put("applyDefaultSchema", "false");
-    opts.put("applyCustomSchema", "true");
-    opts.put("customMappingsJson", def.customMappings(OBJECT_MAPPER).toString());
-    opts.put(
-        "propertiesFromJsonFields",
-        def.mappings().properties().stream()
-            .map(Map.Entry::getKey)
-            .reduce((a, b) -> a + "," + b)
-            .orElse(""));
+    if (def.hasCustomMappings()) {
+      opts.put("applyCustomSchema", "true");
+      opts.put("customMappingsJson", def.customMappings(OBJECT_MAPPER).toString());
+      opts.put(
+          "propertiesFromJsonFields",
+          def.mappings().properties().stream()
+              .map(Map.Entry::getKey)
+              .reduce((a, b) -> a + "," + b)
+              .orElse(""));
+    } else {
+      // No custom mapping: let OpenSearch apply its own default (dynamic) mapping
+      opts.put("applyCustomSchema", "false");
+    }
     if (def.numShards() != null) {
       opts.put("numShards", String.valueOf(def.numShards()));
     }

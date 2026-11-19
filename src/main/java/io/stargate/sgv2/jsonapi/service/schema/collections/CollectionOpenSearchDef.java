@@ -84,21 +84,24 @@ public record CollectionOpenSearchDef(
       return schemaFactory.currentVersion(DISABLED);
     }
 
-    JsonNode mappings = openSearchDesc.mappings();
-    if (mappingsNotDefined(mappings) || !mappings.isObject()) {
-      throw SchemaException.Code.OPEN_SEARCH_MISSING_FIELD_MAPPINGS.get();
+    // 'mappings' is optional: when absent (or an empty object) no custom mapping is applied and
+    // OpenSearch uses its own default (dynamic) mapping.
+    JsonNode providedMappings = openSearchDesc.mappings();
+    JsonNode mappings = null;
+    if (providedMappings != null && !mappingsNotDefined(providedMappings)) {
+      if (!providedMappings.isObject() || providedMappings.has("_id")) {
+        throw SchemaException.Code.OPEN_SEARCH_MISSING_FIELD_MAPPINGS.get();
+      }
+      providedMappings
+          .fieldNames()
+          .forEachRemaining(
+              fieldName -> {
+                if (fieldName.startsWith("$")) {
+                  throw SchemaException.Code.OPEN_SEARCH_MISSING_FIELD_MAPPINGS.get();
+                }
+              });
+      mappings = providedMappings;
     }
-    if (mappings.has("_id")) {
-      throw SchemaException.Code.OPEN_SEARCH_MISSING_FIELD_MAPPINGS.get();
-    }
-    mappings
-        .fieldNames()
-        .forEachRemaining(
-            fieldName -> {
-              if (fieldName.startsWith("$")) {
-                throw SchemaException.Code.OPEN_SEARCH_MISSING_FIELD_MAPPINGS.get();
-              }
-            });
 
     String defaultIndexName = "hcd_%s_%s".formatted(keyspace, collectionName);
     String indexName =
@@ -127,31 +130,36 @@ public record CollectionOpenSearchDef(
 
   private static CollectionOpenSearchDef fromIndexMetadata(
       IndexMetadata index, ObjectMapper objectMapper) {
+    String indexName = index.getOptions().get("indexName");
+    if (indexName == null) {
+      throw SchemaException.Code.OPEN_SEARCH_CORRUPT_SCHEMA.get();
+    }
+    // 'customMappingsJson' is optional: an index created without custom mappings relies on the
+    // OpenSearch default mapping.
+    JsonNode userMappings = null;
     String customMappingsJson = index.getOptions().get("customMappingsJson");
-    if (customMappingsJson == null) {
-      throw SchemaException.Code.OPEN_SEARCH_CORRUPT_SCHEMA.get();
-    }
-    try {
-      String indexName = index.getOptions().get("indexName");
-      if (indexName == null) {
+    if (customMappingsJson != null) {
+      try {
+        JsonNode mappings = objectMapper.readTree(customMappingsJson).path("properties");
+        if (!mappingsNotDefined(mappings) && !mappings.isMissingNode()) {
+          if (!mappings.isObject()) {
+            throw SchemaException.Code.OPEN_SEARCH_CORRUPT_SCHEMA.get();
+          }
+          ObjectNode copy = mappings.deepCopy();
+          copy.remove("_id");
+          userMappings = mappingsNotDefined(copy) ? null : copy;
+        }
+      } catch (JacksonException e) {
         throw SchemaException.Code.OPEN_SEARCH_CORRUPT_SCHEMA.get();
       }
-      JsonNode mappings = objectMapper.readTree(customMappingsJson).path("properties");
-      if (mappingsNotDefined(mappings) || !mappings.isObject()) {
-        throw SchemaException.Code.OPEN_SEARCH_CORRUPT_SCHEMA.get();
-      }
-      ObjectNode userMappings = mappings.deepCopy();
-      userMappings.remove("_id");
-      return new CollectionOpenSearchDef(
-          true,
-          indexName,
-          integerOption(index, "numShards"),
-          integerOption(index, "numReplicas"),
-          userMappings,
-          index.getName().asInternal());
-    } catch (JacksonException e) {
-      throw SchemaException.Code.OPEN_SEARCH_CORRUPT_SCHEMA.get();
     }
+    return new CollectionOpenSearchDef(
+        true,
+        indexName,
+        integerOption(index, "numShards"),
+        integerOption(index, "numReplicas"),
+        userMappings,
+        index.getName().asInternal());
   }
 
   public static CollectionOpenSearchDef fromCommentJson(
@@ -163,9 +171,13 @@ public record CollectionOpenSearchDef(
     if (indexName == null) {
       throw SchemaException.Code.OPEN_SEARCH_CORRUPT_SCHEMA.get();
     }
-    JsonNode mappings = openSearchNode.get("mappings");
-    if (mappingsNotDefined(mappings) || !mappings.isObject()) {
-      throw SchemaException.Code.OPEN_SEARCH_CORRUPT_SCHEMA.get();
+    JsonNode storedMappings = openSearchNode.get("mappings");
+    JsonNode mappings = null;
+    if (storedMappings != null && !mappingsNotDefined(storedMappings)) {
+      if (!storedMappings.isObject()) {
+        throw SchemaException.Code.OPEN_SEARCH_CORRUPT_SCHEMA.get();
+      }
+      mappings = storedMappings;
     }
     return new CollectionOpenSearchDef(
         true,
@@ -181,6 +193,14 @@ public record CollectionOpenSearchDef(
         enabled(), indexName(), numShards(), numReplicas(), mappings());
   }
 
+  /**
+   * Returns {@code true} when user-supplied custom mappings exist (otherwise OpenSearch defaults).
+   */
+  public boolean hasCustomMappings() {
+    return mappings != null;
+  }
+
+  /** Must only be called when {@link #hasCustomMappings()} is {@code true}. */
   public ObjectNode customMappings(ObjectMapper objectMapper) {
     ObjectNode properties = objectMapper.createObjectNode();
     mappings().properties().forEach(entry -> properties.set(entry.getKey(), entry.getValue()));

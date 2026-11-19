@@ -691,14 +691,19 @@ public record CreateCollectionOperation(
     options.put("createIndexIfNotExists", "true");
     options.put("unpackJsonFields", "doc_json");
     options.put("applyDefaultSchema", "false");
-    options.put("applyCustomSchema", "true");
-    options.put(
-        "customMappingsJson", openSearchDefinition.customMappings(OBJECT_MAPPER).toString());
-    options.put(
-        "propertiesFromJsonFields",
-        openSearchDefinition.mappings().properties().stream()
-            .map(Map.Entry::getKey)
-            .collect(Collectors.joining(",")));
+    if (openSearchDefinition.hasCustomMappings()) {
+      options.put("applyCustomSchema", "true");
+      options.put(
+          "customMappingsJson", openSearchDefinition.customMappings(OBJECT_MAPPER).toString());
+      options.put(
+          "propertiesFromJsonFields",
+          openSearchDefinition.mappings().properties().stream()
+              .map(Map.Entry::getKey)
+              .collect(Collectors.joining(",")));
+    } else {
+      // No custom mapping: let OpenSearch apply its own default (dynamic) mapping
+      options.put("applyCustomSchema", "false");
+    }
     if (openSearchDefinition.numShards() != null) {
       options.put("numShards", openSearchDefinition.numShards());
     }

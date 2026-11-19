@@ -13,7 +13,7 @@ import jakarta.annotation.Nullable;
  * inner object is the operation payload.
  *
  * <ul>
- *   <li>{@code "addOpenSearch": {enabled, indexName?, numShards?, numReplicas?, mappings}} — add
+ *   <li>{@code "addOpenSearch": {enabled, indexName?, numShards?, numReplicas?, mappings?}} — add
  *   <li>{@code "dropOpenSearch": {}} — drop
  * </ul>
  */

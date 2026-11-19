@@ -256,7 +256,10 @@ public record CreateCollectionCommand(
             Integer numReplicas,
         @Nullable
             @JsonInclude(JsonInclude.Include.NON_NULL)
-            @Schema(description = "Top-level OpenSearch field mappings", type = SchemaType.OBJECT)
+            @Schema(
+                description =
+                    "Optional top-level OpenSearch field mappings. When omitted, OpenSearch applies its default mapping",
+                type = SchemaType.OBJECT)
             JsonNode mappings) {}
 
     /** --- */

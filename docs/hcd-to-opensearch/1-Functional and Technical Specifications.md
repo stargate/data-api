@@ -226,12 +226,14 @@ SELECT * FROM <table> WHERE expr(<sai-index-name>, '<OpenSearch-query-JSON>')
 
 The collection shredding model (`SuperShreddingMetadata`) stores the raw JSON in `doc_json TEXT` alongside auxiliary indexing columns (`exist_keys`, `query_text_values`, etc.). To make document fields searchable in OpenSearch:
 
-The following four `WITH OPTIONS` keys are **always required** for collections — confirmed by integration testing. There is no optional or auto-inferred path:
+For collections the following `WITH OPTIONS` keys are used (confirmed by integration testing). `applyDefaultSchema: 'true'` is never used, because the Cassandra column is `doc_json TEXT` with no typed schema to derive a mapping from:
 
-1. **`unpackJsonFields: 'doc_json'`** — HCD must parse the JSON blob and merge properties at the OS document root.
-2. **`propertiesFromJsonFields: '<fields>'`** — acts as the allow-list of fields to extract. Must **never** include `_id` — OpenSearch permanently rejects `_id` as a body field (`mapper_parsing_exception`), no mapping can override this.
-3. **`applyCustomSchema: 'true'` + `customMappingsJson: '<json>'`** — required because the Cassandra column is `doc_json TEXT` with no typed schema; `applyDefaultSchema: 'true'` has no schema to work from. The `customMappingsJson` must cover the same fields listed in `propertiesFromJsonFields` and must **not** include an `_id` entry (rejected at request time with `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`; the Data API does **not** inject one).
-4. **`applyDefaultSchema: 'false'`** — must accompany `applyCustomSchema: 'true'`.
+1. **`unpackJsonFields: 'doc_json'`** — always. HCD must parse the JSON blob and merge properties at the OS document root.
+2. **`applyDefaultSchema: 'false'`** — always.
+3. **When custom mappings are supplied** (`openSearch.mappings` present):
+   - **`propertiesFromJsonFields: '<fields>'`** — acts as the allow-list of fields to extract. Must **never** include `_id` — OpenSearch permanently rejects `_id` as a body field (`mapper_parsing_exception`), no mapping can override this.
+   - **`applyCustomSchema: 'true'` + `customMappingsJson: '<json>'`** — The `customMappingsJson` must cover the same fields listed in `propertiesFromJsonFields` and must **not** include an `_id` entry (rejected at request time with `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`; the Data API does **not** inject one).
+4. **When no custom mappings are supplied** (`openSearch.mappings` omitted or `{}`): **`applyCustomSchema: 'false'`** and neither `customMappingsJson` nor `propertiesFromJsonFields`. OpenSearch then applies its default (dynamic) mapping. Because no allow-list is sent, HCD's handling of the `_id` field in this mode must be verified against the target HCD version (see §4.1.3).
 
 - The feature is configured at **collection creation time** (`createCollection`) or added/removed later via `alterCollection` (`addOpenSearch` / `dropOpenSearch`, §4.3). The mappings of an existing OpenSearch index cannot be edited in place: to change them, `dropOpenSearch` then `addOpenSearch` again.
 - Consistency level for writes to OS-indexed tables is automatically upgraded by HCD (ANY/ONE/LOCAL_ONE → QUORUM).
@@ -406,7 +408,11 @@ sequenceDiagram
 
 #### 4.1.3 OpenSearch fields in the Data API Payload
 
-> **Why `mappings` is always required for collections.** The HCD connector always needs three things: (1) `propertiesFromJsonFields` — the allow-list of top-level fields to extract from `doc_json`, critically **excluding `_id`**; (2) `customMappingsJson` — the explicit OS field mapping, because `applyDefaultSchema: 'true'` cannot work (the only Cassandra column is `doc_json TEXT` — no typed schema to derive from); (3) `applyCustomSchema: 'true'` + `applyDefaultSchema: 'false'`. The Data API derives both `propertiesFromJsonFields` (the top-level keys of `mappings`) and `customMappingsJson` from the single `mappings` field. `customMappingsJson` is built by wrapping `mappings` under `{"properties":{...}}` verbatim (no `_id` entry is added), then serialising the whole object to a JSON string. Omitting `mappings` returns `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`.
+> **`mappings` is optional for collections — two modes.**
+> - **Custom mapping (`mappings` provided).** The HCD connector is given (1) `propertiesFromJsonFields` — the allow-list of top-level fields to extract from `doc_json`, critically **excluding `_id`**; (2) `customMappingsJson` — the explicit OS field mapping; (3) `applyCustomSchema: 'true'` + `applyDefaultSchema: 'false'`. The Data API derives both `propertiesFromJsonFields` (the top-level keys of `mappings`) and `customMappingsJson` from the single `mappings` field. `customMappingsJson` is built by wrapping `mappings` under `{"properties":{...}}` verbatim (no `_id` entry is added), then serialising the whole object to a JSON string.
+> - **Default mapping (`mappings` omitted or `{}`).** The Data API sends `applyCustomSchema: 'false'` + `applyDefaultSchema: 'false'` and neither `customMappingsJson` nor `propertiesFromJsonFields`; OpenSearch applies its own default (dynamic) mapping to the unpacked document (or an OpenSearch index template, if one matches the index name). HCD's own `applyDefaultSchema: 'true'` is **never** used for collections, because the only Cassandra column is `doc_json TEXT` and there is no typed schema to derive a mapping from.
+>
+> Dynamic mapping infers types from the first document seen, so it is convenient for getting started but cannot choose analyzers, `keyword` vs `text`, or the EJSON sub-field mappings of §3.1.1. Provide `mappings` for production use cases that depend on those.
 
 | Field | Required | Default | Description |
 |---|---|---|---|
@@ -414,7 +420,7 @@ sequenceDiagram
 | `indexName` | no | `hcd_<keyspace>_<collectionName>` | **OS index name** — the name of the OpenSearch index (passed as `'indexName'` in `WITH OPTIONS`). Leave unset to use the auto-generated default. Note: the **SAI index name** (the Cassandra custom index identifier used in `expr(...)`) is always auto-generated as `hcd_<keyspace>_<collectionName>` and cannot be configured here. |
 | `numShards` | no | *(HCD default)* | Number of primary shards for the OS index. When omitted, HCD uses its own default (currently `1`). |
 | `numReplicas` | no | *(HCD default)* | Number of replicas for the OS index (analogous to Cassandra replication factor). When omitted, HCD uses its own default. |
-| `mappings` | **yes** | — | Map of **top-level** document field name → OpenSearch field definition. The Data API derives `propertiesFromJsonFields` (the key set) and `customMappingsJson` (built as `{"properties":{...mappings}}` serialised to a JSON string) from this single field. **`_id` and any key starting with `$` (e.g. `$vector`, `$lexical`, `$openSearch`) must never appear as top-level keys** — `_id` is a reserved OpenSearch metadata field and `$`-prefixed names are Data API internal fields that are not part of the `doc_json` OpenSearch indexes. Violations return `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`. For nested objects, use `{"type":"object"}` or a `{"properties":{...}}` block (HCD passes `customMappingsJson` verbatim to the OpenSearch Create Index API — confirmed). See the type reference below. |
+| `mappings` | no | *(none — OpenSearch default mapping)* | Map of **top-level** document field name → OpenSearch field definition. When provided, the Data API derives `propertiesFromJsonFields` (the key set) and `customMappingsJson` (built as `{"properties":{...mappings}}` serialised to a JSON string) from this single field. When omitted (or `{}`), no custom mapping is applied and OpenSearch uses its own default (dynamic) mapping. **`_id` and any key starting with `$` (e.g. `$vector`, `$lexical`, `$openSearch`) must never appear as top-level keys** — `_id` is a reserved OpenSearch metadata field and `$`-prefixed names are Data API internal fields that are not part of the `doc_json` OpenSearch indexes. Violations, or a non-object value, return `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`. For nested objects, use `{"type":"object"}` or a `{"properties":{...}}` block (HCD passes `customMappingsJson` verbatim to the OpenSearch Create Index API — confirmed). See the type reference below. |
 
 **OpenSearch field type reference for collections**
 
@@ -442,11 +448,9 @@ sequenceDiagram
 
 > **`nested` — use only for arrays of objects.** If `reviews` is `[{"score": 5, "author": "Alice"}, {"score": 3, "author": "Bob"}]` and you need a query to match only when *the same review* satisfies both conditions, use `nested`. Without it, OpenSearch flattens all values across array elements. For most collection use cases `object` is sufficient.
 
-> **Constraint — `indexing.deny` is rejected:** `openSearch.enabled: true` cannot be combined with `indexing.deny`. This is a **technical constraint** — `propertiesFromJsonFields` is inherently an allow-list with no deny-list equivalent. Use `indexing.allow` or `openSearch.mappings` to control replication scope. Violating this rule returns `OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST`.
+> **Constraint — `indexing.deny` is rejected:** `openSearch.enabled: true` cannot be combined with `indexing.deny`. This is a **technical constraint** — `propertiesFromJsonFields` is inherently an allow-list with no deny-list equivalent. Use `openSearch.mappings` to control replication scope. Violating this rule returns `OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST`.
 
-> **Constraint — `indexing.allow` filters the OpenSearch mapping:** When `indexing.allow` is also present, the Data API automatically filters `propertiesFromJsonFields` and `customMappingsJson` to the **intersection** of the `openSearch.mappings` keys and the `indexing.allow` field list. Fields listed in `openSearch.mappings` that are NOT in `indexing.allow` are silently dropped from the OpenSearch replication. This ensures that a field excluded from SAI indexing is also excluded from OpenSearch replication. If the intersection is empty (no mapping key survives the allow-list), the request is rejected with `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`.
->
-> **Implementation status (as of the current branch):** the `indexing.allow` ∩ `openSearch.mappings` filtering described here and in §4.1.4 / §4.1.5 is **not implemented yet**. `CreateCollectionOperation` and `AlterCollectionCommandResolver` currently emit `propertiesFromJsonFields` and `customMappingsJson` from **all** `openSearch.mappings` keys, regardless of `indexing.allow`, and no empty-intersection check exists. Only the `indexing.deny` rejection (`OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST`) is enforced. Treat the intersection behaviour as the target design.
+> **`indexing.allow` is independent of OpenSearch replication.** `indexing.allow` only controls which fields the Data API SAI-indexes (and therefore which fields can be used in regular filters and sorts). It does **not** filter `openSearch.mappings`: every field listed in `openSearch.mappings` is replicated to OpenSearch (`propertiesFromJsonFields`) and mapped (`customMappingsJson`), whether or not it appears in `indexing.allow`. There is no intersection and no empty-intersection error. This keeps the OpenSearch field set predictable — what you declare in `mappings` is exactly what is replicated — and lets you search in OpenSearch on fields you deliberately do not SAI-index. When `mappings` is omitted, no allow-list is sent and HCD unpacks the whole document.
 
 
 **Relationship to other search capabilities**
@@ -463,7 +467,7 @@ The `openSearch` block is a deliberate, explicit gate — the same model as hybr
 
 #### 4.1.4 Sample payloads
 
-> **Every `createCollection` payload with `openSearch.enabled: true` must include `mappings`.** This is always required — see §4.1.3 for the reasoning.
+> **`mappings` is optional.** When omitted (or `{}`), OpenSearch applies its default mapping; when provided, it drives both the replicated field set and the explicit OpenSearch mapping — see §4.1.3.
 
 ---
 
@@ -502,7 +506,7 @@ WITH OPTIONS = {
 };
 ```
 
-> The Data API derives `propertiesFromJsonFields` from the keys of `mappings` (`firstName,lastName,city,age`) and builds `customMappingsJson` by wrapping `mappings` under `{"properties":{...}}` with `_id` prepended as the first entry, then serialising to a JSON string.
+> The Data API derives `propertiesFromJsonFields` from the keys of `mappings` (`firstName,lastName,city,age`) and builds `customMappingsJson` by wrapping `mappings` under `{"properties":{...}}` verbatim (no `_id` entry is added), then serialising to a JSON string.
 
 ---
 
@@ -529,7 +533,7 @@ WITH OPTIONS = {
 
 ---
 
-**`indexing.allow` + `openSearch.mappings` — fields filtered to the intersection:**
+**`indexing.allow` + `openSearch.mappings` — independent settings:**
 ```json
 {
   "createCollection": {
@@ -552,7 +556,7 @@ WITH OPTIONS = {
 }
 ```
 
-> `category`, `price`, `publishedAt`, `title`, and `author` are SAI-indexed. `title`, `body`, and `author` are declared in `openSearch.mappings`. The intersection is `title` and `author` — only those two fields are passed to `propertiesFromJsonFields` and included in `customMappingsJson`. `body` is dropped from the OpenSearch mapping because it is not in `indexing.allow`. The CQL emitted is:
+> `category`, `price`, `publishedAt`, `title`, and `author` are SAI-indexed (they can be used in regular Data API filters and sorts). `title`, `body`, and `author` are declared in `openSearch.mappings` and are **all** replicated to OpenSearch — including `body`, which is not in `indexing.allow`. The two settings are independent: `indexing.allow` only controls SAI indexing, and `openSearch.mappings` alone decides which fields are replicated and mapped in OpenSearch. The CQL emitted is:
 > ```cql
 > CREATE CUSTOM INDEX IF NOT EXISTS hcd_mykeyspace_articles
 > ON mykeyspace.articles (doc_json)
@@ -563,8 +567,8 @@ WITH OPTIONS = {
 >   'unpackJsonFields':        'doc_json',
 >   'applyDefaultSchema':      'false',
 >   'applyCustomSchema':       'true',
->   'customMappingsJson':      '{"properties":{"title":{"type":"text","analyzer":"english"},"author":{"type":"keyword"}}}',
->   'propertiesFromJsonFields':'title,author'
+>   'customMappingsJson':      '{"properties":{"title":{"type":"text","analyzer":"english"},"body":{"type":"text","analyzer":"english"},"author":{"type":"keyword"}}}',
+>   'propertiesFromJsonFields':'title,body,author'
 > };
 > ```
 
@@ -652,11 +656,11 @@ WITH OPTIONS = {
 
 ---
 
-**Error — `mappings` missing (always required):**
+**Without custom mappings — OpenSearch default (dynamic) mapping:**
 ```json
 {
   "createCollection": {
-    "name": "products",
+    "name": "logs",
     "options": {
       "openSearch": {
         "enabled": true
@@ -665,15 +669,8 @@ WITH OPTIONS = {
   }
 }
 ```
-Response:
-```json
-{
-  "errors": [{
-    "message": "openSearch.mappings is required. There is no auto-inference path for collections.",
-    "errorCode": "OPEN_SEARCH_MISSING_FIELD_MAPPINGS"
-  }]
-}
-```
+
+> `mappings` is omitted. The Data API emits `applyDefaultSchema: 'false'` and `applyCustomSchema: 'false'` and no `customMappingsJson` / `propertiesFromJsonFields`; OpenSearch infers field types dynamically from the unpacked `doc_json`. Use this to get started quickly or when an OpenSearch index template manages the mapping. Add `mappings` when you need explicit types or analyzers (e.g. `text` with `english`, `keyword`). Passing `"mappings": {}` is equivalent to omitting it. The persisted collection definition and `findCollections` then return no `mappings` key.
 
 ---
 
@@ -699,7 +696,7 @@ Response:
 ```json
 {
   "errors": [{
-    "message": "'openSearch.mappings' is required, must be a non-empty object, and must not contain reserved field names ('_id' or any field starting with '$').",
+    "message": "'openSearch.mappings' is optional, but when provided it must be an object and must not contain reserved field names ('_id' or any field starting with '$').",
     "errorCode": "OPEN_SEARCH_MISSING_FIELD_MAPPINGS"
   }]
 }
@@ -731,40 +728,8 @@ Response:
 ```json
 {
   "errors": [{
-    "message": "openSearch cannot be enabled when 'indexing.deny' is set. Use 'indexing.allow' or 'openSearch.mappings' to specify which fields to replicate.",
+    "message": "openSearch cannot be enabled when 'indexing.deny' is set. Remove 'indexing.deny' and use 'openSearch.mappings' to specify which fields to replicate.",
     "errorCode": "OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST"
-  }]
-}
-```
-
----
-
-**Error — `indexing.allow` present but intersection with `openSearch.mappings` keys is empty:**
-```json
-{
-  "createCollection": {
-    "name": "products",
-    "options": {
-      "indexing": {
-        "allow": ["category", "price"]
-      },
-      "openSearch": {
-        "enabled": true,
-        "mappings": {
-          "title":       { "type": "text", "analyzer": "english" },
-          "description": { "type": "text", "analyzer": "english" }
-        }
-      }
-    }
-  }
-}
-```
-Response:
-```json
-{
-  "errors": [{
-    "message": "openSearch.mappings contains no fields that are in 'indexing.allow'. The intersection of openSearch.mappings keys and indexing.allow is empty — no fields would be replicated to OpenSearch.",
-    "errorCode": "OPEN_SEARCH_MISSING_FIELD_MAPPINGS"
   }]
 }
 ```
@@ -831,12 +796,13 @@ Response:
 
 **CQL emitted**
 
-When `openSearch.enabled: true` the Data API executes a second CQL statement immediately after `CREATE TABLE`. The same five `WITH OPTIONS` keys are **always present** for every collection OpenSearch index — they are not conditional:
+When `openSearch.enabled: true` the Data API executes a second CQL statement immediately after `CREATE TABLE`. The following `WITH OPTIONS` keys are always present, and the mapping-related ones depend on whether `openSearch.mappings` is provided:
 
-- `applyDefaultSchema: 'false'` — always. The only Cassandra column is `doc_json TEXT`; there is no typed schema to derive a mapping from.
-- `applyCustomSchema: 'true'` + `customMappingsJson` — always. The Data API builds `customMappingsJson` by constructing `{"properties":{<mappings entries>}}` and serialising the result to a JSON string. No `_id` entry is added — `_id` must not appear in `mappings`.
-- `propertiesFromJsonFields` — always. Built from the **effective field set** as a comma-separated string. When `indexing.allow` is also present, this is the **intersection** of `openSearch.mappings` top-level keys and the `indexing.allow` field list; when `indexing.allow` is absent it is simply the top-level keys of `openSearch.mappings`. `_id` is always excluded (validated at request time). An empty intersection is rejected with `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`.
+- `indexName` and `createIndexIfNotExists: 'true'` — always.
 - `unpackJsonFields: 'doc_json'` — always. Required so HCD parses the JSON blob.
+- `applyDefaultSchema: 'false'` — always. The only Cassandra column is `doc_json TEXT`; there is no typed schema to derive a mapping from, so HCD's own default-schema derivation is never used for collections.
+- When `mappings` **is provided**: `applyCustomSchema: 'true'` + `customMappingsJson` + `propertiesFromJsonFields`. The Data API builds `customMappingsJson` by constructing `{"properties":{<mappings entries>}}` and serialising the result to a JSON string, and `propertiesFromJsonFields` from the top-level keys of `mappings`. No `_id` entry is added — `_id` must not appear in `mappings`. `indexing.allow` is **not** consulted: every field listed in `mappings` is replicated, whatever the SAI indexing configuration says.
+- When `mappings` is **absent** (or `{}`): `applyCustomSchema: 'false'`, and neither `customMappingsJson` nor `propertiesFromJsonFields` is emitted. OpenSearch applies its **default (dynamic) mapping** to the unpacked document. This mode is also what is read back from an `OpenSearchIndex` created directly in CQL without custom mappings (see §4.2).
 
 *Standard example — `persons` collection, default OS index name:*
 ```cql
@@ -874,29 +840,45 @@ WITH OPTIONS = {
 };
 ```
 
+*Without custom mappings — `openSearch: { "enabled": true }` (OpenSearch applies its default mapping):*
+```cql
+CREATE CUSTOM INDEX IF NOT EXISTS hcd_mykeyspace_logs
+ON mykeyspace.logs (doc_json)
+USING 'OpenSearchIndex'
+WITH OPTIONS = {
+  'indexName':               'hcd_mykeyspace_logs',
+  'createIndexIfNotExists':  'true',
+  'unpackJsonFields':        'doc_json',
+  'applyDefaultSchema':      'false',
+  'applyCustomSchema':       'false'
+};
+```
+
 **`WITH OPTIONS` mapping rules**
 
 > The `WITH OPTIONS` block carries both the **SAI index name** (implicit in the `CREATE CUSTOM INDEX` statement itself) and the **OS index name** (explicit as the `'indexName'` option). See §3 for the formal distinction.
 
 | Condition | Options key added |
 |---|---|
-| **Always** | `indexName`, `createIndexIfNotExists: 'true'`, `unpackJsonFields: 'doc_json'`, `applyDefaultSchema: 'false'`, `applyCustomSchema: 'true'`, `customMappingsJson` ¹, `propertiesFromJsonFields` ² |
+| **Always** | `indexName`, `createIndexIfNotExists: 'true'`, `unpackJsonFields: 'doc_json'`, `applyDefaultSchema: 'false'` |
+| `openSearch.mappings` provided | `applyCustomSchema: 'true'`, `customMappingsJson` ¹, `propertiesFromJsonFields` ² |
+| `openSearch.mappings` absent or `{}` | `applyCustomSchema: 'false'` (no `customMappingsJson`, no `propertiesFromJsonFields`) |
 | `openSearch.numShards` set by user | `numShards: '<value>'` |
 | `openSearch.numReplicas` set by user | `numReplicas: '<value>'` |
 
-> ¹ `customMappingsJson` is always present. The Data API constructs `{"properties":{<mappings entries>}}` and serialises it to a JSON string. The `{"properties":{...}}` wrapper is the OpenSearch index mapping envelope; no `_id` entry is injected. The option ordering in the emitted CQL is: `indexName`, `createIndexIfNotExists`, `unpackJsonFields`, `applyDefaultSchema`, `applyCustomSchema`, `customMappingsJson`, `propertiesFromJsonFields`.
+> ¹ `customMappingsJson` is present only when `mappings` is provided. The Data API constructs `{"properties":{<mappings entries>}}` and serialises it to a JSON string. The `{"properties":{...}}` wrapper is the OpenSearch index mapping envelope; no `_id` entry is injected. The option ordering in the emitted CQL is: `indexName`, `createIndexIfNotExists`, `unpackJsonFields`, `applyDefaultSchema`, `applyCustomSchema`, `customMappingsJson`, `propertiesFromJsonFields`.
 
-> ² `propertiesFromJsonFields` is always present. When `indexing.allow` is absent it equals the top-level keys of `mappings` (i.e. `Object.keys(mappings)`). When `indexing.allow` is present it equals `Object.keys(mappings).filter(k => indexing.allow.includes(k))` — the intersection. `_id` must never appear in either input — validated at request time. An empty intersection is rejected with `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`. For **tables** (§4.3) the equivalent options are optional (HCD can use `applyDefaultSchema: 'true'`); for **collections** they are mandatory.
+> ² `propertiesFromJsonFields` is present only when `mappings` is provided, and equals the top-level keys of `mappings` (i.e. `Object.keys(mappings)`). `_id` must never appear in the input — validated at request time. `indexing.allow` has **no** effect on this value. When no `mappings` is provided the option is omitted and HCD unpacks the whole `doc_json`; OpenSearch then applies its own default (dynamic) mapping. For **tables** (§4.3) the equivalent options are also optional (HCD can use `applyDefaultSchema: 'true'`).
 
 **Todo list**
-1. Add `OpenSearchDesc` record to `CreateCollectionCommand.Options` — fields: `Boolean enabled` (required), `Integer numShards` (optional), `Integer numReplicas` (optional), `String indexName` (optional), `JsonNode mappings` (**required**).
+1. Add `OpenSearchDesc` record to `CreateCollectionCommand.Options` — fields: `Boolean enabled` (required), `Integer numShards` (optional), `Integer numReplicas` (optional), `String indexName` (optional), `JsonNode mappings` (optional).
 2. Create `CollectionOpenSearchDef` record in `service/schema/collections` following `CollectionLexicalDef` pattern — includes `fromApiDesc()`, `toApiDesc()`, and a `SchemaDefaults` inner instance.
 3. Create `CollectionOpenSearchDefSchemaFactory` following the lexical pattern.
 4. Add `openSearchDef` field (`SchemaHolder<CollectionOpenSearchDef>`) to `CollectionSchemaObject`.
 5. Add `CollectionSchemaVersion.V_3`; add `CollectionSettingsV3Reader` (extends V2Reader).
 6. Update V1/V2 readers to return `SchemaDefaults.forPreRelease()` when `openSearch` key is absent.
-7. Update `CreateCollectionCommandResolver` to: (a) reject `indexing.deny` + `openSearch.enabled: true` with `OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST`; (b) validate that `mappings` is present and non-empty (throw `OPEN_SEARCH_MISSING_FIELD_MAPPINGS` if absent); (c) validate that `_id` does not appear as a key in `mappings`; (d) when `indexing.allow` is present, compute the **effective field set** as `Object.keys(mappings).filter(k => indexing.allow.includes(k))` and reject with `OPEN_SEARCH_MISSING_FIELD_MAPPINGS` if the result is empty; (e) resolve `indexName` default; persist resolved values in comment JSON. — In `CollectionOpenSearchDef.fromApiDesc()`, when `enabled: false`, check each of `indexName`, `numShards`, `numReplicas`, and `mappings` individually and throw `INVALID_CREATE_COLLECTION_OPTIONS` naming the specific field (mirrors `lexical.enabled: false` + `analyzer` pattern).
-8. Update `CreateCollectionOperation` to emit `CREATE CUSTOM INDEX … USING 'OpenSearchIndex'` after table creation: build `propertiesFromJsonFields` from the **effective field set** (intersection when `indexing.allow` is present, full `mappings` key set otherwise); build `customMappingsJson` by constructing `{"properties":{...<effective mappings entries>}}` and serialising to a JSON string; include all five mandatory options.
+7. Update `CreateCollectionCommandResolver` to: (a) reject `indexing.deny` + `openSearch.enabled: true` with `OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST`; (b) when `mappings` is provided and non-empty, validate that it is an object (otherwise throw `OPEN_SEARCH_MISSING_FIELD_MAPPINGS`); when absent, `null` or `{}` treat it as "no custom mappings"; (c) when `mappings` is provided, validate that neither `_id` nor any `$`-prefixed key appears as a top-level key; (d) resolve `indexName` default; persist resolved values in comment JSON. `indexing.allow` does **not** influence the OpenSearch field set. — In `CollectionOpenSearchDef.fromApiDesc()`, when `enabled: false`, check each of `indexName`, `numShards`, `numReplicas`, and `mappings` individually and throw `INVALID_CREATE_COLLECTION_OPTIONS` naming the specific field (mirrors `lexical.enabled: false` + `analyzer` pattern).
+8. Update `CreateCollectionOperation` to emit `CREATE CUSTOM INDEX … USING 'OpenSearchIndex'` after table creation: when `mappings` is provided, build `propertiesFromJsonFields` from the top-level keys of `mappings` and `customMappingsJson` by constructing `{"properties":{...<mappings entries>}}` and serialising to a JSON string, with `applyCustomSchema: 'true'`; when no `mappings` is provided, omit both options and emit `applyCustomSchema: 'false'`. `indexName`, `createIndexIfNotExists`, `unpackJsonFields` and `applyDefaultSchema: 'false'` are always emitted.
 9. Update `CollectionSchemaFactory` to read/write the `openSearch` key in the comment JSON.
 
 **Relevant context**
@@ -1063,7 +1045,7 @@ sequenceDiagram
 | `indexName` | When `enabled: true` | When `enabled: false` | **Resolved OS index name** — never null when enabled. This is the OpenSearch index name (the `'indexName'` `WITH OPTIONS` value). The SAI index name (the Cassandra custom index identifier) is not returned here. |
 | `numShards` | When `enabled: true` | When `enabled: false` | Persisted at creation time; always returned when enabled. |
 | `numReplicas` | When `enabled: true` | When `enabled: false` | Persisted at creation time; always returned when enabled. |
-| `mappings` | When `enabled: true` | When `enabled: false` | The `mappings` object as provided at creation time; always persisted and always returned when enabled. |
+| `mappings` | When `enabled: true` and custom mappings were provided | When `enabled: false`, or when no custom mappings were provided (OpenSearch default mapping) | The `mappings` object as provided at creation time; persisted and returned when set. |
 
 #### 4.2.4 Sample payloads
 
@@ -1105,7 +1087,7 @@ sequenceDiagram
 }
 ```
 
-> All fields are always round-tripped: `indexName`, `numShards`, `numReplicas`, and `mappings` are always present when `enabled: true`.
+> Fields are round-tripped as stored: `indexName` is always present when `enabled: true`; `numShards`, `numReplicas` and `mappings` are present when they were set. A collection created without `mappings` (OpenSearch default mapping) returns no `mappings` key.
 
 ---
 
@@ -1226,9 +1208,10 @@ sequenceDiagram
 - `findCollections` with `explain: true` includes an `openSearch` key for all collections:
   - When enabled: `{"enabled": true, "indexName": "...", "numShards": 1, "numReplicas": 1, "mappings": {...}}`.
   - When disabled: `{"enabled": false}` (matching `lexical` and `rerank`).
-- The returned object always contains `enabled`. When `enabled == true`, `indexName`, `numShards`, `numReplicas`, and `mappings` are also present.
+- The returned object always contains `enabled`. When `enabled == true`, `indexName` is also present, and so are `numShards`, `numReplicas` and `mappings` when they were set. `mappings` is omitted when the collection uses the OpenSearch default mapping.
 - Collections with schema V1 or V2 return `{"enabled": false}` (via `CollectionOpenSearchDef.SCHEMA_DEFAULTS.forPreRelease()`).
-- Schema read-back: `CollectionSettingsV3Reader` must (1) read `schema.openSearch`; (2) if missing or `enabled == false` produce a disabled def; (3) if `enabled == true` populate all fields — if `indexName` is null in the stored comment, **throw `OPEN_SEARCH_CORRUPT_SCHEMA`** rather than silently recomputing the default.
+- Schema read-back: `CollectionSettingsV3Reader` must (1) read `schema.openSearch`; (2) if missing or `enabled == false` produce a disabled def; (3) if `enabled == true` populate all fields — if `indexName` is null in the stored comment, **throw `OPEN_SEARCH_CORRUPT_SCHEMA`** rather than silently recomputing the default. A missing `mappings` is valid (default mapping) and is **not** an error.
+- The same leniency applies when the definition is read from the `OpenSearchIndex` CQL index metadata: a missing `customMappingsJson` (or an empty `properties`) yields a definition with no custom mappings; only a missing `indexName`, or a `customMappingsJson` that is present but unparseable / not an object, throws `OPEN_SEARCH_CORRUPT_SCHEMA`. This allows indexes created directly in CQL with `applyCustomSchema: 'false'` to be read.
 
 **Todo list**
 1. Verify `CollectionSettingsV3Reader` stores `indexName`, `numShards`, `numReplicas`, and `mappings` as resolved values at write time.
@@ -1339,7 +1322,7 @@ sequenceDiagram
 | `operation.addOpenSearch.indexName` | no | `hcd_<keyspace>_<collectionName>` | **OS index name** — the OpenSearch index name. Defaults to `hcd_<keyspace>_<collectionName>` when absent. |
 | `operation.addOpenSearch.numShards` | no | *(HCD default)* | Number of primary shards. |
 | `operation.addOpenSearch.numReplicas` | no | *(HCD default)* | Number of replicas. |
-| `operation.addOpenSearch.mappings` | **yes** | — | Flat field-name → OpenSearch field definition map. Required (same constraint as `createCollection`). Must be a non-empty object and must not contain `_id` or any `$`-prefixed key. |
+| `operation.addOpenSearch.mappings` | no | *(none — OpenSearch default mapping)* | Flat field-name → OpenSearch field definition map. Optional (same behaviour as `createCollection`). When provided it must be an object and must not contain `_id` or any `$`-prefixed key. |
 
 **`dropOpenSearch` operation fields:**
 
@@ -1504,8 +1487,8 @@ AlterCollectionCommand
 **`addOpenSearch` resolver logic**
 
 1. Read `schemaObject.openSearchDef()`. If `openSearchDef.enabled()` is `true`, throw `OPEN_SEARCH_INDEX_ALREADY_EXISTS`.
-2. Validate the incoming `openSearch` descriptor (same rules as `createCollection`): `enabled: true` required, `mappings` required, non-empty, no `_id` key.
-3. Build the `WITH OPTIONS` map (same logic as `CreateCollectionOperation`): `unpackJsonFields`, `propertiesFromJsonFields`, `applyCustomSchema`, `applyDefaultSchema`, `customMappingsJson`, and optionally `indexName`, `numShards`, `numReplicas`.
+2. Validate the incoming `openSearch` descriptor (same rules as `createCollection`): `enabled: true` required; `mappings` optional — when provided it must be an object with no `_id` key and no `$`-prefixed key.
+3. Build the `WITH OPTIONS` map (same logic as `CreateCollectionOperation`): `unpackJsonFields`, `applyDefaultSchema: 'false'`, `applyCustomSchema`, and — only when `mappings` is provided — `propertiesFromJsonFields` and `customMappingsJson`; optionally `indexName`, `numShards`, `numReplicas`.
 4. Emit `CREATE CUSTOM INDEX IF NOT EXISTS hcd_<ks>_<coll> ON <ks>.<coll> (doc_json) USING 'OpenSearchIndex' WITH OPTIONS = {...}`.
 5. Compute the new schema comment JSON: clone the existing `CollectionSettings`, set the `openSearch` block, bump `schemaVersion` to `V_3`, serialise and write back to the table comment.
 6. Invalidate the schema cache for this collection.
@@ -4420,8 +4403,8 @@ Codes below are implemented in `SchemaException.Code` / `FilterException.Code` a
 | `OPEN_SEARCH_INCOMPATIBLE_WITH_DENY_LIST` | `openSearch.enabled: true` + `indexing.deny` at collection creation (`CreateCollectionCommandResolver`). |
 | `OPEN_SEARCH_INDEX_ALREADY_EXISTS` | Attempting to create a second OpenSearch index on the same table or collection (`createOpenSearchIndex`, `alterCollection addOpenSearch`). |
 | `OPEN_SEARCH_AGGREGATION_TOO_LARGE` | An aggregation response exceeds the `max_agg_json_bytes` / `max_agg_response_bytes` bounds imposed by `OpenSearchQueryHandler` (detected from the error message in `SearchAggregateCollectionOperation` / `SearchAggregateTableOperation`). |
-| `OPEN_SEARCH_CORRUPT_SCHEMA` | A persisted OpenSearch definition (table-comment JSON or `OpenSearchIndex` CQL metadata) is incomplete: missing `indexName`, `customMappingsJson` or `mappings`. Thrown instead of silently recomputing a default, which could later cause `expr(...)` queries against a non-existent SAI index. |
-| `OPEN_SEARCH_MISSING_FIELD_MAPPINGS` | `createCollection` / `addOpenSearch` with `openSearch.enabled: true` has missing or empty `mappings`, `mappings` that is not an object, an `_id` key, or any key starting with `$`. There is no auto-inference path for collections. |
+| `OPEN_SEARCH_CORRUPT_SCHEMA` | A persisted OpenSearch definition (table-comment JSON or `OpenSearchIndex` CQL metadata) is invalid: missing `indexName`, or `customMappingsJson` / `mappings` present but not parseable or not an object. A missing `customMappingsJson` / `mappings` is **not** an error — it means no custom mapping (OpenSearch default mapping). Thrown instead of silently recomputing a default `indexName`, which could later cause `expr(...)` queries against a non-existent SAI index. |
+| `OPEN_SEARCH_MISSING_FIELD_MAPPINGS` | `createCollection` / `addOpenSearch` with `openSearch.enabled: true` provides `mappings` that is not an object, contains an `_id` key, or contains any key starting with `$`. Omitting `mappings` (or passing an empty object) is **valid** and means "use the OpenSearch default mapping". |
 
 **Proposed in earlier drafts but NOT implemented as dedicated codes:**
 - `OPEN_SEARCH_NOT_ENABLED` — replaced by the `_FOR_COLLECTION` / `_FOR_TABLE` variants above.
