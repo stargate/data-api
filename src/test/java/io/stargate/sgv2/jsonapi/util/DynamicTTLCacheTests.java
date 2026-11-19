@@ -8,6 +8,8 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.Ticker;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -278,6 +280,39 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
     assertThat(fixture.cache.peekValue(longKey))
         .as("Value is not present in cache when peeking with Long TTL - after Long TTL expiry")
         .isNotPresent();
+  }
+
+  @Test
+  public void canceledLookupDoesNotFailOtherLookups() {
+    // Two requests wait for the same value while it loads, then one is canceled. If the cancel
+    // reached the load they share, the other request would fail with a CancellationException.
+    var fixture = newFixture();
+    var pendingValue = new CompletableFuture<String>();
+    when(fixture.valueFactory.apply(CACHE_KEY)).thenReturn(pendingValue);
+
+    var canceledLookup =
+        fixture.cache.get(CACHE_KEY).subscribe().withSubscriber(UniAssertSubscriber.create());
+    var otherLookup =
+        fixture.cache.get(CACHE_KEY).subscribe().withSubscriber(UniAssertSubscriber.create());
+    canceledLookup.cancel();
+    pendingValue.complete(fixture.expectedValue);
+
+    otherLookup.assertItem(fixture.expectedValue);
+  }
+
+  @Test
+  public void lookupCompletesWhenValueIsLoadedFromUni() {
+    // The schema cache loads with Uni.subscribeAsCompletionStage(), which returns SmallRye's
+    // ContextualCompletableFuture. Its minimalCompletionStage() returns a new stage that never
+    // completes, so a get() built on it would hang every schema lookup.
+    var fixture = newFixture();
+    when(fixture.valueFactory.apply(CACHE_KEY))
+        .thenReturn(Uni.createFrom().item(fixture.expectedValue).subscribeAsCompletionStage());
+
+    // The timeout turns a hang into a test failure.
+    assertThat(fixture.cache.get(CACHE_KEY).await().atMost(Duration.ofSeconds(5)))
+        .as("Lookup completes with the loaded value")
+        .isSameAs(fixture.expectedValue);
   }
 
   // =======================================================

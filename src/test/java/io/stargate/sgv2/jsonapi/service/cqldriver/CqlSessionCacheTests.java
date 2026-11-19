@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.datastax.oss.driver.api.core.CqlSession;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.UserAgent;
 import io.stargate.sgv2.jsonapi.util.CacheTestsBase;
@@ -402,6 +403,30 @@ public class CqlSessionCacheTests extends CacheTestsBase {
 
     // Verify no interactions with session factory
     verifyNoInteractions(fixture.sessionFactory);
+  }
+
+  @Test
+  public void sessionForCanceledRequestIsClosedWhenItExpires() {
+    // A request is canceled, for example by a client disconnect, while its session is still being
+    // created. If the cancel reached the shared load, the finished session would never enter the
+    // cache, so nothing would close it and its connections would stay open.
+    var fixture = newFixture();
+    var pendingSession = new CompletableFuture<CqlSession>();
+    when(fixture.sessionFactory.apply(TEST_CONSTANTS.TENANT, fixture.expectedCredentials))
+        .thenReturn(pendingSession);
+
+    var request =
+        fixture
+            .cache
+            .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create());
+    request.cancel();
+    pendingSession.complete(fixture.expectedSession);
+
+    fixture.ticker.advance(LONG_TTL.plusSeconds(1));
+    fixture.cache.cleanUp();
+    verify(fixture.expectedSession).close();
   }
 
   // =======================================================
