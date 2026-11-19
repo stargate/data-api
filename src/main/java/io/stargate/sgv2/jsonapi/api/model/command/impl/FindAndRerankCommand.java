@@ -77,6 +77,17 @@ public record FindAndRerankCommand(
       /** ---- */
       @Schema(ref = HybridLimits.REF) HybridLimits hybridLimits,
       /** ---- */
+      // TODO: an Integer like the other limits, so Jackson turns 1.5 into 1. Change all the
+      // limits together later, so a number with a fraction gets an error.
+      @Schema(
+              name = Names.RERANK_CANDIDATE_LIMIT,
+              description =
+                  "Optional maximum number of candidate documents to read for reranking when the sort does not use $hybrid. Defaults to the configured limit. It cannot be used with a $hybrid sort. Use hybridLimits with a $hybrid sort.",
+              type = SchemaType.INTEGER,
+              implementation = Integer.class)
+          @JsonProperty(Names.RERANK_CANDIDATE_LIMIT)
+          Integer rerankCandidateLimit,
+      /** ---- */
       @Schema(
               description =
                   "Query to pass to the reranking model, defaults to the text used for the $vectorize sort, required if $vectorize is not used.",
@@ -117,7 +128,16 @@ public record FindAndRerankCommand(
               implementation = RerankOverrideSchema.class,
               ref = RerankOverrideSchema.REF)
           @JsonProperty("rerank")
-          CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {}
+          CreateCollectionCommand.Options.RerankServiceDesc rerankServiceOverride) {
+
+    // TODO: add every option name here. Bind each option to its name with @JsonProperty and
+    // @Schema(name=). Names with the same meaning in other commands, e.g. limit, go in one shared
+    // interface.
+    /** The names of the options in the command JSON. */
+    public interface Names {
+      String RERANK_CANDIDATE_LIMIT = "rerankCandidateLimit";
+    }
+  }
 
   // Matches the override validation in CollectionRerankDef. Update both together.
   @Schema(
