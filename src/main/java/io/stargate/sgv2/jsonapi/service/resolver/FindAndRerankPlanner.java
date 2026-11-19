@@ -21,6 +21,7 @@ import io.stargate.sgv2.jsonapi.service.operation.reranking.RerankingQuery;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
+import io.stargate.sgv2.jsonapi.util.StringUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -323,27 +324,27 @@ class FindAndRerankPlanner {
         : RerankingQuery.createForVectorizeSort(rerankQueryOption, vectorizeText(sort));
   }
 
+  /**
+   * Finds the passage to rerank in each document: the rerankOn option when it is not blank,
+   * otherwise the $lexical field for a $lexical sort, or the $vectorize field for a $vectorize or
+   * $hybrid sort.
+   */
   private static PathMatchLocator passageLocator(FindAndRerankCommand command) {
+    var sort = command.sortClause();
+    var rerankOnOption =
+        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankOn, null);
 
-    var rerankOn = getOrDefault(command.options(), FindAndRerankCommand.Options::rerankOn, null);
-    var isRerankOn = rerankOn != null && !rerankOn.isBlank();
-
-    String finalRerankField;
-
-    if (isVectorizeSort(command.sortClause())) {
-      // use the vectorize field, unless the user has overridden
-      finalRerankField = isRerankOn ? rerankOn : VECTOR_EMBEDDING_TEXT_FIELD;
-    } else if (command.sortClause() instanceof FindAndRerankSort.LexicalLeg) {
-      // a $lexical sort uses the lexical field, unless the user has overridden
-      finalRerankField = isRerankOn ? rerankOn : LEXICAL_CONTENT_FIELD;
-    } else if (isRerankOn) {
-      // user has to provide a field to rerank on
-      finalRerankField = rerankOn;
-    } else {
-      throw RequestException.Code.MISSING_RERANK_ON.get();
+    if (!StringUtil.isNullOrBlank(rerankOnOption)) {
+      return PathMatchLocator.forPath(rerankOnOption);
     }
-
-    return PathMatchLocator.forPath(finalRerankField);
+    if (sort instanceof FindAndRerankSort.LexicalLeg) {
+      return PathMatchLocator.forPath(LEXICAL_CONTENT_FIELD);
+    }
+    if (isVectorizeSort(sort)) {
+      return PathMatchLocator.forPath(VECTOR_EMBEDDING_TEXT_FIELD);
+    }
+    // other sorts, e.g. $vector or a field sort, have no default field, so rerankOn is required
+    throw RequestException.Code.MISSING_RERANK_ON.get();
   }
 
   private static void throwIfNoLexicalIndex(CollectionSchemaObject schemaObject) {
