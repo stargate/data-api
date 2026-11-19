@@ -390,8 +390,6 @@ public class FindAndRerankCollectionSuccessIntegrationTest
    */
   @Test
   void sortWithoutHybridReadsRerankCandidateLimitDocuments() {
-    // NOTE: the ids are not the ids of allSixtyCandidatesReachRerankerAcrossBatches. On a slow
-    // database a timed out insert of that test can still write its document later.
     var documents =
         IntStream.range(0, 60)
             .mapToObj(
@@ -401,10 +399,7 @@ public class FindAndRerankCollectionSuccessIntegrationTest
                         "$vector", List.of((double) index + 1, 0.0, 0.0, 0.0, 0.0),
                         "content", "score:" + index + " unique passage " + index))
             .toList();
-    // NOTE: 20 documents in each insert, one insert of 60 documents can time out on a slow database
-    for (int from = 0; from < documents.size(); from += 20) {
-      insertDocuments(collectionName, documents.subList(from, from + 20));
-    }
+    insertDocuments(collectionName, documents);
     var sort = Map.of("$vector", List.of(1.0, 0.0, 0.0, 0.0, 0.0));
 
     findAndRerank(
