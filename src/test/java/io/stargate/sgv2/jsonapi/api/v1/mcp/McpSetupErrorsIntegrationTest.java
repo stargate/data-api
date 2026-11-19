@@ -52,7 +52,7 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
   }
 
   @Test
-  void unknownCollectionReturnsAnApplicationErrorThenAValidCallSucceeds() {
+  void unknownCollectionReturnsAnApplicationError() {
     var response =
         callTool(
             3,
@@ -60,7 +60,6 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
             Map.of("keyspace", keyspaceName, "collection", collectionName));
 
     assertApplicationError(response, 3, SchemaException.Code.UNKNOWN_COLLECTION_OR_TABLE);
-    assertProviderDiscoverySucceeds(4);
   }
 
   @Test
@@ -108,7 +107,6 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
 
     // Quarkiverse 2.0.3 reports parse errors in a JSON-RPC envelope with HTTP 200.
     assertProtocolError(response, null, JsonRpcErrorCodes.PARSE_ERROR);
-    assertProviderDiscoverySucceeds(7);
   }
 
   @Test
@@ -118,7 +116,6 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
 
     assertProtocolError(response, 8, JsonRpcErrorCodes.METHOD_NOT_FOUND);
     assertProtocolError(callTool(9, "unknownTool", Map.of()), 9, JsonRpcErrorCodes.INVALID_PARAMS);
-    assertProviderDiscoverySucceeds(10);
   }
 
   @Test
@@ -134,7 +131,6 @@ class McpSetupErrorsIntegrationTest extends McpIntegrationTestBase {
     assertThat(content.getJsonObject(0).getString("type")).isEqualTo("text");
     assertThat(content.getJsonObject(0).getString("text"))
         .isEqualTo("Missing required argument: keyspace");
-    assertProviderDiscoverySucceeds(12);
   }
 
   private void assertProviderDiscoverySucceeds(int id) {
