@@ -17,6 +17,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
@@ -57,7 +58,7 @@ class McpResourceTest {
 
   private final MeteredCommandProcessor commandProcessor = mock(MeteredCommandProcessor.class);
   private final SchemaObjectCache schemaObjectCache = mock(SchemaObjectCache.class);
-  private final KeyspaceCommand command = mock(KeyspaceCommand.class);
+  private final KeyspaceCommand command = keyspaceCommand();
   private final CommandContext<CollectionSchemaObject> context = commandContext();
 
   @Test
@@ -113,7 +114,7 @@ class McpResourceTest {
     when(commandProcessor.processCommand(context, command)).thenReturn(Uni.createFrom().nothing());
 
     mcpResource()
-        .processCommand(Uni.createFrom().item(context), command)
+        .processCommand(() -> Uni.createFrom().item(context), command)
         .subscribe()
         .with(response -> {}, failure -> {})
         .cancel();
@@ -160,9 +161,15 @@ class McpResourceTest {
   /** Runs one tool call with {@link #context} and {@link #command} and waits for the response. */
   private ToolResponse callTool() {
     return mcpResource()
-        .processCommand(Uni.createFrom().item(context), command)
+        .processCommand(() -> Uni.createFrom().item(context), command)
         .await()
         .atMost(TIMEOUT);
+  }
+
+  private static KeyspaceCommand keyspaceCommand() {
+    var command = mock(KeyspaceCommand.class);
+    when(command.commandName()).thenReturn(CommandName.FIND_COLLECTIONS);
+    return command;
   }
 
   @SuppressWarnings("unchecked")
