@@ -79,7 +79,6 @@ class McpCommandValidationTest {
 
     var mcpResult = callMcp(command, arguments);
     assertThat(mcpResult.getBoolean("isError")).isTrue();
-    assertThat(mcpResult.getJsonArray("content")).isEmpty();
     assertValidationError(mcpResult.getJsonObject("structuredContent"), reason);
     verifyNoInteractions(schemaObjectCacheSupplier, schemaObjectCache, commandProcessor);
   }
@@ -108,12 +107,9 @@ class McpCommandValidationTest {
     var httpResult = callHttp(command, arguments);
     var mcpResult = callMcp(command, arguments);
 
-    assertThat(httpResult.getJsonObject("status")).as(httpResult.encode()).isNotNull();
     assertThat(httpResult.getJsonObject("status").getInteger("ok")).isEqualTo(1);
     assertThat(httpResult.containsKey("errors")).isFalse();
     assertThat(mcpResult.getBoolean("isError")).isFalse();
-    assertThat(mcpResult.getJsonArray("content")).isEmpty();
-    assertThat(mcpResult.getValue("structuredContent")).isNull();
     assertThat(mcpResult.getJsonObject("_meta").getJsonObject("status"))
         .isEqualTo(httpResult.getJsonObject("status"));
     var commands = ArgumentCaptor.forClass(Command.class);

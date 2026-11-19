@@ -34,6 +34,7 @@ class McpOriginFilterTest {
         "https://APP.example.com",
         "HTTPS://app.example.com",
         "https://app.example.com:443",
+        "https://app.example.com:65536",
         "http://app.example.com:80",
         "ftp://app.example.com",
         "https://*.example.com",

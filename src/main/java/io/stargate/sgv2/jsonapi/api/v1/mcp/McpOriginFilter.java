@@ -157,6 +157,7 @@ public class McpOriginFilter {
     if (!("http".equals(scheme) || "https".equals(scheme))
         || uri.isOpaque()
         || uri.getHost() == null
+        || uri.getPort() > 65535
         || uri.getRawUserInfo() != null
         || !uri.getRawPath().isEmpty()
         || uri.getRawQuery() != null

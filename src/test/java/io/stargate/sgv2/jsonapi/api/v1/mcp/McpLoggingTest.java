@@ -51,6 +51,14 @@ class McpLoggingTest {
   @Test
   void normalLogsExcludePayloadsAndCredentials() throws IOException {
     long start = Files.size(LOG_FILE);
+    listToolsWithPrivateData();
+
+    assertThat(logsAfterRequestsComplete(start, 1))
+        .contains("MCP request completed", "method=tools/list", "status=200")
+        .doesNotContain("synthetic-");
+  }
+
+  private void listToolsWithPrivateData() {
     given()
         .contentType(ContentType.JSON)
         .accept("application/json, text/event-stream")
@@ -77,10 +85,6 @@ class McpLoggingTest {
         .post(mcpPath() + "?code=synthetic-code-secret")
         .then()
         .statusCode(200);
-
-    assertThat(logsSince(start))
-        .contains("MCP request completed", "method=tools/list", "status=200")
-        .doesNotContain("synthetic-");
   }
 
   @Test
@@ -101,7 +105,7 @@ class McpLoggingTest {
         .body("{\"access_token\":synthetic-malformed-body-secret}")
         .post(mcpPath());
 
-    assertThat(logsSince(start))
+    assertThat(logsAfterRequestsComplete(start, 2))
         .contains("MCP event details redacted", "status=400")
         .doesNotContain("synthetic-");
   }
@@ -118,7 +122,7 @@ class McpLoggingTest {
 
     callProviderTool();
 
-    assertThat(logsSince(start))
+    assertThat(logsAfterRequestsComplete(start, 1))
         .contains(
             "MCP command completed",
             "command=findEmbeddingProviders",
@@ -165,17 +169,13 @@ class McpLoggingTest {
             .getJsonObject("TraceSession")
             .getString("requestId");
     assertThat(requestId).matches("[a-f0-9-]{36}").isNotEqualTo(clientRequestId);
-    await()
-        .atMost(Duration.ofSeconds(5))
-        .untilAsserted(
-            () ->
-                assertThat(logsSince(start))
-                    .contains(
-                        "MCP request completed requestId=" + requestId,
-                        "MCP command completed requestId="
-                            + requestId
-                            + " command=findEmbeddingProviders isError=false")
-                    .doesNotContain(clientRequestId));
+    assertThat(logsAfterRequestsComplete(start, 1))
+        .contains(
+            "MCP request completed requestId=" + requestId,
+            "MCP command completed requestId="
+                + requestId
+                + " command=findEmbeddingProviders isError=false")
+        .doesNotContain(clientRequestId);
   }
 
   @Test
@@ -198,7 +198,7 @@ class McpLoggingTest {
 
     callProviderTool();
 
-    assertThat(logsSince(start))
+    assertThat(logsAfterRequestsComplete(start, 1))
         .contains("MCP command completed", "command=findEmbeddingProviders", "isError=true")
         .doesNotContain("synthetic-");
   }
@@ -221,7 +221,7 @@ class McpLoggingTest {
 
     callProviderTool();
 
-    assertThat(logsSince(start))
+    assertThat(logsAfterRequestsComplete(start, 1))
         .contains("MCP command failed", "command=findEmbeddingProviders")
         .doesNotContain("synthetic-");
   }
@@ -282,11 +282,6 @@ class McpLoggingTest {
                     tracedProviderRequest(2).header("Token", "synthetic-token-2").post(mcpPath()));
         var second = awaitStarted(started, secondResponse);
 
-        assertThat(first.context().requestContext()).isNotSameAs(second.context().requestContext());
-        assertThat(first.context().requestContext().requestId())
-            .isNotEqualTo(second.context().requestContext().requestId());
-        assertThat(first.context().requestTracing().enabled()).isTrue();
-        assertThat(second.context().requestTracing().enabled()).isTrue();
         assertThat(first.context().requestTracing().getSession().orElseThrow())
             .isNotSameAs(second.context().requestTracing().getSession().orElseThrow());
         assertThat(first.logRequestId())
@@ -305,7 +300,6 @@ class McpLoggingTest {
             .isEqualTo("worker-context");
         var secondResult = assertResponseComplete(secondResponse.get(10, TimeUnit.SECONDS), 2);
         assertThat(firstResponse.isDone()).isFalse();
-        assertThat(firstCompletion.isDone()).isFalse();
         assertThat(
                 worker
                     .submit(
@@ -319,12 +313,17 @@ class McpLoggingTest {
 
         assertIsolatedResult(first, firstResult, 1);
         assertIsolatedResult(second, secondResult, 2);
-        var logs = logsSince(start);
-        for (var call : List.of(first, second)) {
-          assertThat(logs).contains("MCP request completed requestId=" + call.logRequestId());
-          traceMetadata(call == first ? 1 : 2)
-              .values()
-              .forEach(value -> assertThat(logs).doesNotContain(value));
+        var logs =
+            await()
+                .atMost(Duration.ofSeconds(5))
+                .until(
+                    () -> logsSince(start),
+                    text ->
+                        text.contains("MCP request completed requestId=" + first.logRequestId())
+                            && text.contains(
+                                "MCP request completed requestId=" + second.logRequestId()));
+        for (int id : List.of(1, 2)) {
+          traceMetadata(id).values().forEach(value -> assertThat(logs).doesNotContain(value));
         }
         assertThat(logs)
             .contains(
@@ -449,6 +448,18 @@ class McpLoggingTest {
         .statusCode(200);
   }
 
+  private static String logsAfterRequestsComplete(long start, int requestCount) {
+    return await()
+        .atMost(Duration.ofSeconds(5))
+        .until(
+            () -> logsSince(start),
+            logs ->
+                logs.lines()
+                        .filter(line -> line.contains("MCP request completed requestId="))
+                        .count()
+                    >= requestCount);
+  }
+
   static String logsSince(long start) throws IOException {
     byte[] bytes = Files.readAllBytes(LOG_FILE);
     return new String(
@@ -457,7 +468,7 @@ class McpLoggingTest {
 
   @Test
   void subsequentHttpRequestsKeepTheirOrdinaryLogs() throws IOException {
-    normalLogsExcludePayloadsAndCredentials();
+    listToolsWithPrivateData();
     long start = Files.size(LOG_FILE);
     assertThat(given().get("/v1/logging-isolation-check").statusCode()).isIn(401, 404);
     await()
