@@ -13,12 +13,14 @@ import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.rpcPayload;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.toolPayload;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.quarkiverse.mcp.server.ToolManager;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import io.vertx.core.json.JsonObject;
+import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,14 +38,17 @@ import org.junit.jupiter.params.provider.ValueSource;
  * results are checked over raw HTTP in the MCP integration tests instead.
  */
 @QuarkusTest
-@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
+@TestProfile(McpProtocolTest.Profile.class)
 class McpProtocolTest {
   private static final String MCP_PATH = "/v1/mcp";
+  private static final int TOOLS_PER_PAGE = 12;
   private static final int HEADER_MISMATCH = -32020;
   private static final int UNSUPPORTED_PROTOCOL_VERSION = -32022;
   private static final int METHOD_NOT_FOUND = -32601;
   private static final int INVALID_PARAMS = -32602;
   private static final int PARSE_ERROR = -32700;
+
+  @Inject ToolManager toolManager;
 
   // Header auth checks only that a token is present. Database requests validate it, but these
   // requests never reach the database.
@@ -102,12 +107,31 @@ class McpProtocolTest {
   }
 
   @Test
-  void toolsListOrderIsStableAcrossRequestsAndPages() {
-    var first = listAllToolNames();
-    var second = listAllToolNames();
+  void listsEveryRegisteredToolInOrderAcrossPages() {
+    var names = new ArrayList<String>();
+    toolManager.forEach(tool -> names.add(tool.name()));
+    assertThat(names.size()).isGreaterThan(2 * TOOLS_PER_PAGE);
 
-    assertThat(first).isNotEmpty().doesNotHaveDuplicates();
-    assertThat(second).containsExactlyElementsOf(first);
+    String cursor = null;
+    for (int offset = 0; offset < names.size(); offset += TOOLS_PER_PAGE) {
+      var params =
+          cursor == null ? Map.<String, Object>of() : Map.<String, Object>of("cursor", cursor);
+      var response =
+          authorized("tools/list").body(rpcPayload(1, "tools/list", params)).post(MCP_PATH);
+      var result = assertResponseComplete(response, 1);
+      int end = Math.min(offset + TOOLS_PER_PAGE, names.size());
+      assertThat(result.getJsonArray("tools"))
+          .extracting(tool -> ((JsonObject) tool).getString("name"))
+          .containsExactlyElementsOf(names.subList(offset, end));
+
+      var nextCursor = result.getString("nextCursor");
+      if (end < names.size()) {
+        assertThat(nextCursor).isNotBlank().isNotEqualTo(cursor);
+      } else {
+        assertThat(nextCursor).isNull();
+      }
+      cursor = nextCursor;
+    }
   }
 
   @ParameterizedTest
@@ -358,21 +382,10 @@ class McpProtocolTest {
     assertThat(result.getString("cacheScope")).isEqualTo("private");
   }
 
-  private static List<String> listAllToolNames() {
-    var names = new ArrayList<String>();
-    String cursor = null;
-    int id = 1;
-    do {
-      var params =
-          cursor == null ? Map.<String, Object>of() : Map.<String, Object>of("cursor", cursor);
-      var response =
-          authorized("tools/list").body(rpcPayload(id, "tools/list", params)).post(MCP_PATH);
-      var result = assertResponseComplete(response, id++);
-      result
-          .getJsonArray("tools")
-          .forEach(tool -> names.add(((JsonObject) tool).getString("name")));
-      cursor = result.getString("nextCursor");
-    } while (cursor != null);
-    return names;
+  public static class Profile implements NoGlobalResourcesTestProfile {
+    @Override
+    public Map<String, String> getConfigOverrides() {
+      return Map.of("quarkus.mcp.server.tools.page-size", Integer.toString(TOOLS_PER_PAGE));
+    }
   }
 }
