@@ -1637,7 +1637,7 @@ request-errors:
 
   - scope: SCHEMA
     code: UNKNOWN_USER_DEFINED_TYPE
-    title: User defined type is unknown
+    title: User-defined type is unknown
     body: |-
       The column uses a user-defined type that is not known.
       
@@ -2081,7 +2081,7 @@ request-errors:
 
   - scope: SCHEMA
     code: INVALID_USER_DEFINED_TYPE_NAME
-    title: User defined type name is not valid.
+    title: User-defined type name is not valid.
     body: |-
       User-defined type name is not valid: ${udtName}.
         
