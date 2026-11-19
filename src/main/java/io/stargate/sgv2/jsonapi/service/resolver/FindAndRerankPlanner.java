@@ -58,13 +58,7 @@ class FindAndRerankPlanner {
     var rerankCandidateLimit = resolveRerankCandidateLimit(command, operationsConfig);
 
     var rerankServiceDef = resolveRerankServiceDef(command, commandContext);
-    var rerankQuery =
-        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankQuery, null);
-    // a $lexical sort has no text to vectorize, so its lexical text is the default query
-    var rerankingQuery =
-        sort instanceof FindAndRerankSort.LexicalLeg(LexicalSortExpression(var lexicalText))
-            ? RerankingQuery.createForLexicalSort(rerankQuery, lexicalText)
-            : RerankingQuery.createForVectorizeSort(rerankQuery, vectorizeText(sort));
+    var rerankingQuery = rerankingQuery(command);
     var passageLocator = passageLocator(command);
     var projector = command.buildProjector();
 
@@ -313,6 +307,20 @@ class FindAndRerankPlanner {
     var serviceDef = commandContext.schemaObject().rerankDef().rerankServiceDef();
     CollectionRerankDef.checkExistingModelStatus(rerankingProvidersConfig, serviceDef);
     return serviceDef;
+  }
+
+  /**
+   * The query to rerank with: the rerankQuery option when it is not blank, otherwise the text of a
+   * $lexical sort, or the $vectorize text of a $vectorize or $hybrid sort.
+   */
+  private static RerankingQuery rerankingQuery(FindAndRerankCommand command) {
+    var sort = command.sortClause();
+    var rerankQueryOption =
+        getOrDefault(command.options(), FindAndRerankCommand.Options::rerankQuery, null);
+
+    return sort instanceof FindAndRerankSort.LexicalLeg(LexicalSortExpression(var lexicalText))
+        ? RerankingQuery.createForLexicalSort(rerankQueryOption, lexicalText)
+        : RerankingQuery.createForVectorizeSort(rerankQueryOption, vectorizeText(sort));
   }
 
   private static PathMatchLocator passageLocator(FindAndRerankCommand command) {
