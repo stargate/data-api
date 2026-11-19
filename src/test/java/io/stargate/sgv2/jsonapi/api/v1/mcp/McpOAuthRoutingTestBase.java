@@ -24,8 +24,10 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
+import jakarta.inject.Inject;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -38,6 +40,7 @@ abstract class McpOAuthRoutingTestBase {
   static final String BROWSER_ORIGIN = "https://client.example.test";
 
   @InjectMock CommandProcessor commandProcessor;
+  @Inject RequestContext injectedContext;
 
   @Test
   void approvedBrowserOriginCanFollowTheChallengeToPublicMetadata() {
@@ -83,6 +86,7 @@ abstract class McpOAuthRoutingTestBase {
     var context = observed.get();
     assertThat(context.authToken()).isEqualTo(credential);
     assertThat(context.providerAuthToken()).isNull();
+    assertThat(context.injectedProviderToken()).isNull();
     assertThat(context.reranking().apiKey()).isEmpty();
     assertThat(context.embedding().authToken()).isEmpty();
     assertThat(response.asString()).doesNotContain(credential, "legacy-credential");
@@ -131,6 +135,7 @@ abstract class McpOAuthRoutingTestBase {
     assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
     assertThat(observed.get().authToken()).isEqualTo(expectedRestCredential());
     assertThat(observed.get().providerAuthToken()).isEqualTo(expectedRestCredential());
+    assertThat(observed.get().injectedProviderToken()).isEqualTo(expectedRestCredential());
     assertThat(observed.get().reranking().apiKey()).isEqualTo(expectedRestCredential());
     assertThat(response.asString()).doesNotContain("legacy-credential");
   }
@@ -151,6 +156,7 @@ abstract class McpOAuthRoutingTestBase {
   record Credentials(
       String authToken,
       String providerAuthToken,
+      String injectedProviderToken,
       EmbeddingCredentials embedding,
       RerankingCredentials reranking) {}
 
@@ -165,6 +171,7 @@ abstract class McpOAuthRoutingTestBase {
                   new Credentials(
                       request.authToken(),
                       request.providerAuthToken(),
+                      injectedContext.providerAuthToken(),
                       request.getEmbeddingCredentials(),
                       request.getRerankingCredentials()));
               return Uni.createFrom()

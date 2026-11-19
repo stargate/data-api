@@ -23,6 +23,7 @@ import jakarta.annotation.Nullable;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import jakarta.inject.Provider;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.SecurityContext;
 import java.util.List;
@@ -109,7 +110,8 @@ public class RequestContext implements LoggingMDCContext {
   @Inject
   public RequestContext(
       RoutingContext routingContext,
-      SecurityContext securityContext,
+      Provider<SecurityContext> restSecurityContext,
+      SecurityIdentity securityIdentity,
       Instance<RequestTenantResolver> tenantResolver,
       Instance<RequestAuthTokenResolver> tokenResolver,
       Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver,
@@ -117,14 +119,20 @@ public class RequestContext implements LoggingMDCContext {
 
     this.httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
 
-    var principal = securityContext.getUserPrincipal();
+    boolean mcpRequest = oauthMetadata.isMcpRequest(routingContext);
+    var securityContext = mcpRequest ? null : restSecurityContext.get();
+    var principal =
+        mcpRequest ? securityIdentity.getPrincipal() : securityContext.getUserPrincipal();
     this.authToken =
-        normalizeOptionalString(tokenResolver.get().resolve(routingContext, principal));
-    boolean oauthMcpRequest =
-        (oauthMetadata.bearerEnabled() || principal instanceof JsonWebToken)
-            && oauthMetadata.isMcpRequest(routingContext);
-    this.providerAuthToken = oauthMcpRequest ? null : authToken;
-    this.requestId = generateRequestId();
+        normalizeOptionalString(
+            mcpRequest && principal instanceof JsonWebToken jwt
+                ? jwt.getRawToken()
+                : tokenResolver.get().resolve(routingContext, principal));
+    this.providerAuthToken =
+        mcpRequest && (oauthMetadata.bearerEnabled() || principal instanceof JsonWebToken)
+            ? null
+            : authToken;
+    this.requestId = mcpRequest ? getOrCreateRequestId(routingContext) : generateRequestId();
     this.userAgent = new UserAgent(httpHeaders.getHeader(HttpHeaders.USER_AGENT));
     this.tenant = tenantResolver.get().resolve(routingContext, securityContext);
 
