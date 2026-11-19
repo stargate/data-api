@@ -297,6 +297,39 @@ class McpOpenApiSchemaAdapterTest {
     assertEquals("#/components/schemas/A~1B~0C", McpOpenApiSchemaAdapter.componentRef("A/B~C"));
   }
 
+  /**
+   * Checks that copying an OpenAPI component into {@code $defs} keeps decimal numbers exact. The
+   * test adds this component to the fixture document and bundles a reference to it.
+   *
+   * <pre>
+   * "Decimal": {"type": "number", "minimum": 0.25, "maximum": 1.75, "default": 0.5}
+   * </pre>
+   *
+   * <p>The bundled copy must keep those three values, accept the bounds, and reject values just
+   * outside them.
+   */
+  @Test
+  void shouldPreserveDecimalSchemaBoundsAndDefault() throws Exception {
+    var document = fixtureDocument();
+    ((ObjectNode) document.path("components").path("schemas"))
+        .putObject("Decimal")
+        .put("type", "number")
+        .put("minimum", 0.25)
+        .put("maximum", 1.75)
+        .put("default", 0.5);
+    var schema = bundle(MAPPER.readTree("{\"$ref\":\"#/components/schemas/Decimal\"}"), document);
+    var component = schema.at(schema.path("$ref").asText().substring(1));
+
+    assertEquals(0.25, component.path("minimum").doubleValue());
+    assertEquals(1.75, component.path("maximum").doubleValue());
+    assertEquals(0.5, component.path("default").doubleValue());
+    assertAccepts(schema, "0.25");
+    assertAccepts(schema, "1.75");
+    assertAccepts(schema, component.path("default").toString());
+    assertRejects(schema, "0.125");
+    assertRejects(schema, "1.875");
+  }
+
   /** Bundles a copy of {@code input}, so tests can compare the result with the input. */
   private static ObjectNode bundle(JsonNode input, JsonNode document) {
     ObjectNode schema = input.deepCopy();
