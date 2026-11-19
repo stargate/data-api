@@ -88,6 +88,7 @@ class McpOAuthDisabledTest {
     public Map<String, String> getConfigOverrides() {
       var overrides = new HashMap<>(super.getConfigOverrides());
       overrides.put("stargate.auth.bearer.enabled", "false");
+      overrides.put("quarkus.http.auth.inclusive", "true");
       return overrides;
     }
   }

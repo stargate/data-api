@@ -96,6 +96,12 @@ quarkus:
       basic: false
       proactive: false
       permission:
+        # Require Data API identities alongside the route's own authorization policy.
+        data-api-auth:
+          paths: v1/*,${quarkus.http.auth.permission.mcp.paths}
+          auth-mechanism: data-api
+          shared: true
+          policy: data-api
         default:
           paths: v1/*
           policy: authenticated

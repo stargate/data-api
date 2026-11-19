@@ -3,9 +3,14 @@ package io.stargate.sgv2.jsonapi.api.security.configuration;
 import static io.stargate.sgv2.jsonapi.api.security.configuration.HeaderBasedSecurityConfiguration.validateBearerConfiguration;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
+import io.stargate.sgv2.jsonapi.config.AuthConfig;
+import jakarta.enterprise.inject.Instance;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -13,6 +18,20 @@ import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class HeaderBasedSecurityConfigurationTest {
+
+  @Test
+  void bearerAuthenticationRequiresAnInstalledJwtVerifier() {
+    var auth = mock(AuthConfig.class);
+    when(auth.bearer()).thenReturn(() -> true);
+    Instance<MpJwtValidator> verifier = mock();
+    when(verifier.isUnsatisfied()).thenReturn(true);
+
+    var startup = new HeaderBasedSecurityConfiguration();
+    assertThatThrownBy(
+            () -> startup.httpAuthenticationMechanism(auth, mock(), mock(), jwtConfig(), verifier))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("quarkus.smallrye-jwt.enabled=true");
+  }
 
   @Test
   void verifiedBearerRequiresExplicitIssuerKeyAndAudience() {

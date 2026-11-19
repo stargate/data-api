@@ -73,6 +73,9 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
   public Uni<SecurityIdentity> authenticate(
       RoutingContext context, IdentityProviderManager identityProviderManager) {
     return authenticateCredentials(context, identityProviderManager)
+        .onItem()
+        .ifNotNull()
+        .transform(DataApiAuthenticationPolicy::authenticatedIdentity)
         .onFailure(AuthenticationFailedException.class)
         .invoke(
             failure ->
@@ -113,7 +116,7 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
       }
     }
 
-    // Do not let the lower-priority JWT mechanism enable Bearer authentication implicitly.
+    // Bearer credentials are only supported on an OAuth-enabled MCP transport.
     if (authorization != null) {
       context.put(HttpAuthenticationMechanism.class.getName(), this);
       return Uni.createFrom().failure(new AuthenticationFailedException());
@@ -147,7 +150,7 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
 
   @Override
   public int getPriority() {
-    // Keep the feature flag ahead of the built-in JWT mechanism.
+    // Preserve challenge ordering on routes without an explicit authentication scheme.
     return 3000;
   }
 
@@ -192,7 +195,10 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
   @Override
   public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
     HttpCredentialTransport transport =
-        new HttpCredentialTransport(HttpCredentialTransport.Type.OTHER_HEADER, headerName);
+        new HttpCredentialTransport(
+            HttpCredentialTransport.Type.OTHER_HEADER,
+            headerName,
+            DataApiAuthenticationPolicy.NAME);
     return Uni.createFrom().item(transport);
   }
 }

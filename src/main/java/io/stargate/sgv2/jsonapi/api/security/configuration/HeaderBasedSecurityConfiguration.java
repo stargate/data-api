@@ -20,6 +20,7 @@ package io.stargate.sgv2.jsonapi.api.security.configuration;
 import io.quarkus.arc.lookup.LookupIfProperty;
 import io.quarkus.runtime.Startup;
 import io.quarkus.security.identity.IdentityProvider;
+import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.stargate.sgv2.jsonapi.api.security.HeaderAuthenticationRequest;
@@ -44,8 +45,14 @@ public class HeaderBasedSecurityConfiguration {
       AuthConfig config,
       Instance<ErrorChallengeSender> customChallengeSender,
       McpOAuthMetadata metadata,
-      JWTAuthContextInfo jwtConfig) {
+      JWTAuthContextInfo jwtConfig,
+      Instance<MpJwtValidator> jwtVerifier) {
     if (config.bearer().enabled()) {
+      if (jwtVerifier.isUnsatisfied()) {
+        throw new IllegalStateException(
+            "Bearer authentication requires the SmallRye JWT verifier. Build with"
+                + " quarkus.smallrye-jwt.enabled=true.");
+      }
       validateBearerConfiguration(jwtConfig, metadata.audienceFromRequestHost());
     }
     return new HeaderBasedAuthenticationMechanism(config, customChallengeSender, metadata);

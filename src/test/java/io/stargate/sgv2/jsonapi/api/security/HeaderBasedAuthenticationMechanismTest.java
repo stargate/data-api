@@ -14,6 +14,7 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
+import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.security.challenge.impl.ErrorChallengeSender;
@@ -37,12 +38,13 @@ class HeaderBasedAuthenticationMechanismTest {
   @Test
   void bearerCredentialsReachTheJwtProviderBeforeLegacyHeaders() {
     var manager = mock(IdentityProviderManager.class);
-    var identity = mock(SecurityIdentity.class);
+    var identity = jwtIdentity(Set.of("https://db-one.apps.example.test/v1/mcp"));
     when(manager.authenticate(any())).thenReturn(Uni.createFrom().item(identity));
     var mechanism = mechanism(true, true);
     var context = context(Map.of("Authorization", "Bearer encoded-jwt", "Token", "legacy-token"));
 
-    assertThat(mechanism.authenticate(context, manager).await().indefinitely()).isSameAs(identity);
+    var authenticated = mechanism.authenticate(context, manager).await().indefinitely();
+    assertThat(authenticated.getPrincipal()).isSameAs(identity.getPrincipal());
 
     var request = ArgumentCaptor.forClass(AuthenticationRequest.class);
     verify(manager).authenticate(request.capture());
@@ -91,7 +93,8 @@ class HeaderBasedAuthenticationMechanismTest {
     when(context.response()).thenReturn(response);
     var metadata = mock(McpOAuthMetadata.class);
     String challenge =
-        "Bearer resource_metadata=\"https://data.example.test/.well-known/oauth-protected-resource\"";
+        "Bearer"
+            + " resource_metadata=\"https://data.example.test/.well-known/oauth-protected-resource\"";
     when(metadata.isMcpRequest(context)).thenReturn(true);
     when(metadata.challenge(context)).thenReturn(Optional.of(challenge));
     var mechanism =
@@ -113,7 +116,8 @@ class HeaderBasedAuthenticationMechanismTest {
     when(context.response()).thenReturn(response);
     var metadata = mock(McpOAuthMetadata.class);
     String challenge =
-        "Bearer resource_metadata=\"https://db-one.apps.example.test/.well-known/oauth-protected-resource\"";
+        "Bearer"
+            + " resource_metadata=\"https://db-one.apps.example.test/.well-known/oauth-protected-resource\"";
     when(metadata.isMcpRequest(context)).thenReturn(true);
     when(metadata.challenge(context)).thenReturn(Optional.of(challenge));
     when(metadata.acceptsAudience(context, audience)).thenReturn(false);
@@ -139,36 +143,35 @@ class HeaderBasedAuthenticationMechanismTest {
     var mechanism =
         new HeaderBasedAuthenticationMechanism(authConfig(true, true), instance(), metadata);
 
-    assertThat(mechanism.authenticate(context, manager).await().indefinitely()).isSameAs(identity);
+    var authenticated = mechanism.authenticate(context, manager).await().indefinitely();
+    assertThat(authenticated.getPrincipal()).isSameAs(identity.getPrincipal());
   }
 
   @Test
   void legacyCredentialsSkipTheBearerAudienceCheck() {
     var manager = mock(IdentityProviderManager.class);
-    var identity = mock(SecurityIdentity.class);
+    var identity = legacyIdentity();
     when(manager.authenticate(any())).thenReturn(Uni.createFrom().item(identity));
     var metadata = mock(McpOAuthMetadata.class);
     var mechanism =
         new HeaderBasedAuthenticationMechanism(authConfig(true, true), instance(), metadata);
 
-    assertThat(
-            mechanism
-                .authenticate(context(Map.of("Token", "legacy-token")), manager)
-                .await()
-                .indefinitely())
-        .isSameAs(identity);
+    var context = context(Map.of("Token", "legacy-token"));
+    var authenticated = mechanism.authenticate(context, manager).await().indefinitely();
+    assertThat(authenticated.getPrincipal()).isSameAs(identity.getPrincipal());
     verify(metadata, never()).acceptsAudience(any(), any());
   }
 
   @Test
   void disabledBearerAuthenticationPreservesLegacyHeaderPrecedence() {
     var manager = mock(IdentityProviderManager.class);
-    var identity = mock(SecurityIdentity.class);
+    var identity = legacyIdentity();
     when(manager.authenticate(any())).thenReturn(Uni.createFrom().item(identity));
     var context = context(Map.of("Authorization", "Bearer invalid-jwt", "Token", "legacy-token"));
 
-    assertThat(mechanism(false, true).authenticate(context, manager).await().indefinitely())
-        .isSameAs(identity);
+    var authenticated =
+        mechanism(false, true).authenticate(context, manager).await().indefinitely();
+    assertThat(authenticated.getPrincipal()).isSameAs(identity.getPrincipal());
     var request = ArgumentCaptor.forClass(AuthenticationRequest.class);
     verify(manager).authenticate(request.capture());
     assertThat(request.getValue()).isInstanceOf(HeaderAuthenticationRequest.class);
@@ -214,12 +217,13 @@ class HeaderBasedAuthenticationMechanismTest {
   @Test
   void enabledMcpOAuthPreservesLegacyHeaderPrecedenceOnRestPaths() {
     var manager = mock(IdentityProviderManager.class);
-    var identity = mock(SecurityIdentity.class);
+    var identity = legacyIdentity();
     when(manager.authenticate(any())).thenReturn(Uni.createFrom().item(identity));
     var context = context(Map.of("Authorization", "Bearer synthetic-jwt", "Token", "legacy-token"));
 
-    assertThat(mechanism(true, true, false).authenticate(context, manager).await().indefinitely())
-        .isSameAs(identity);
+    var authenticated =
+        mechanism(true, true, false).authenticate(context, manager).await().indefinitely();
+    assertThat(authenticated.getPrincipal()).isSameAs(identity.getPrincipal());
     var request = ArgumentCaptor.forClass(AuthenticationRequest.class);
     verify(manager).authenticate(request.capture());
     assertThat(request.getValue()).isInstanceOf(HeaderAuthenticationRequest.class);
@@ -264,7 +268,8 @@ class HeaderBasedAuthenticationMechanismTest {
     var metadata = mock(McpOAuthMetadata.class);
     var context = context(Map.of());
     var challenge =
-        "Bearer resource_metadata=\"https://data.example.test/.well-known/oauth-protected-resource\"";
+        "Bearer"
+            + " resource_metadata=\"https://data.example.test/.well-known/oauth-protected-resource\"";
     when(metadata.challenge(context)).thenReturn(Optional.of(challenge));
     var mechanism = new HeaderBasedAuthenticationMechanism(config, instance(), metadata);
 
@@ -309,9 +314,11 @@ class HeaderBasedAuthenticationMechanismTest {
   private static SecurityIdentity jwtIdentity(Set<String> audience) {
     var token = mock(JsonWebToken.class);
     when(token.getAudience()).thenReturn(audience);
-    var identity = mock(SecurityIdentity.class);
-    when(identity.getPrincipal()).thenReturn(token);
-    return identity;
+    return QuarkusSecurityIdentity.builder().setPrincipal(token).build();
+  }
+
+  private static SecurityIdentity legacyIdentity() {
+    return QuarkusSecurityIdentity.builder().setPrincipal(() -> "legacy-token").build();
   }
 
   @SuppressWarnings("unchecked")

@@ -31,6 +31,8 @@ class McpOAuthCustomPathTest extends McpOAuthRoutingTestBase {
       overrides.put("stargate.auth.token-resolver.fixed.token", "configured-database-credential");
       overrides.put("quarkus.http.root-path", "/service");
       overrides.put("quarkus.mcp.server.http.root-path", "/tools");
+      overrides.put("quarkus.http.auth.inclusive", "true");
+      overrides.put("quarkus.smallrye-jwt.priority", "900");
       overrides.put("mp.jwt.verify.audiences", McpOAuthTestSupport.PUBLIC_BASE + "/service/tools");
       return overrides;
     }
