@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -56,6 +57,25 @@ class SyncServiceCredentialResolvingProviderTest {
 
   @Nested
   class Vectorize {
+
+    @Test
+    void storedCredentialLookupRequiresAServiceCredential() {
+      authToken = null;
+      var provider = createProvider(Map.of("providerKey", "stored-key"));
+
+      assertThatThrownBy(
+              () ->
+                  provider
+                      .vectorize(
+                          1,
+                          List.of("text"),
+                          emptyCreds,
+                          EmbeddingProvider.EmbeddingRequestType.INDEX)
+                      .await()
+                      .indefinitely())
+          .hasMessageContaining("separate service token");
+      verifyNoInteractions(syncServiceClient);
+    }
 
     @Test
     void shouldResolveProviderKeyAndPassToDelegate() {

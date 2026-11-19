@@ -59,6 +59,22 @@ class McpOAuthTest extends McpOAuthRoutingTestBase {
   }
 
   @Test
+  void oauthToolCallsKeepExplicitProviderKeysSeparateFromTheDatabaseToken() {
+    var context = captureCredentials();
+    var response =
+        providerRequest(1)
+            .header("Authorization", "Bearer " + firstToken())
+            .header("x-embedding-api-key", "embedding-key")
+            .header("reranking-api-key", "reranking-key")
+            .post(mcpPath());
+
+    assertResponseComplete(response, 1);
+    assertThat(context.get().embedding().apiKey()).contains("embedding-key");
+    assertThat(context.get().reranking().apiKey()).isEqualTo("reranking-key");
+    assertThat(context.get().providerAuthToken()).isNull();
+  }
+
+  @Test
   void fixedBaseRejectsMultipleAudiences() {
     String jwt =
         token(

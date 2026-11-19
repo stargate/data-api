@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.request.tenant.RequestTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
 import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
+import io.stargate.sgv2.jsonapi.api.security.McpOAuthMetadata;
 import io.stargate.sgv2.jsonapi.config.BillingConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
@@ -18,12 +19,14 @@ import io.stargate.sgv2.jsonapi.logging.LoggingMDCContext;
 import io.stargate.sgv2.jsonapi.service.billing.Billing;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaRegistry;
 import io.vertx.ext.web.RoutingContext;
+import jakarta.annotation.Nullable;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.SecurityContext;
 import java.util.List;
+import java.util.Optional;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.slf4j.MDC;
 
@@ -44,6 +47,7 @@ public class RequestContext implements LoggingMDCContext {
   private static final String ROUTING_REQUEST_ID = RequestContext.class.getName() + ".requestId";
 
   private final String authToken;
+  private final String providerAuthToken;
   private final String requestId;
   private final UserAgent userAgent;
   private final Tenant tenant;
@@ -66,6 +70,7 @@ public class RequestContext implements LoggingMDCContext {
   public RequestContext(Tenant tenant, String authToken, UserAgent userAgent) {
 
     this.authToken = authToken;
+    this.providerAuthToken = authToken;
     this.requestId = generateRequestId();
     this.userAgent = userAgent;
     this.tenant = tenant;
@@ -74,11 +79,7 @@ public class RequestContext implements LoggingMDCContext {
     this.httpHeaders = null;
   }
 
-  /**
-   * Constructor for non-JAX-RS HTTP contexts (e.g., MCP Streamable HTTP) where JAX-RS {@link
-   * SecurityContext} is not available but Quarkus {@link SecurityIdentity} is. Uses the same
-   * configured resolver for legacy credentials and forwards the authenticated JWT for OAuth.
-   */
+  /** Builds the MCP request context from the identity authenticated by the HTTP transport. */
   public RequestContext(
       RoutingContext routingContext,
       SecurityIdentity securityIdentity,
@@ -94,17 +95,15 @@ public class RequestContext implements LoggingMDCContext {
             principal instanceof JsonWebToken jwt
                 ? jwt.getRawToken()
                 : tokenResolver.get().resolve(routingContext, principal));
+    this.providerAuthToken = principal instanceof JsonWebToken ? null : authToken;
     this.requestId = getOrCreateRequestId(routingContext);
     this.userAgent = new UserAgent(httpHeaders.getHeader(HttpHeaders.USER_AGENT));
     this.tenant = tenantResolver.get().resolve(routingContext, null);
 
     this.embeddingCredentials =
-        embeddingCredentialsResolver.get().resolveEmbeddingCredentials(tenant, routingContext);
+        resolveEmbeddingCredentials(embeddingCredentialsResolver.get(), routingContext);
 
-    this.rerankingCredentials =
-        HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext)
-            .map(s -> new RerankingCredentials(tenant, normalizeOptionalString(s)))
-            .orElseGet(() -> new RerankingCredentials(tenant, authToken));
+    this.rerankingCredentials = resolveRerankingCredentials(routingContext);
   }
 
   @Inject
@@ -113,26 +112,46 @@ public class RequestContext implements LoggingMDCContext {
       SecurityContext securityContext,
       Instance<RequestTenantResolver> tenantResolver,
       Instance<RequestAuthTokenResolver> tokenResolver,
-      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver) {
+      Instance<EmbeddingCredentialsResolver> embeddingCredentialsResolver,
+      McpOAuthMetadata oauthMetadata) {
 
     this.httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
 
+    var principal = securityContext.getUserPrincipal();
     this.authToken =
-        normalizeOptionalString(
-            tokenResolver.get().resolve(routingContext, securityContext.getUserPrincipal()));
+        normalizeOptionalString(tokenResolver.get().resolve(routingContext, principal));
+    boolean oauthMcpRequest =
+        (oauthMetadata.bearerEnabled() || principal instanceof JsonWebToken)
+            && oauthMetadata.isMcpRequest(routingContext);
+    this.providerAuthToken = oauthMcpRequest ? null : authToken;
     this.requestId = generateRequestId();
     this.userAgent = new UserAgent(httpHeaders.getHeader(HttpHeaders.USER_AGENT));
     this.tenant = tenantResolver.get().resolve(routingContext, securityContext);
 
     this.embeddingCredentials =
-        embeddingCredentialsResolver.get().resolveEmbeddingCredentials(tenant, routingContext);
+        resolveEmbeddingCredentials(embeddingCredentialsResolver.get(), routingContext);
 
-    // user specified the reranking key in the request header, use that.
-    // fall back to whatever they provided as the auth token for the API
-    this.rerankingCredentials =
-        HeaderBasedRerankingKeyResolver.resolveRerankingKey(routingContext)
-            .map(s -> new RerankingCredentials(tenant, normalizeOptionalString(s)))
-            .orElseGet(() -> new RerankingCredentials(tenant, authToken));
+    this.rerankingCredentials = resolveRerankingCredentials(routingContext);
+  }
+
+  private RerankingCredentials resolveRerankingCredentials(RoutingContext context) {
+    var key =
+        HeaderBasedRerankingKeyResolver.resolveRerankingKey(context).orElse(providerAuthToken);
+    return new RerankingCredentials(tenant, normalizeOptionalString(key));
+  }
+
+  private EmbeddingCredentials resolveEmbeddingCredentials(
+      EmbeddingCredentialsResolver resolver, RoutingContext context) {
+    var credentials = resolver.resolveEmbeddingCredentials(tenant, context);
+    if (providerAuthToken != null || credentials.authToken().isEmpty()) {
+      return credentials;
+    }
+    return new EmbeddingCredentials(
+        credentials.tenant(),
+        credentials.apiKey(),
+        credentials.accessId(),
+        credentials.secretId(),
+        Optional.empty());
   }
 
   private static String generateRequestId() {
@@ -172,6 +191,12 @@ public class RequestContext implements LoggingMDCContext {
    */
   public String authToken() {
     return authToken;
+  }
+
+  /** Legacy credential for provider services. MCP access tokens are scoped to the database. */
+  @Nullable
+  public String providerAuthToken() {
+    return providerAuthToken;
   }
 
   /** Non-null {@link UserAgent} for the request, resolved from the request. */

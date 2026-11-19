@@ -212,7 +212,7 @@ public class McpResource {
                       embeddingProvider =
                           embeddingProviderFactory.create(
                               requestContext.tenant(),
-                              requestContext.authToken(),
+                              requestContext.providerAuthToken(),
                               vectorColDef.vectorizeDefinition().provider(),
                               vectorColDef.vectorizeDefinition().modelName(),
                               vectorColDef.vectorSize(),

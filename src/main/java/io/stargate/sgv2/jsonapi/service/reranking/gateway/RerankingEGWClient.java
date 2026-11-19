@@ -69,8 +69,10 @@ public class RerankingEGWClient extends RerankingProvider {
     var contextBuilder =
         EmbeddingGateway.ProviderRerankingRequest.ProviderContext.newBuilder()
             .setProviderName(modelProvider().apiName())
-            .setTenantId(tenant.toString())
-            .putAuthTokens(DATA_API_TOKEN, authToken);
+            .setTenantId(tenant.toString());
+    if (authToken != null) {
+      contextBuilder.putAuthTokens(DATA_API_TOKEN, authToken);
+    }
     if (!rerankingCredentials.apiKey().isEmpty()) {
       contextBuilder.putAuthTokens(RERANKING_API_KEY, rerankingCredentials.apiKey());
     }

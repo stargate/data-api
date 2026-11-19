@@ -23,6 +23,8 @@ import io.restassured.specification.RequestSpecification;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.api.request.RerankingCredentials;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -69,7 +71,7 @@ abstract class McpOAuthRoutingTestBase {
   @ValueSource(strings = {"Token", "X-Cassandra-Token"})
   void commandContextReceivesTheVerifiedTokenRatherThanItsSubjectOrLegacyHeaders(String header) {
     String credential = firstToken();
-    var observed = captureDatabaseCredential();
+    var observed = captureCredentials();
 
     var request = providerRequest(1).header("Authorization", "Bearer " + credential);
     if (header != null) {
@@ -78,7 +80,11 @@ abstract class McpOAuthRoutingTestBase {
     var response = request.post(mcpPath());
 
     assertResponseComplete(response, 1);
-    assertThat(observed.get()).isEqualTo(credential);
+    var context = observed.get();
+    assertThat(context.authToken()).isEqualTo(credential);
+    assertThat(context.providerAuthToken()).isNull();
+    assertThat(context.reranking().apiKey()).isEmpty();
+    assertThat(context.embedding().authToken()).isEmpty();
     assertThat(response.asString()).doesNotContain(credential, "legacy-credential");
   }
 
@@ -114,7 +120,7 @@ abstract class McpOAuthRoutingTestBase {
   @ParameterizedTest
   @ValueSource(strings = {"Token", "X-Cassandra-Token"})
   void ordinaryRestCallsRetainLegacyAuthentication(String header) {
-    var observed = captureDatabaseCredential();
+    var observed = captureCredentials();
     var response =
         given()
             .contentType("application/json")
@@ -123,7 +129,9 @@ abstract class McpOAuthRoutingTestBase {
             .post("/v1");
 
     assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
-    assertThat(observed.get()).isEqualTo(expectedRestCredential());
+    assertThat(observed.get().authToken()).isEqualTo(expectedRestCredential());
+    assertThat(observed.get().providerAuthToken()).isEqualTo(expectedRestCredential());
+    assertThat(observed.get().reranking().apiKey()).isEqualTo(expectedRestCredential());
     assertThat(response.asString()).doesNotContain("legacy-credential");
   }
 
@@ -140,13 +148,25 @@ abstract class McpOAuthRoutingTestBase {
     verifyNoInteractions(commandProcessor);
   }
 
-  private AtomicReference<String> captureDatabaseCredential() {
-    var observed = new AtomicReference<String>();
+  record Credentials(
+      String authToken,
+      String providerAuthToken,
+      EmbeddingCredentials embedding,
+      RerankingCredentials reranking) {}
+
+  AtomicReference<Credentials> captureCredentials() {
+    var observed = new AtomicReference<Credentials>();
     when(commandProcessor.processCommand(any(), any()))
         .thenAnswer(
             invocation -> {
               CommandContext<?> context = invocation.getArgument(0);
-              observed.set(context.requestContext().authToken());
+              var request = context.requestContext();
+              observed.set(
+                  new Credentials(
+                      request.authToken(),
+                      request.providerAuthToken(),
+                      request.getEmbeddingCredentials(),
+                      request.getRerankingCredentials()));
               return Uni.createFrom()
                   .item(CommandResult.statusOnlyBuilder(context.requestTracing()).build());
             });
