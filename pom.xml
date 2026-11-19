@@ -60,6 +60,16 @@
       -->
     <surefire-plugin.version>3.5.3</surefire-plugin.version>
     <skipITs>false</skipITs>
+    <!-- 27-Oct-2026, eric: IBM SonarQube analysis scope, read by sonar-maven-plugin.
+        Run-specific settings (host, token, truststore, branch or PR keys)
+        are passed by .github/workflows/ibm-sonar.yaml
+      -->
+    <!-- IBM SonarQube project key format: 544478-<github_repo_id> -->
+    <sonar.projectKey>544478-564388942</sonar.projectKey>
+    <sonar.projectName>stargate/data-api</sonar.projectName>
+    <sonar.links.scm>https://github.com/stargate/data-api</sonar.links.scm>
+    <!-- Unit test coverage only; integration test coverage runs in separate CI jobs -->
+    <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
   <dependencyManagement>
     <dependencies>
