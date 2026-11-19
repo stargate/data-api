@@ -63,17 +63,17 @@ snippets:
 
   - name: RETRY_UNKNOWN
     body: |-
-      Review the Error Message before retrying this request.
+      Review the error message before retrying this request.
 
   - name: INEFFICIENT_FILTER
     body: |-
-      The query was executed without taking advantage of the primary key or indexes on the table, this can have performance implications on large tables.
+      The query was executed without taking advantage of the primary key or indexes on the table. This can have performance implications on large tables.
       
       See documentation for best practices for filtering.
 
   - name: INEFFICIENT_SORT
     body: |-
-      The command was executed using in memory sorting rather than taking advantage of the partition sorting on disk. This can have performance implications on large tables.
+      The command was executed using in-memory sorting rather than taking advantage of the partition sorting on disk. This can have performance implications on large tables.
       
       See documentation for best practices for sorting.
 
@@ -1127,7 +1127,7 @@ request-errors:
 
   - scope: WARNING
     code: IN_MEMORY_SORTING_DUE_SKIP_OPTIONS
-    title: Sorting uses skip option, performing as in memory sort
+    title: Sorting uses skip option, performing as in-memory sort
     body: |-
       The command used the `skip` option together with a sort clause, so the sorting was performed in memory rather than by the database.
 
