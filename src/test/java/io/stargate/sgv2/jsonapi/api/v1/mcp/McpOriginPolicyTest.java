@@ -183,7 +183,7 @@ class McpOriginPolicyTest {
   @Test
   void leavesTheOrdinaryHttpApiAlone() {
     // The ordinary HTTP API keeps its own policy. These reach authentication and fail there.
-    for (String path : new String[] {"/v1", "/v1/mcpkeyspace"}) {
+    for (String path : new String[] {"/v1", "/v1/mcpkeyspace", "/v1/mcp/orders"}) {
       var response =
           given()
               .contentType("application/json")

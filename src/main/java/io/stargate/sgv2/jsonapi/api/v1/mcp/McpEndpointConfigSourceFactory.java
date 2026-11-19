@@ -74,11 +74,18 @@ public class McpEndpointConfigSourceFactory implements ConfigSourceFactory {
 
   public record TransportPaths(String endpoint, String sse, String messagesPrefix) {
     public boolean matches(String normalizedPath) {
-      return endpoint.equals(normalizedPath)
-          || (endpoint + "/").equals(normalizedPath)
-          || sse.equals(normalizedPath)
-          || (sse + "/").equals(normalizedPath)
-          || normalizedPath.startsWith(messagesPrefix);
+      if (normalizedPath == null) {
+        return false;
+      }
+      String path =
+          normalizedPath.length() > 1 && normalizedPath.endsWith("/")
+              ? normalizedPath.substring(0, normalizedPath.length() - 1)
+              : normalizedPath;
+      return path.equals(endpoint)
+          || path.equals(sse)
+          || (path.startsWith(messagesPrefix)
+              && path.length() > messagesPrefix.length()
+              && path.indexOf('/', messagesPrefix.length()) == -1);
     }
 
     public String permissionPaths() {

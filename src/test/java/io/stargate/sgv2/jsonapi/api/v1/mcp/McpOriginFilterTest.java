@@ -4,10 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /** Covers Origin configuration and path matching without starting the application. */
@@ -48,27 +46,19 @@ class McpOriginFilterTest {
   }
 
   @ParameterizedTest
-  @CsvSource({
-    "/, /v1/mcp, /v1/mcp",
-    "/, v1/mcp, /v1/mcp",
-    "/, /v1/mcp/, /v1/mcp",
-    "/api, /v1/mcp, /api/v1/mcp",
-    "/api/, v1/mcp, /api/v1/mcp",
-    "/, /, /"
-  })
-  void resolvesTheEndpointLikeQuarkusRoutes(String httpRoot, String mcpRoot, String expected) {
-    assertThat(McpOriginFilter.endpointPath(httpRoot, mcpRoot)).isEqualTo(expected);
-  }
+  @ValueSource(strings = {"/v1/mcp", "/"})
+  void matchesOnlyRegisteredTransportRoutes(String endpoint) {
+    var routes = McpEndpointConfigSourceFactory.transportPaths(endpoint);
+    var prefix = endpoint.equals("/") ? "" : endpoint;
 
-  @Test
-  void matchesTheEndpointAndPathsBelowIt() {
-    var filter = new McpOriginFilter("/", "/v1/mcp", Optional.empty());
-    assertThat(filter.isMcpPath("/v1/mcp")).isTrue();
-    assertThat(filter.isMcpPath("/v1/mcp/")).isTrue();
-    assertThat(filter.isMcpPath("/v1/mcp/sse")).isTrue();
-    // A keyspace whose name starts with "mcp" belongs to the ordinary HTTP API.
-    assertThat(filter.isMcpPath("/v1/mcpkeyspace")).isFalse();
-    assertThat(filter.isMcpPath("/v1")).isFalse();
-    assertThat(filter.isMcpPath(null)).isFalse();
+    assertThat(routes.matches(endpoint)).isTrue();
+    for (String suffix : List.of("/", "/sse", "/sse/", "/messages/id", "/messages/id/")) {
+      assertThat(routes.matches(prefix + suffix)).as(suffix).isTrue();
+    }
+    for (String suffix : List.of("/orders", "/messages", "/messages/", "/messages/id/details")) {
+      assertThat(routes.matches(prefix + suffix)).as(suffix).isFalse();
+    }
+    assertThat(routes.matches("/v1/mcpkeyspace")).isFalse();
+    assertThat(routes.matches(null)).isFalse();
   }
 }

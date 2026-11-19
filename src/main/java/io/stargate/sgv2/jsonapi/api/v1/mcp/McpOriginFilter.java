@@ -45,16 +45,14 @@ public class McpOriginFilter {
   private static final String REJECTION_BODY =
       "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"Origin not allowed\"}}";
 
-  private final String endpointPath;
+  private final McpEndpointConfigSourceFactory.TransportPaths transportPaths;
   private final Set<String> allowedOrigins;
 
   @Inject
   public McpOriginFilter(
-      @ConfigProperty(name = "quarkus.http.root-path", defaultValue = "/") String httpRootPath,
-      @ConfigProperty(name = "quarkus.mcp.server.http.root-path", defaultValue = "/mcp")
-          String mcpRootPath,
+      @ConfigProperty(name = McpEndpointConfigSourceFactory.ENDPOINT_PATH) String endpointPath,
       @ConfigProperty(name = ALLOWED_ORIGINS) Optional<List<String>> allowedOrigins) {
-    this.endpointPath = endpointPath(httpRootPath, mcpRootPath);
+    this.transportPaths = McpEndpointConfigSourceFactory.transportPaths(endpointPath);
     this.allowedOrigins = approvedOrigins(allowedOrigins.orElse(List.of()));
   }
 
@@ -63,7 +61,7 @@ public class McpOriginFilter {
   }
 
   void filter(RoutingContext context) {
-    if (!isMcpPath(context.normalizedPath())) {
+    if (!transportPaths.matches(context.normalizedPath())) {
       context.next();
       return;
     }
@@ -107,27 +105,9 @@ public class McpOriginFilter {
     return origins.size() == 1 && allowedOrigins.contains(origins.getFirst());
   }
 
-  boolean isMcpPath(String path) {
-    return path != null
-        && (endpointPath.equals("/")
-            || path.equals(endpointPath)
-            || path.startsWith(endpointPath + "/"));
-  }
-
   private static boolean isPreflight(HttpServerRequest request) {
     return HttpMethod.OPTIONS.equals(request.method())
         && request.headers().contains(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD);
-  }
-
-  /**
-   * Resolves the MCP root path against the HTTP root path the same way Quarkus resolves the routes
-   * that the MCP extension registers, so the filter covers the endpoint and every path below it.
-   */
-  static String endpointPath(String httpRootPath, String mcpRootPath) {
-    String base = httpRootPath.endsWith("/") ? httpRootPath : httpRootPath + "/";
-    String relative = mcpRootPath.startsWith("/") ? mcpRootPath.substring(1) : mcpRootPath;
-    String path = URI.create(base).resolve(relative).normalize().getPath();
-    return path.length() > 1 && path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
   }
 
   /**
