@@ -62,11 +62,13 @@ class OAuthSmokeTest(unittest.TestCase):
                 else:
                     result = {"isError": False, "structuredContent": {"document": {"id": "hello"}}}
                 response = {"jsonrpc": "2.0", "id": body["id"], "result": result}
-                self.send(status, owner.mutation(body["method"], response))
+                self.send(status, owner.mutation(body["method"], response),
+                          **(owner.denied_headers if status == 403 else {}))
 
         self.server = HTTPServer(("127.0.0.1", 0), Handler)
         self.base = "http://127.0.0.1:" + str(self.server.server_port)
         self.endpoint = self.base + "/v1/mcp"
+        self.denied_headers = {"WWW_Authenticate": f'Bearer resource_metadata="{self.base}/metadata"'}
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         self.addCleanup(self.server.server_close)
@@ -117,6 +119,14 @@ class OAuthSmokeTest(unittest.TestCase):
         self.denied_status = 200
         with self.assertRaisesRegex(smoke.SmokeFailure, "expected 403"):
             self.run_smoke(denied_keyspace="denied")
+
+    def test_database_denial_requires_its_discovery_challenge(self):
+        challenge = self.denied_headers["WWW_Authenticate"]
+        for headers in ({}, {"WWW_Authenticate": challenge.replace("/metadata", "/other")},
+                        {"WWW_Authenticate": challenge + ', error="insufficient_scope"'}):
+            with self.subTest(headers=headers), self.assertRaisesRegex(smoke.SmokeFailure, "challenge"):
+                self.denied_headers = headers
+                self.run_smoke(denied_keyspace="denied")
 
     def test_wrong_document_fails(self):
         with self.assertRaisesRegex(smoke.SmokeFailure, "expected document"):

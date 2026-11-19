@@ -72,6 +72,17 @@ class Response:
     def json(self):
         return json_object(self.body)
 
+    def bearer_challenge(self):
+        scheme, _, parameters = self.headers.get("WWW-Authenticate", "").partition(" ")
+        fields = {}
+        if scheme.lower() == "bearer":
+            for parameter in urllib.request.parse_http_list(parameters):
+                match = re.fullmatch(r'([\w-]+)\s*=\s*(?:"([^"]*)"|([^\s",]+))', parameter)
+                if not match or match[1].lower() in fields:
+                    return {}
+                fields[match[1].lower()] = match[2] if match[2] is not None else match[3]
+        return fields
+
 
 class Client:
     def __init__(self, endpoint):
@@ -106,10 +117,15 @@ class Client:
             headers["Authorization"] = "Bearer " + token
         return self.request(self.endpoint, json.dumps(payload).encode(), headers)
 
-    def result(self, method, params, token, expected_status=200):
+    def result(self, method, params, token, denied_metadata=None):
         response = self.rpc(method, params, token)
+        expected_status = 403 if denied_metadata is not None else 200
         require(response.status == expected_status,
                 f"{method} returned HTTP {response.status}, expected {expected_status}")
+        if denied_metadata is not None:
+            challenge = response.bearer_challenge()
+            require(challenge.get("resource_metadata") == denied_metadata and "error" not in challenge,
+                    "Database denial requires the Bearer discovery challenge without an OAuth error")
         body = response.json()
         require(body.get("jsonrpc") == "2.0" and body.get("id") == self.sequence,
                 "JSON-RPC response did not match its request")
@@ -127,11 +143,8 @@ def smoke_test(endpoint, token, keyspace, collection, filter_value, expected_doc
     client = Client(endpoint)
     challenge = client.rpc("tools/list", {})
     require(challenge.status == 401, f"Unauthenticated MCP returned HTTP {challenge.status}, expected 401")
-    header = challenge.headers.get("WWW-Authenticate", "")
-    metadata = re.search(r'\bresource_metadata="([^"]+)"', header)
-    require(header.lower().startswith("bearer ") and metadata is not None,
-            "The 401 challenge is missing Bearer resource metadata")
-    metadata_url = metadata.group(1)
+    metadata_url = challenge.bearer_challenge().get("resource_metadata")
+    require(metadata_url, "The 401 challenge is missing Bearer resource metadata")
     require(origin(metadata_url) == origin(endpoint), "Resource metadata must use the MCP origin")
     response = client.request(metadata_url)
     require(response.status == 200, f"Resource metadata returned HTTP {response.status}")
@@ -178,7 +191,7 @@ def smoke_test(endpoint, token, keyspace, collection, filter_value, expected_doc
     print("PASS  Database read returned the exact expected document")
     if denied_keyspace is not None:
         result = client.result("tools/call", {"name": "findOne", "arguments": {
-            **arguments, "keyspace": denied_keyspace}}, token, expected_status=403)
+            **arguments, "keyspace": denied_keyspace}}, token, denied_metadata=metadata_url)
         content = result.get("structuredContent")
         require(result.get("isError") is True and isinstance(content, dict)
                 and isinstance(content.get("errors"), list) and len(content["errors"]) == 1
