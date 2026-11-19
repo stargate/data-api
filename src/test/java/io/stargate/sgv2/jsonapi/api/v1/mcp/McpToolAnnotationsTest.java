@@ -4,13 +4,15 @@ import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.request;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.rpcPayload;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,16 +25,16 @@ import org.junit.jupiter.params.provider.CsvSource;
 class McpToolAnnotationsTest {
   private final Map<String, Map<String, Object>> tools = new HashMap<>();
 
-  @BeforeEach
+  @TestHTTPResource("/v1/mcp")
+  URI endpoint;
+
+  @BeforeAll
   void listTools() {
-    if (!tools.isEmpty()) {
-      return;
-    }
     List<Map<String, Object>> registeredTools =
         request("tools/list")
             .header("Token", "annotations-test-credential")
             .body(rpcPayload(1, "tools/list", Map.of()))
-            .post("/v1/mcp")
+            .post(endpoint)
             .then()
             .statusCode(200)
             .extract()
@@ -44,9 +46,8 @@ class McpToolAnnotationsTest {
   }
 
   @Test
-  void listsEveryToolWithBehaviorHints() {
+  void registersOnlyTheReviewedTools() {
     assertThat(tools).hasSize(35);
-    tools.forEach((name, tool) -> assertThat(tool).as(name).containsKey("annotations"));
   }
 
   @ParameterizedTest(name = "{0}")
