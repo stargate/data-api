@@ -48,4 +48,27 @@ public class McpEndpointConfigSourceFactory implements ConfigSourceFactory {
                 excludePattern),
             "MCP endpoint"));
   }
+
+  /** Mirrors the streamable HTTP, SSE, and message routes registered by MCP SDK 2.0.3. */
+  public static TransportPaths transportPaths(String endpointPath) {
+    String childRoot = endpointPath.equals("/") ? "" : endpointPath;
+    return new TransportPaths(endpointPath, childRoot + "/sse", childRoot + "/messages/");
+  }
+
+  public record TransportPaths(String endpoint, String sse, String messagesPrefix) {
+    public boolean matches(String normalizedPath) {
+      if (normalizedPath == null) {
+        return false;
+      }
+      String path =
+          normalizedPath.length() > 1 && normalizedPath.endsWith("/")
+              ? normalizedPath.substring(0, normalizedPath.length() - 1)
+              : normalizedPath;
+      return path.equals(endpoint)
+          || path.equals(sse)
+          || (path.startsWith(messagesPrefix)
+              && path.length() > messagesPrefix.length()
+              && path.indexOf('/', messagesPrefix.length()) == -1);
+    }
+  }
 }
