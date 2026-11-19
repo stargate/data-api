@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.syncservice;
 
+import static io.stargate.sgv2.jsonapi.service.resolver.ValidateCredentials.requireCredentialServiceToken;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -42,7 +44,10 @@ public class SyncServiceClient {
    */
   public void validateKey(String provider, String key) {
     validateKeyAsync(
-            dataApiRequestInfo.authToken(), dataApiRequestInfo.tenant().toString(), provider, key)
+            requireCredentialServiceToken(dataApiRequestInfo.providerAuthToken()),
+            dataApiRequestInfo.tenant().toString(),
+            provider,
+            key)
         .await()
         .atMost(Duration.ofSeconds(10));
   }

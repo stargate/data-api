@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.reranking.gateway;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -27,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 /**
  * Tests for the RerankEGWClient class. Mocking the embedding gateway service to test the grpc
@@ -104,7 +106,7 @@ public class RerankingGatewayClientTest {
             ModelProvider.NVIDIA,
             MODEL_CONFIG,
             tenant,
-            "default",
+            null,
             rerankService,
             Map.of(),
             TESTING_COMMAND_NAME);
@@ -120,6 +122,11 @@ public class RerankingGatewayClientTest {
             .withSubscriber(UniAssertSubscriber.create())
             .awaitItem()
             .getItem();
+
+    var request = ArgumentCaptor.forClass(EmbeddingGateway.ProviderRerankingRequest.class);
+    verify(rerankService).rerank(request.capture());
+    assertThat(request.getValue().getProviderContext().getAuthTokensMap())
+        .isEqualTo(Map.of("RERANKING_API_KEY", RERANK_CREDENTIALS.apiKey()));
 
     assertThat(response).isNotNull();
     assertThat(response.batchId()).isEqualTo(1);

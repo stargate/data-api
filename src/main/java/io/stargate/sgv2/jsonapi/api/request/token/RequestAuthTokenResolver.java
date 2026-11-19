@@ -18,23 +18,24 @@
 package io.stargate.sgv2.jsonapi.api.request.token;
 
 import io.vertx.ext.web.RoutingContext;
-import jakarta.ws.rs.core.SecurityContext;
+import java.security.Principal;
 
 /**
  * Resolver of the Cassandra token.
  *
  * <p>The implementation can use any information from the {@link RoutingContext} or {@link
- * SecurityContext} to obtain the token.
+ * Principal} to obtain the token.
  */
 @FunctionalInterface
 public interface RequestAuthTokenResolver {
 
   /**
-   * Returns a Cassandra token given a {@link RoutingContext} and a {@link SecurityContext}.
+   * Returns a Cassandra token given a {@link RoutingContext} and its authenticated {@link
+   * Principal}.
    *
    * @param context the routing context
-   * @param securityContext the security context
+   * @param principal the authenticated principal
    * @return The Cassandra token. If empty, indicates that no token should be used.
    */
-  String resolve(RoutingContext context, SecurityContext securityContext);
+  String resolve(RoutingContext context, Principal principal);
 }

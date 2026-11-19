@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import static io.stargate.sgv2.jsonapi.service.resolver.ValidateCredentials.requireCredentialServiceToken;
+
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.request.tenant.Tenant;
@@ -102,6 +104,7 @@ public class SyncServiceCredentialResolvingProvider extends EmbeddingProvider {
    * behavior).
    */
   private Uni<EmbeddingCredentials> resolveCredentials() {
+    String serviceToken = requireCredentialServiceToken(authToken);
     String providerName = modelProvider().apiName();
 
     // Build parallel SyncService calls and track which accepted token name each one is for
@@ -113,7 +116,7 @@ public class SyncServiceCredentialResolvingProvider extends EmbeddingProvider {
       acceptedNames.add(entry.getKey());
       credNames.add(entry.getValue());
       resolveUnis.add(
-          syncServiceClient.getCredential(authToken, tenant, providerName, entry.getValue()));
+          syncServiceClient.getCredential(serviceToken, tenant, providerName, entry.getValue()));
     }
 
     return Uni.join()
