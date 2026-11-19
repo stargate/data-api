@@ -72,7 +72,7 @@ public class RerankingQuery implements Recordable {
       return new RerankingQuery(rerankQuery, Source.OPTIONS);
     }
 
-    // will never be blank, sanity check
+    // will never be blank, but double-checking for safety
     if (sortText != null && !sortText.isBlank()) {
       return new RerankingQuery(sortText, sortSource);
     }
