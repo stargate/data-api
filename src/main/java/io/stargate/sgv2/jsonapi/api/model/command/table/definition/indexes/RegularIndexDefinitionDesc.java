@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableDescDefaults;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
+import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -32,7 +33,10 @@ public record RegularIndexDefinitionDesc(
         @Schema(
             description =
                 "Required name of the column to index. To index the keys or values in a map column, use {\"my_map_colum\" : \"$keys\"} or {\"my_map_colum\" : \"$values\"}",
-            required = true)
+            required = true,
+            // RegularIndexColumnDeserializer reads either form. The record fields are the parsed
+            // result and are not request JSON.
+            anyOf = {String.class, Map.class})
         @JsonDeserialize(using = RegularIndexColumnDeserializer.class)
         @JsonSerialize(using = RegularIndexColumnSerializer.class)
         @JsonProperty(TableDescConstants.IndexDefinitionDesc.COLUMN)
