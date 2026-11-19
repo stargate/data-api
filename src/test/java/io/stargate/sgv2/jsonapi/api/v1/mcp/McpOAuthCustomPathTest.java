@@ -7,7 +7,7 @@ import java.util.Map;
 
 @QuarkusTest
 @TestProfile(McpOAuthCustomPathTest.CustomPathProfile.class)
-class McpOAuthCustomPathTest extends McpOAuthTest {
+class McpOAuthCustomPathTest extends McpOAuthRoutingTestBase {
   @Override
   protected String expectedResource() {
     return McpOAuthTestSupport.PUBLIC_BASE + "/service/tools";
@@ -18,10 +18,17 @@ class McpOAuthCustomPathTest extends McpOAuthTest {
     return McpOAuthTestSupport.PUBLIC_BASE + "/service" + McpOAuthTestSupport.METADATA_PATH;
   }
 
-  public static class CustomPathProfile extends OAuthProfile {
+  @Override
+  String expectedRestCredential() {
+    return "configured-database-credential";
+  }
+
+  public static class CustomPathProfile extends McpOAuthTest.OAuthProfile {
     @Override
     public Map<String, String> getConfigOverrides() {
       var overrides = new HashMap<>(super.getConfigOverrides());
+      overrides.put("stargate.auth.token-resolver.type", "fixed");
+      overrides.put("stargate.auth.token-resolver.fixed.token", "configured-database-credential");
       overrides.put("quarkus.http.root-path", "/service");
       overrides.put("quarkus.mcp.server.http.root-path", "/tools");
       overrides.put("mp.jwt.verify.audiences", McpOAuthTestSupport.PUBLIC_BASE + "/service/tools");

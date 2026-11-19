@@ -77,8 +77,7 @@ public class McpOriginFilter {
       context.next();
       return;
     }
-    String origin = origins.get(0);
-    if (origins.size() > 1 || !allowedOrigins.contains(origin)) {
+    if (!allowsOrigin(origins)) {
       response
           .setStatusCode(403)
           .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
@@ -86,6 +85,7 @@ public class McpOriginFilter {
       return;
     }
 
+    String origin = origins.getFirst();
     if (isPreflight(request)) {
       response
           .setStatusCode(204)
@@ -101,6 +101,10 @@ public class McpOriginFilter {
                 .putHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origin)
                 .putHeader(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, EXPOSED_HEADERS));
     context.next();
+  }
+
+  public boolean allowsOrigin(List<String> origins) {
+    return origins.size() == 1 && allowedOrigins.contains(origins.getFirst());
   }
 
   boolean isMcpPath(String path) {

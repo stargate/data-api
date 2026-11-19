@@ -1,17 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
-import static io.restassured.RestAssured.config;
 import static io.restassured.RestAssured.given;
-import static io.restassured.config.HttpClientConfig.httpClientConfig;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.CURRENT_PROTOCOL_VERSION;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertResponseComplete;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertRpcError;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.request;
-import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.rpcPayload;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.AUTH_SERVER;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.FIRST_ORG;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.FIRST_SUBJECT;
-import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.METADATA_PATH;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.PUBLIC_BASE;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.SECOND_ORG;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.SECOND_SUBJECT;
@@ -23,7 +19,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.quarkiverse.mcp.server.JsonRpcErrorCodes;
-import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.response.Response;
@@ -33,15 +28,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
-import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -50,28 +42,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 @QuarkusTest
 @TestProfile(McpOAuthTest.OAuthProfile.class)
-class McpOAuthTest {
+class McpOAuthTest extends McpOAuthRoutingTestBase {
   private static final int UNSUPPORTED_PROTOCOL_VERSION = -32022;
-
-  @InjectMock CommandProcessor commandProcessor;
-
-  @Test
-  void discoveryIsPublicAndUsesTheConfiguredResource() {
-    var metadata = given().get(METADATA_PATH).then().statusCode(200).extract().jsonPath();
-
-    assertThat(metadata.getString("resource")).isEqualTo(expectedResource());
-    assertThat(metadata.getList("authorization_servers", String.class))
-        .containsExactly(AUTH_SERVER);
-    assertThat(metadata.getList("bearer_methods_supported", String.class)).contains("header");
-  }
-
-  @Test
-  void unauthenticatedRequestsAdvertiseAbsoluteMetadataLocation() {
-    var response = catalogRequest(1).post(mcpPath());
-
-    assertChallenge(response);
-    verifyNoInteractions(commandProcessor);
-  }
 
   @Test
   void validJwtListsToolsWithoutAStoredSession() {
@@ -214,101 +186,6 @@ class McpOAuthTest {
     verifyNoInteractions(commandProcessor);
   }
 
-  @ParameterizedTest
-  @NullSource
-  @ValueSource(strings = {"Token", "X-Cassandra-Token"})
-  void commandContextReceivesTheVerifiedTokenRatherThanItsSubjectOrLegacyHeaders(String header) {
-    String credential = firstToken();
-    var observed = new AtomicReference<String>();
-    when(commandProcessor.processCommand(any(), any()))
-        .thenAnswer(
-            invocation -> {
-              CommandContext<?> context = invocation.getArgument(0);
-              observed.set(context.requestContext().authToken());
-              return Uni.createFrom()
-                  .item(CommandResult.statusOnlyBuilder(context.requestTracing()).build());
-            });
-
-    var request = providerRequest(1).header("Authorization", "Bearer " + credential);
-    if (header != null) {
-      request.header(header, "legacy-credential");
-    }
-    var response = request.post(mcpPath());
-
-    assertResponseComplete(response, 1);
-    assertThat(observed.get())
-        .isEqualTo(credential)
-        .isNotEqualTo(FIRST_SUBJECT)
-        .isNotEqualTo("legacy-credential");
-    assertThat(response.asString()).doesNotContain(credential, "legacy-credential");
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"Token", "X-Cassandra-Token"})
-  void legacyCredentialsCannotOpenTheSseTransport(String header) {
-    var response =
-        given()
-            // Bound the read if a regression incorrectly admits this streaming request.
-            .config(config().httpClient(httpClientConfig().setParam("http.socket.timeout", 5000)))
-            .header(header, "legacy-credential")
-            .accept("text/event-stream")
-            .get(mcpPath() + "/sse");
-
-    assertChallenge(response);
-    verifyNoInteractions(commandProcessor);
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"Token", "X-Cassandra-Token"})
-  void legacyCredentialsCannotPostToTheMessageTransport(String header) {
-    var response =
-        given()
-            .header(header, "legacy-credential")
-            .contentType("application/json")
-            .body(rpcPayload(1, "tools/list", Map.of()))
-            .post(mcpPath() + "/messages/synthetic-session-id");
-
-    assertChallenge(response);
-    verifyNoInteractions(commandProcessor);
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {"Token", "X-Cassandra-Token"})
-  void ordinaryRestCallsRetainLegacyAuthentication(String header) {
-    var observed = new AtomicReference<String>();
-    when(commandProcessor.processCommand(any(), any()))
-        .thenAnswer(
-            invocation -> {
-              CommandContext<?> context = invocation.getArgument(0);
-              observed.set(context.requestContext().authToken());
-              return Uni.createFrom()
-                  .item(CommandResult.statusOnlyBuilder(context.requestTracing()).build());
-            });
-    var response =
-        given()
-            .contentType("application/json")
-            .header(header, "legacy-credential")
-            .body(Map.of("findEmbeddingProviders", Map.of()))
-            .post("/v1");
-
-    assertThat(response.statusCode()).as(response.asString()).isEqualTo(200);
-    assertThat(observed.get()).isEqualTo("legacy-credential");
-    assertThat(response.asString()).doesNotContain("legacy-credential");
-  }
-
-  @Test
-  void ordinaryRestCallsDoNotAcceptBearerOnlyAuthentication() {
-    var response =
-        given()
-            .contentType("application/json")
-            .header("Authorization", "Bearer " + firstToken())
-            .body(Map.of("findEmbeddingProviders", Map.of()))
-            .post("/v1");
-
-    assertThat(response.statusCode()).as(response.asString()).isEqualTo(401);
-    verifyNoInteractions(commandProcessor);
-  }
-
   @Test
   void overlappingJwtRequestsKeepSeparateCredentialsWhenCompletedInReverseOrder() throws Exception {
     String firstToken = firstToken();
@@ -389,32 +266,6 @@ class McpOAuthTest {
     }
   }
 
-  protected String expectedResource() {
-    return PUBLIC_BASE + "/v1/mcp";
-  }
-
-  protected String expectedMetadataUrl() {
-    return PUBLIC_BASE + METADATA_PATH;
-  }
-
-  private String firstToken() {
-    return token(FIRST_SUBJECT, FIRST_ORG, "read-role", expectedResource());
-  }
-
-  private String mcpPath() {
-    return ConfigProvider.getConfig().getValue("quarkus.mcp.server.http.root-path", String.class);
-  }
-
-  private RequestSpecification catalogRequest(int id) {
-    return request("tools/list").body(rpcPayload(id, "tools/list", Map.of()));
-  }
-
-  private RequestSpecification providerRequest(int id) {
-    return request("tools/call")
-        .header("Mcp-Name", "findEmbeddingProviders")
-        .body(McpHttpTestSupport.toolPayload(id, "findEmbeddingProviders", Map.of()));
-  }
-
   private RequestSpecification toolRequest(String name, Map<String, Object> args) {
     return request("tools/call")
         .header("Mcp-Name", name)
@@ -432,13 +283,6 @@ class McpOAuthTest {
             "resource_metadata=\"" + expectedMetadataUrl() + "\"");
   }
 
-  private void assertChallenge(Response response) {
-    assertThat(response.statusCode()).as(response.asString()).isEqualTo(401);
-    assertThat(response.header("WWW-Authenticate"))
-        .as("HTTP headers: %s; body: %s", response.headers(), response.asString())
-        .contains("Bearer", "resource_metadata=\"" + expectedMetadataUrl() + "\"");
-  }
-
   public static class OAuthProfile implements NoGlobalResourcesTestProfile {
     @Override
     public Map<String, String> getConfigOverrides() {
@@ -447,6 +291,8 @@ class McpOAuthTest {
           "true",
           "stargate.auth.bearer.enabled",
           "true",
+          McpOriginFilter.ALLOWED_ORIGINS,
+          BROWSER_ORIGIN,
           "stargate.mcp.auth.server-url",
           AUTH_SERVER,
           "stargate.mcp.auth.public-base-url",

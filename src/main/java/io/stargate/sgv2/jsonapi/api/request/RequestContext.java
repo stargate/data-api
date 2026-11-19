@@ -24,6 +24,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.SecurityContext;
 import java.util.List;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.slf4j.MDC;
 
 /**
@@ -76,7 +77,7 @@ public class RequestContext implements LoggingMDCContext {
   /**
    * Constructor for non-JAX-RS HTTP contexts (e.g., MCP Streamable HTTP) where JAX-RS {@link
    * SecurityContext} is not available but Quarkus {@link SecurityIdentity} is. Uses the same
-   * resolution logic as the CDI constructor.
+   * configured resolver for legacy credentials and forwards the authenticated JWT for OAuth.
    */
   public RequestContext(
       RoutingContext routingContext,
@@ -87,9 +88,12 @@ public class RequestContext implements LoggingMDCContext {
 
     this.httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
 
+    var principal = securityIdentity.getPrincipal();
     this.authToken =
         normalizeOptionalString(
-            tokenResolver.get().resolve(routingContext, securityIdentity.getPrincipal()));
+            principal instanceof JsonWebToken jwt
+                ? jwt.getRawToken()
+                : tokenResolver.get().resolve(routingContext, principal));
     this.requestId = getOrCreateRequestId(routingContext);
     this.userAgent = new UserAgent(httpHeaders.getHeader(HttpHeaders.USER_AGENT));
     this.tenant = tenantResolver.get().resolve(routingContext, null);
