@@ -62,7 +62,7 @@ public abstract class SortClauseBuilder<T extends SchemaObject> {
    */
   protected abstract SortClause buildClauseFromDefinition(ObjectNode sortNode);
 
-  protected float[] tryDecodeBinaryVector(String path, JsonNode innerValue) {
+  public static float[] tryDecodeBinaryVector(String path, JsonNode innerValue) {
     if (innerValue instanceof ObjectNode innerObject) {
       var ejsonWrapped = EJSONWrapper.maybeFrom(innerObject);
       if (ejsonWrapped == null || ejsonWrapped.type() != EJSONWrapper.EJSONType.BINARY) {
