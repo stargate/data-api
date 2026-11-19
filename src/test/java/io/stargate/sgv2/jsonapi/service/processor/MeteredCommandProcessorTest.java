@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.processor;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.InjectMock;
@@ -13,9 +14,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.api.request.tenant.TenantFactory;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -104,12 +107,12 @@ public class MeteredCommandProcessorTest {
     public void errorMetricsWithNoErrorCode() throws Exception {
       String json =
           """
-        {
-          "find": {
+          {
+            "find": {
 
+            }
           }
-        }
-        """;
+          """;
 
       FindCommand countCommand = objectMapper.readValue(json, FindCommand.class);
 
@@ -216,6 +219,71 @@ public class MeteredCommandProcessorTest {
                       assertThat(line)
                           .contains("error_code=\"" + exception.fullyQualifiedCode() + "\"");
                       assertThat(line).contains("module=\"sgv2-jsonapi\"");
+                    });
+              });
+    }
+
+    /**
+     * The processor builds the filter and sort clauses again to choose the sort type tag. A clause
+     * that failed during the command fails again here, and that second failure must not replace the
+     * error result.
+     */
+    @Test
+    public void errorMetricsWithUnsupportedFilterOperator() throws Exception {
+      String json =
+          """
+          {
+            "findOne": {
+              "filter": {"year": {"$bogus": 1}}
+            }
+          }
+          """;
+
+      FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
+
+      // the same failure the command processor recovers into the error result
+      var exception =
+          catchThrowableOfType(
+              FilterException.class, () -> findOneCommand.filterClause(commandContext));
+      assertThat(exception).isNotNull();
+      var commandResult =
+          CommandResult.statusOnlyBuilder(RequestTracing.NO_OP).addThrowable(exception).build();
+
+      Mockito.when(commandProcessor.processCommand(commandContext, findOneCommand))
+          .thenReturn(Uni.createFrom().item(commandResult));
+
+      var actualResult =
+          meteredCommandProcessor
+              .processCommand(commandContext, findOneCommand)
+              .await()
+              .atMost(Duration.ofMinutes(1));
+      assertThat(actualResult).isSameAs(commandResult);
+
+      // same timing problem as errorMetrics()
+      Thread.sleep(1000);
+
+      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+      List<String> httpMetrics =
+          metrics
+              .lines()
+              .filter(
+                  line ->
+                      line.startsWith("command_processor_process_")
+                          && !line.startsWith("command_processor_process_seconds_bucket")
+                          && !line.contains("quantile")
+                          && line.contains("command=\"FindOneCommand\""))
+              .toList();
+
+      assertThat(httpMetrics)
+          .satisfies(
+              lines -> {
+                assertThat(lines.size()).isEqualTo(3);
+                lines.forEach(
+                    line -> {
+                      assertThat(line).contains("error=\"true\"");
+                      assertThat(line)
+                          .contains("error_code=\"" + exception.fullyQualifiedCode() + "\"");
+                      assertThat(line).contains("sort_type=\"NONE\"");
                     });
               });
     }
