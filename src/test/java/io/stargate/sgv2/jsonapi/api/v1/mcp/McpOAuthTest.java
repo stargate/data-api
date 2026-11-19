@@ -15,10 +15,12 @@ import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.token;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpOAuthTestSupport.tokenWithScope;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.quarkiverse.mcp.server.JsonRpcErrorCodes;
+import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.restassured.response.Response;
@@ -27,11 +29,16 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCache;
+import io.stargate.sgv2.jsonapi.service.schema.SchemaObjectCacheSupplier;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -101,6 +108,47 @@ class McpOAuthTest extends McpOAuthRoutingTestBase {
 
     assertInsufficientScope(response, "astra:db:write");
     verifyNoInteractions(commandProcessor);
+  }
+
+  @Test
+  void databaseDenialDuringSchemaLookupReturnsForbidden() {
+    var cache = mock(SchemaObjectCache.class);
+    when(cache.getDatabase(any(), any(), any()))
+        .thenReturn(Uni.createFrom().failure(databaseDenial()));
+
+    var supplier = mock(SchemaObjectCacheSupplier.class);
+    when(supplier.get()).thenReturn(cache);
+    QuarkusMock.installMockForType(supplier, SchemaObjectCacheSupplier.class);
+    assertDatabaseDenial();
+    verifyNoInteractions(commandProcessor);
+  }
+
+  @Test
+  void databaseDenialDuringExecutionReturnsForbidden() {
+    var denied =
+        CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+            .addThrowable(databaseDenial())
+            .build();
+    when(commandProcessor.processCommand(any(), any()))
+        .thenReturn(Uni.createFrom().item(denied).emitOn(ForkJoinPool.commonPool()));
+    assertDatabaseDenial();
+  }
+
+  private APISecurityException databaseDenial() {
+    return APISecurityException.Code.UNAUTHORIZED_ACCESS.get(
+        Map.of("keyspace", "test", "table", "items"));
+  }
+
+  private void assertDatabaseDenial() {
+    var response =
+        providerRequest(1).header("Authorization", "Bearer " + firstToken()).post(mcpPath());
+    assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.header("WWW-Authenticate"))
+        .isEqualTo("Bearer resource_metadata=\"" + expectedMetadataUrl() + "\"");
+    assertThat(response.jsonPath().getBoolean("result.isError")).isTrue();
+    assertThat(
+            response.jsonPath().getList("result.structuredContent.errors.errorCode", String.class))
+        .containsExactly("UNAUTHORIZED_ACCESS");
   }
 
   @Test

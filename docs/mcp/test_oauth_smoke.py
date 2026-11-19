@@ -19,6 +19,7 @@ class OAuthSmokeTest(unittest.TestCase):
         self.requests = []
         self.mutation = lambda method, body: body
         self.redirect = False
+        self.denied_status = 403
         owner = self
 
         class Handler(BaseHTTPRequestHandler):
@@ -50,15 +51,17 @@ class OAuthSmokeTest(unittest.TestCase):
                 if owner.redirect:
                     self.send(302, {}, Location=owner.base + "/redirected")
                     return
+                status = 200
                 if body["method"] == "tools/list":
                     result = {"tools": [{"name": "findOne"}, {"name": "findKeyspaces"}]}
                 elif body["params"]["arguments"]["keyspace"] == "denied":
+                    status = owner.denied_status
                     result = {"isError": True, "structuredContent": {
                         "errors": [{"errorCode": "UNAUTHORIZED_ACCESS"}]}}
                 else:
                     result = {"isError": False, "structuredContent": {"document": {"id": "hello"}}}
                 response = {"jsonrpc": "2.0", "id": body["id"], "result": result}
-                self.send(200, owner.mutation(body["method"], response))
+                self.send(status, owner.mutation(body["method"], response))
 
         self.server = HTTPServer(("127.0.0.1", 0), Handler)
         self.base = "http://127.0.0.1:" + str(self.server.server_port)
@@ -93,6 +96,11 @@ class OAuthSmokeTest(unittest.TestCase):
                     "io.modelcontextprotocol/clientCapabilities": {}})
         self.assertEqual(self.requests[-1][2]["params"]["arguments"], {
             "keyspace": "denied", "collection": "messages", "filter": {"id": "hello"}})
+
+    def test_database_denial_requires_http_403(self):
+        self.denied_status = 200
+        with self.assertRaisesRegex(smoke.SmokeFailure, "expected 403"):
+            self.run_smoke(denied_keyspace="denied")
 
     def test_wrong_document_fails(self):
         with self.assertRaisesRegex(smoke.SmokeFailure, "expected document"):

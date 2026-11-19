@@ -105,9 +105,10 @@ class Client:
             headers["Authorization"] = "Bearer " + token
         return self.request(self.endpoint, json.dumps(payload).encode(), headers)
 
-    def result(self, method, params, token):
+    def result(self, method, params, token, expected_status=200):
         response = self.rpc(method, params, token)
-        require(response.status == 200, f"{method} returned HTTP {response.status}")
+        require(response.status == expected_status,
+                f"{method} returned HTTP {response.status}, expected {expected_status}")
         body = response.json()
         require(body.get("jsonrpc") == "2.0" and body.get("id") == self.sequence,
                 "JSON-RPC response did not match its request")
@@ -163,14 +164,14 @@ def smoke_test(endpoint, token, keyspace, collection, filter_value, expected_doc
     print("PASS  Database read returned the exact expected document")
     if denied_keyspace is not None:
         result = client.result("tools/call", {"name": "findOne", "arguments": {
-            **arguments, "keyspace": denied_keyspace}}, token)
+            **arguments, "keyspace": denied_keyspace}}, token, expected_status=403)
         content = result.get("structuredContent")
         require(result.get("isError") is True and isinstance(content, dict)
                 and isinstance(content.get("errors"), list) and len(content["errors"]) == 1
                 and isinstance(content["errors"][0], dict)
                 and content["errors"][0].get("errorCode") == "UNAUTHORIZED_ACCESS",
                 "Denied read did not return UNAUTHORIZED_ACCESS")
-        print("PASS  Other keyspace read was denied with UNAUTHORIZED_ACCESS")
+        print("PASS  Other keyspace read returned HTTP 403 with UNAUTHORIZED_ACCESS")
     return names
 
 

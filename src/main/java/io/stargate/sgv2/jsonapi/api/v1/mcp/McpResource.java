@@ -23,6 +23,7 @@ import io.stargate.sgv2.jsonapi.api.request.token.RequestAuthTokenResolver;
 import io.stargate.sgv2.jsonapi.api.security.McpOAuthMetadata;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.exception.mappers.FrameworkExceptionMapper;
@@ -266,11 +267,30 @@ public class McpResource {
                           failure == null
                               ? executeCommand(context, command)
                               : handleSetupFailure(failure))
-                  .map(CommandResult::toToolResponse)
+                  .map(this::toToolResponse)
                   .invoke(result -> McpRequestLogging.commandCompleted(command, result))
                   .onFailure()
                   .invoke(failure -> McpRequestLogging.commandFailed(command));
             });
+  }
+
+  private ToolResponse toToolResponse(CommandResult result) {
+    if (oauthMetadata.bearerEnabled()
+        && result.errors().stream()
+            .anyMatch(
+                error ->
+                    APISecurityException.Code.UNAUTHORIZED_ACCESS
+                        .name()
+                        .equals(error.errorCode()))) {
+      // The token already has the required scope. Only database permissions can grant this action.
+      var context = routingContextProvider.get();
+      context
+          .response()
+          .setStatusCode(Response.Status.FORBIDDEN.getStatusCode())
+          .putHeader(
+              HttpHeaders.WWW_AUTHENTICATE, oauthMetadata.challenge(context).orElse("Bearer"));
+    }
+    return result.toToolResponse();
   }
 
   private void requireOAuthScope(RoutingContext context, Command command) {

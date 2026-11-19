@@ -4,9 +4,18 @@ import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.assertResponseComplete;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.request;
 import static io.stargate.sgv2.jsonapi.api.v1.mcp.McpHttpTestSupport.rpcPayload;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
+import io.stargate.sgv2.jsonapi.exception.APISecurityException;
+import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -16,6 +25,31 @@ import org.junit.jupiter.params.provider.ValueSource;
 @QuarkusTest
 @TestProfile(McpOAuthDisabledTest.DisabledProfile.class)
 class McpOAuthDisabledTest {
+  @InjectMock CommandProcessor commandProcessor;
+
+  @Test
+  void legacyDatabaseDenialRemainsAToolError() {
+    var denied =
+        APISecurityException.Code.UNAUTHORIZED_ACCESS.get(
+            Map.of("keyspace", "test", "table", "items"));
+    when(commandProcessor.processCommand(any(), any()))
+        .thenReturn(
+            Uni.createFrom()
+                .item(
+                    CommandResult.statusOnlyBuilder(RequestTracing.NO_OP)
+                        .addThrowable(denied)
+                        .build()));
+
+    var response =
+        request("tools/call")
+            .header("Mcp-Name", "findEmbeddingProviders")
+            .body(McpHttpTestSupport.toolPayload(1, "findEmbeddingProviders", Map.of()))
+            .header("Token", "legacy-credential")
+            .post("/v1/mcp");
+    assertThat(assertResponseComplete(response, 1).getBoolean("isError")).isTrue();
+    assertThat(response.header("WWW-Authenticate")).isNull();
+  }
+
   @Test
   void disabledBearerAuthenticationDoesNotAdvertiseOAuthMetadata() {
     given().get(McpOAuthTestSupport.METADATA_PATH).then().statusCode(404);
