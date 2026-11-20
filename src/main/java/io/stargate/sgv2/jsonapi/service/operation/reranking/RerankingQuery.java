@@ -47,7 +47,7 @@ public class RerankingQuery implements Recordable {
    *     vectorize.
    * @return Constructed RerankingQuery, with the source indicating where the query came from.
    */
-  public static RerankingQuery createForVectorizeSort(String rerankQuery, String vectorizeText) {
+  public static RerankingQuery forVectorizeSort(String rerankQuery, String vectorizeText) {
     return create(rerankQuery, vectorizeText, Source.VECTORIZE);
   }
 
@@ -61,7 +61,7 @@ public class RerankingQuery implements Recordable {
    * @param lexicalText The text of the $lexical sort.
    * @return Constructed RerankingQuery, with the source indicating where the query came from.
    */
-  public static RerankingQuery createForLexicalSort(String rerankQuery, String lexicalText) {
+  public static RerankingQuery forLexicalSort(String rerankQuery, String lexicalText) {
     return create(rerankQuery, lexicalText, Source.LEXICAL);
   }
 
