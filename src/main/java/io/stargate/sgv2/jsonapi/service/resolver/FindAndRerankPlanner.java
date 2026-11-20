@@ -135,10 +135,11 @@ class FindAndRerankPlanner {
       // not set on the command, so use the default from the config
       return bounds.defaultValue();
     }
-    // a $hybrid sort sets the read limit of each leg with the hybridLimits option instead
+    // rerankCandidateLimit is only for a single leg sort, so a $hybrid sort must use hybridLimits
     if (command.sortClause() instanceof FindAndRerankSort.MultiLeg) {
       throw RequestException.Code.UNSUPPORTED_RERANK_CANDIDATE_LIMIT_WITH_HYBRID_SORT.get();
     }
+
     validateLimitInBounds(FindAndRerankCommand.Options.Names.RERANK_CANDIDATE_LIMIT, limit, bounds);
     return limit;
   }
