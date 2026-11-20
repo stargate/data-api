@@ -59,8 +59,8 @@ class FindAndRerankPlanner {
     var rerankCandidateLimit = resolveRerankCandidateLimit(command, operationsConfig);
 
     var rerankServiceDef = resolveRerankServiceDef(command, commandContext);
-    var rerankingQuery = rerankingQuery(command);
-    var passageLocator = passageLocator(command);
+    var rerankingQuery = buildRerankingQuery(command);
+    var passageLocator = buildPassageLocator(command);
     var projector = command.buildProjector();
 
     // NOTE: the legs are planned after the options and the projection are checked, to keep the
@@ -72,11 +72,12 @@ class FindAndRerankPlanner {
     // UNEXPECTED_SERVER_ERROR, see GH #2577
     var legs =
         switch (sort) {
-          case FindAndRerankSort.MultiLeg multiLeg -> multiLegs(command, multiLeg, schemaObject);
+          case FindAndRerankSort.MultiLeg multiLeg ->
+              buildMultiLegs(command, multiLeg, schemaObject);
           case FindAndRerankSort.SingleLeg singleLeg ->
-              List.of(singleLeg(singleLeg, rerankCandidateLimit));
+              List.of(buildSingleLeg(singleLeg, rerankCandidateLimit));
         };
-    var vectorizeStep = isVectorizeSort(sort) ? planVectorizeStep(sort, schemaObject) : null;
+    var vectorizeStep = isVectorizeSort(sort) ? buildVectorizeStep(sort, schemaObject) : null;
 
     int limit =
         getOrDefault(
@@ -118,9 +119,12 @@ class FindAndRerankPlanner {
   }
 
   /**
-   * The read limit for a sort without $hybrid: the user-supplied rerankCandidateLimit, or the
-   * default of the dynamic OperationsConfig bounds when the option is not set. The option cannot be
-   * used with a $hybrid sort, and must be inside the bounds.
+   * Resolves the read limit for a sort without $hybrid.
+   *
+   * @param command The command. It may have the <code>rerankCandidateLimit</code> option.
+   * @param operationsConfig The config that has the default and the bounds for the read limit.
+   * @return The <code>rerankCandidateLimit</code> option, or the default from the config when the
+   *     option is not set.
    */
   private static int resolveRerankCandidateLimit(
       FindAndRerankCommand command, OperationsConfig operationsConfig) {
@@ -128,8 +132,10 @@ class FindAndRerankPlanner {
     var limit =
         getOrDefault(command.options(), FindAndRerankCommand.Options::rerankCandidateLimit, null);
     if (limit == null) {
+      // not set on the command, so use the default from the config
       return bounds.defaultValue();
     }
+    // a $hybrid sort sets the read limit of each leg with the hybridLimits option instead
     if (command.sortClause() instanceof FindAndRerankSort.MultiLeg) {
       throw RequestException.Code.UNSUPPORTED_RERANK_CANDIDATE_LIMIT_WITH_HYBRID_SORT.get();
     }
@@ -187,16 +193,21 @@ class FindAndRerankPlanner {
   }
 
   /**
-   * The legs of a $hybrid sort: always a vector leg, and a lexical leg when the sort has lexical
-   * text and the collection has a lexical index. Without a lexical index the $hybrid text skips the
-   * lexical leg, and an explicit $lexical throws. Throws when the sort has no vectorize text and no
-   * vector for the vector leg.
+   * Builds the legs for a $hybrid sort.
+   *
+   * @param command The command. Its <code>hybridLimits</code> option sets the read limit of each
+   *     leg.
+   * @param multiLeg The $hybrid sort of the command.
+   * @param schemaObject The collection. The lexical leg needs its lexical index.
+   * @return A vector leg, and a lexical leg when the sort has lexical text and the collection has a
+   *     lexical index.
    */
-  private static List<FindAndRerankPlan.RerankLeg> multiLegs(
+  private static List<FindAndRerankPlan.RerankLeg> buildMultiLegs(
       FindAndRerankCommand command,
       FindAndRerankSort.MultiLeg multiLeg,
       CollectionSchemaObject schemaObject) {
 
+    // every $hybrid sort reads with the vector leg, so it needs $vectorize text or a $vector
     if (!isVectorizeSort(multiLeg) && !isVectorSort(multiLeg)) {
       throw isLexicalSort(multiLeg)
           ? SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT.get()
@@ -240,10 +251,13 @@ class FindAndRerankPlanner {
   }
 
   /**
-   * The one leg of a sort without $hybrid, it reads at most <code>readLimit</code> documents.
-   * Throws for a sort that needs the filter leg, because the filter leg is not planned yet.
+   * Builds the leg for a sort without $hybrid.
+   *
+   * @param singleLeg The sort of the command.
+   * @param readLimit The maximum number of documents the leg reads.
+   * @return A vector leg for a $vectorize or $vector sort, or a lexical leg for a $lexical sort.
    */
-  private static FindAndRerankPlan.RerankLeg singleLeg(
+  private static FindAndRerankPlan.RerankLeg buildSingleLeg(
       FindAndRerankSort.SingleLeg singleLeg, int readLimit) {
     return switch (singleLeg) {
         // the vector leg reads with the vector from the vectorize step
@@ -261,10 +275,13 @@ class FindAndRerankPlanner {
   }
 
   /**
-   * The {@link FindAndRerankPlan.VectorizeStep} for the vectorize text of the sort, using the
-   * vectorize column of the collection.
+   * Builds the {@link FindAndRerankPlan.VectorizeStep} for the vectorize text of the sort.
+   *
+   * @param sort The sort of the command. It must have vectorize text.
+   * @param schemaObject The collection. The step uses its vectorize column.
+   * @return The step that vectorizes the text with the vectorize service of the collection.
    */
-  private static FindAndRerankPlan.VectorizeStep planVectorizeStep(
+  private static FindAndRerankPlan.VectorizeStep buildVectorizeStep(
       FindAndRerankSort sort, CollectionSchemaObject schemaObject) {
 
     // sanity check, validateSortSupported() checked the collection has a vectorize column
@@ -311,35 +328,46 @@ class FindAndRerankPlanner {
   }
 
   /**
-   * The query to rerank with: the rerankQuery option when it is not blank, otherwise the text of a
-   * $lexical sort, or the $vectorize text of a $vectorize or $hybrid sort.
+   * Builds the query to rerank with.
+   *
+   * @param command The command. It has the sort and may have the <code>rerankQuery</code> option.
+   * @return The query from the <code>rerankQuery</code> option, or from the sort when the option is
+   *     null or blank.
    */
-  private static RerankingQuery rerankingQuery(FindAndRerankCommand command) {
+  private static RerankingQuery buildRerankingQuery(FindAndRerankCommand command) {
     var sort = command.sortClause();
     var rerankQueryOption =
         getOrDefault(command.options(), FindAndRerankCommand.Options::rerankQuery, null);
 
+    // the default query is the text of the sort: the lexical text for a $lexical sort, otherwise
+    // the vectorize text for $vectorize or $hybrid
     return sort instanceof FindAndRerankSort.LexicalLeg(LexicalSortExpression(var lexicalText))
-        ? RerankingQuery.createForLexicalSort(rerankQueryOption, lexicalText)
-        : RerankingQuery.createForVectorizeSort(rerankQueryOption, vectorizeText(sort));
+        ? RerankingQuery.forLexicalSort(rerankQueryOption, lexicalText)
+        : RerankingQuery.forVectorizeSort(rerankQueryOption, vectorizeText(sort));
   }
 
   /**
-   * Finds the passage to rerank in each document: the rerankOn option when it is not blank,
-   * otherwise the $lexical field for a $lexical sort, or the $vectorize field for a $vectorize or
-   * $hybrid sort.
+   * Builds the locator that finds the passage to rerank in each document.
+   *
+   * @param command The command. It has the sort and may have the <code>rerankOn</code> option.
+   * @return The locator for the field in the <code>rerankOn</code> option, or for the default field
+   *     of the sort when the option is null or blank.
    */
-  private static PathMatchLocator passageLocator(FindAndRerankCommand command) {
+  private static PathMatchLocator buildPassageLocator(FindAndRerankCommand command) {
     var sort = command.sortClause();
     var rerankOnOption =
         getOrDefault(command.options(), FindAndRerankCommand.Options::rerankOn, null);
 
+    // the user set rerankOn, so it replaces the default field of the sort
     if (!StringUtil.isNullOrBlank(rerankOnOption)) {
       return PathMatchLocator.forPath(rerankOnOption);
     }
+    // a $lexical sort reranks on the $lexical field by default
     if (sort instanceof FindAndRerankSort.LexicalLeg) {
       return PathMatchLocator.forPath(LEXICAL_CONTENT_FIELD);
     }
+    // a sort with vectorize text, e.g. $vectorize or $hybrid, reranks on the $vectorize field by
+    // default
     if (isVectorizeSort(sort)) {
       return PathMatchLocator.forPath(VECTOR_EMBEDDING_TEXT_FIELD);
     }
