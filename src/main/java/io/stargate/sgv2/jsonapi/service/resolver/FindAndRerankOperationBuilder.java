@@ -6,10 +6,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.embeddings.EmbeddingDeferredAction;
@@ -189,11 +191,20 @@ class FindAndRerankOperationBuilder {
     // Hack: See https://github.com/stargate/data-api/issues/1961
     // copying the hybrid limits on the command context so the find command resolver can pick it up
     // when the command runs later, so we can set the page size to be the same as the limit
+    // A sort without $hybrid has no hybridLimits, so we copy the read limit of its one leg
     commandContext.setHybridLimits(
-        getOrDefault(
-            command.options(),
-            FindAndRerankCommand.Options::hybridLimits,
-            FindAndRerankCommand.HybridLimits.DEFAULT));
+        switch (command.sortClause()) {
+          case FindAndRerankSort.MultiLeg ignored ->
+              getOrDefault(
+                  command.options(),
+                  FindAndRerankCommand.Options::hybridLimits,
+                  FindAndRerankCommand.HybridLimits.DEFAULT);
+          case FindAndRerankSort.SingleLeg ignored -> {
+            var readLimit = plan.legs().getFirst().readLimit();
+            yield new FindAndRerankCommand.HybridLimits(
+                readLimit, readLimit, CommandFeatures.EMPTY);
+          }
+        });
 
     var deferrables = new ArrayList<Deferrable>();
 

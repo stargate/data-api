@@ -299,6 +299,8 @@ request-errors:
       The passage text can be specified using either:
       * `$hybrid` field in the sort clause, in which case documents are ranked using the value of `$vectorize` e.g. `{"$hybrid": "query text"}`.
       * `$vectorize` field in the sort clause, when using different sorting for vectorize and lexical, e.g. `{"$hybrid":  {"$vectorize": "query text"}}`.
+      * `$vectorize` field as the only field in the sort clause, in which case documents are ranked using the value of `$vectorize`, e.g. `{"$vectorize": "query text"}`.
+      * `$lexical` field as the only field in the sort clause, in which case documents are ranked using the value of `$lexical`, e.g. `{"$lexical": "query text"}`.
       * `rerankOn` field in the options clause, e.g. `{"rerankOn": "my_passage_field"}`.
 
       When specified the `rerankOn` option takes priority. In all cases the passage text must be a non blank text value. 
@@ -317,6 +319,8 @@ request-errors:
       The query can be specified using either: 
       * `$hybrid` field in the sort clause, e.g. `{"$hybrid": "query text"}`.
       * `$vectorize` field in the sort clause, when using different sorting for vectorize and lexical, e.g. `{"$hybrid":  {"$vectorize": "query text"}}`.
+      * `$vectorize` field as the only field in the sort clause, e.g. `{"$vectorize": "query text"}`.
+      * `$lexical` field as the only field in the sort clause, e.g. `{"$lexical": "query text"}`.
       * `rerankQuery` field in the options clause, e.g. `{"rerankQuery": "query text"}`.
       
       When specified the `rerankQuery` option takes priority. In all cases the query text must be a non blank text value. 
@@ -2364,13 +2368,13 @@ request-errors:
 
   - scope: SORT
     code: UNSUPPORTED_FIND_AND_RERANK_SORT
-    title: Hybrid sort required by findAndRerank
+    title: Hybrid, vector or lexical sort required by findAndRerank
     body: |-
-      The command attempted to run findAndRerank without a `$hybrid` sort.
+      The command attempted to run findAndRerank with a sort by document fields, or without a sort.
 
-      The findAndRerank command finds the documents to rerank with a `$hybrid` sort, e.g. `{"$hybrid": "query text"}` or `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`. Sorting by only one of `$vectorize`, `$vector` or `$lexical`, sorting by document fields, and reranking the documents matched by the filter alone are not supported.
+      The findAndRerank command finds the documents to rerank with a `$hybrid` sort, e.g. `{"$hybrid": "query text"}`, or with a sort by only one of `$vectorize`, `$vector` or `$lexical`, e.g. `{"$vectorize": "query text"}`. Sorting by document fields, and reranking the documents matched by the filter alone are not supported.
 
-      Resend the command with a `$hybrid` sort.
+      Resend the command with a `$hybrid`, `$vectorize`, `$vector` or `$lexical` sort.
 
   - scope: SORT
     code: UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND
