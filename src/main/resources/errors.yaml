@@ -24,8 +24,8 @@
 # ===========
 #
 # "snippets" is a list of text snippets than can be included in any error body, the snippets are included in the
-# variables when running the template for the body of the error. Snippets are referenced using `${SNIPET.<NAME>}`
-# variables when running the template for the body of the error. Snippets are referenced using `${SNIPET.<NAME>}`
+# variables when running the template for the body of the error. Snippets are referenced using ${SNIPPET.<NAME>}`
+# variables when running the template for the body of the error. Snippets are referenced using ${SNIPPET.<NAME>}`
 # where <NAME> is the name of the snippet key.
 # Each snippet has:
 # - name: UPPER_SNAKE_CASE_1
@@ -94,7 +94,7 @@ snippets:
 
   - name: VECTOR_SORT_EXPLANATION
     body: |-
-      A vector sort in the sort clause identifies the vector column by name and then provides either:  
+      A vector sort in the sort clause identifies the `vector` column by name and then provides either:  
       - The vector as an array of decimal numbers.
       - The vector as a base64-encoded `{"$binary": "base64-encoded-vector"}` object.
       - A string to be vectorized if enabled for the column.
@@ -140,7 +140,7 @@ request-errors:
     body: |-
       Command '${command}' does not accept options but some were included.
       
-      Remove the 'options' field, or set it to null or an empty object ({}), and resend the command.
+      Remove the `options` field, or set it to null or an empty object (`{}`), and resend the command.
 
   - scope:
     code: COMMAND_FIELD_VALUE_INVALID
@@ -164,51 +164,51 @@ request-errors:
     body: |-
       Command '${command}' is not a ${commandType} recognized by Data API.
       
-      Data API supports following ${commandType}s: ${knownCommands}.
+      Data API supports the following ${commandType}s: ${knownCommands}.
       
       Which commands are accepted depends on what the request targets: a database, keyspace, collection, or table. Check the command name for typos and that the request was sent to the right target, then resend using one of the supported commands.
 
   - scope:
     code: HYBRID_FIELD_CONFLICT
-    title: Conflict with $hybrid field
+    title: Conflict with `$hybrid` field
     body: |-
-      Field '$hybrid' cannot be used with '$lexical', '$vector', or '$vectorize'.
+      Field `$hybrid` cannot be used with `$lexical`, `$vector`, or `$vectorize`.
       
-      '$hybrid' is a shorthand that sets both '$lexical' and '$vectorize' on the document, so the document must not also contain those fields or '$vector'.
+      `$hybrid` is a shorthand that sets both `$lexical` and `$vectorize` on the document, so the document must not also contain those fields or `$vector`.
 
-      Resend the command with either '$hybrid', or the individual '$lexical' and '$vector'/'$vectorize' fields, but not both.
+      Resend the command with either `$hybrid`, or the individual `$lexical` and `$vector`/`$vectorize` fields, but not both.
 
   - scope:
     code: HYBRID_FIELD_UNSUPPORTED_VALUE_TYPE
-    title: Unsupported JSON value type for $hybrid field
+    title: Unsupported JSON value type for `$hybrid` field
     body: |-
-      Unsupported JSON value type for '$hybrid' field: ${errorMessage}.
+      Unsupported JSON value type for `$hybrid` field: ${errorMessage}.
 
-      Resend with '$hybrid' as a string, an object with '$lexical' and/or '$vectorize' string values, or null.
+      Resend with `$hybrid` as a string, an object with `$lexical` and/or `$vectorize` string values, or null.
 
   - scope:
     code: HYBRID_FIELD_UNKNOWN_SUBFIELDS
-    title: Unknown sub-field(s) for $hybrid field
+    title: Unknown sub-field(s) for `$hybrid` field
     body: |-
-      Unknown sub-field(s) for '$hybrid' field: ${errorMessage}.
+      Unknown sub-field(s) for `$hybrid` field: ${errorMessage}.
 
-      Only '$lexical' and '$vectorize' are supported inside '$hybrid'. Remove the other sub-fields and resend.
+      Only `$lexical` and `$vectorize` are supported inside `$hybrid`. Remove the other sub-fields and resend.
 
   - scope:
     code: HYBRID_FIELD_UNSUPPORTED_SUBFIELD_VALUE_TYPE
-    title: Unsupported JSON value type for $hybrid sub-field
+    title: Unsupported JSON value type for `$hybrid` sub-field
     body: |-
-      Unsupported JSON value type for '$hybrid' sub-field: ${errorMessage}.
+      Unsupported JSON value type for `$hybrid` sub-field: ${errorMessage}.
 
-      The '$lexical' and '$vectorize' sub-fields of '$hybrid' must each be a string or null. Resend with valid values.
+      The `$lexical` and `$vectorize` sub-fields of `$hybrid` must each be a string or null. Resend with valid values.
 
   - scope:
     code: INVALID_CREATE_COLLECTION_FIELD
-    title: Invalid field(s) for createCollection
+    title: Invalid field(s) for `createCollection`
     body: |-
-      'createCollection' command referenced unrecognized field(s): ${message}
+      `createCollection` command referenced unrecognized field(s): ${message}
       
-      Resend 'createCollection' with only valid fields.
+      Resend `createCollection` with only valid fields.
 
   - scope:
     code: REQUEST_NOT_JSON
@@ -231,11 +231,11 @@ request-errors:
     http-status-override: 415
     title: Unsupported Content-Type
     body: |-
-      Request sent with unsupported 'Content-Type' header value.
+      Request sent with unsupported `Content-Type` header value.
       
       The API only supports content type: application/json
       
-      Resend with the header 'Content-Type: application/json'.
+      Resend with the header `Content-Type: application/json`.
 
   - scope:
     code: UNSUPPORTED_TABLE_COMMAND
@@ -296,7 +296,7 @@ request-errors:
     code: MISSING_RERANK_ON
     title: Rerank field is missing
     body: |-
-      The findAndRerank command does not specify which document field to rerank on.
+      The `findAndRerank` command does not specify which document field to rerank on.
 
       Reranking involves using a model to compare text from a user query to text from stored documents, the passage texts.
       
@@ -314,7 +314,7 @@ request-errors:
     code: MISSING_RERANK_QUERY_TEXT
     title: Rerank query text is missing
     body: |-
-      The findAndRerank command is missing the text to use as the query with the reranking model.
+      The `findAndRerank` command is missing the text to use as the query with the reranking model.
 
       Reranking involves using a model to compare passages of text to a user query. 
       
@@ -372,29 +372,29 @@ request-errors:
  # DOCUMENT request errors
   - scope: DOCUMENT
     code: DOCUMENT_ALREADY_EXISTS
-    title: Document with the given _id already exists
+    title: Document with the given `_id` already exists
     body: |-
-      Cannot insert the document: a document already exists with given '_id' (${id}). 
+      Cannot insert the document: a document already exists with given `_id` (${id}). 
 
-      Either resend the command with a distinct '_id' (or omit '_id' so one is generated), or use an update command to change the existing document instead.
+      Either resend the command with a distinct `_id` (or omit `_id` so one is generated), or use an update command to change the existing document instead.
 
   - scope: DOCUMENT
     code: DOCUMENT_REPLACE_DIFFERENT_DOCID
-    title: Target and replacement documents have different _id
+    title: Target and replacement documents have different `_id`
     body: |-
-      The replace document and document resolved using filter have different '_id's: ${replaceId} (replace document) vs. ${matchedId} (document that filter matches). 
+      The replace document and document resolved using filter have different `_id` values: ${replaceId} (replace document) vs. ${matchedId} (document that filter matches). 
 
-      A document's '_id' cannot be changed by a replace command.
+      A document's `_id` cannot be changed by a replace command.
 
-      Resend the command with a replacement document that has the same '_id' as the document being replaced, or omit '_id' from the replacement document.
+      Resend the command with a replacement document that has the same `_id` as the document being replaced, or omit `_id` from the replacement document.
 
   - scope: DOCUMENT
     code: INVALID_VECTORIZE_VALUE_TYPE
-    title: Invalid $vectorize value type
+    title: Invalid `$vectorize` value type
     body: |-
-      Invalid $vectorize value: ${errorMessage}.
+      Invalid `$vectorize` value: ${errorMessage}.
 
-      The '$vectorize' field must be a string or null. Resend the command with a valid '$vectorize' value.
+      The `$vectorize` field must be a string or null. Resend the command with a valid `$vectorize` value.
 
   - scope: DOCUMENT
     code: MISSING_PRIMARY_KEY_COLUMNS
@@ -413,27 +413,27 @@ request-errors:
     code: SHRED_BAD_BINARY_VECTOR_VALUE
     title: Bad binary vector value to shred
     body: |-
-      Bad binary $vector value to shred: ${errorMessage}.
+      Bad binary `$vector` value to shred: ${errorMessage}.
 
-      A binary '$vector' must be an object in the form {"$binary": "<base64 string>"}, The underlying bytes must represent 32-bit floating point values in big-endian format. The byte sequence must be Base64-encoded, with = padding if needed.
+      A binary `$vector` must be an object in the form `{"$binary": "<base64 string>"}`, The underlying bytes must represent 32-bit floating point values in big-endian format. The byte sequence must be Base64-encoded, with `=` padding if needed.
 
   - scope: DOCUMENT
     code: SHRED_BAD_DOCID_TYPE
-    title: Bad type for '_id' field
+    title: Bad type for `_id` field
     body: |-
-      Bad type for '_id' field: ${errorMessage}.
+      Bad type for `_id` field: ${errorMessage}.
 
-      The '_id' must be a string, number, boolean, null, or an extended JSON value such as {"$objectId": "..."}, {"$uuid": "..."} or {"$date": <epoch milliseconds>}.
+      The `_id` must be a string, number, boolean, null, or an extended JSON value such as `{"$objectId": "..."}`, `{"$uuid": "..."}` or `{"$date": <epoch milliseconds>}`.
 
-      Resend the command with a valid '_id', or omit '_id' so one is generated.
+      Resend the command with a valid `_id`, or omit `_id` so one is generated.
 
   - scope: DOCUMENT
     code: SHRED_BAD_DOCID_VALUE
-    title: Bad value for '_id' field
+    title: Bad value for `_id` field
     body: |-
-      Bad value for '_id' field: ${errorMessage}.
+      Bad value for `_id` field: ${errorMessage}.
 
-      Resend the command with a valid '_id', or omit '_id' so one is generated.
+      Resend the command with a valid `_id`, or omit `_id` so one is generated.
 
   - scope: DOCUMENT
     code: SHRED_BAD_DOCUMENT_TYPE
@@ -443,21 +443,21 @@ request-errors:
 
   - scope: DOCUMENT
     code: SHRED_BAD_DOCUMENT_VECTOR_TYPE
-    title: Bad $vector value to shred
+    title: Bad `$vector` value to shred
     body: |-
-      Bad $vector value to shred: ${errorMessage}.
+      Bad `$vector` value to shred: ${errorMessage}.
 
-      The '$vector' field must be an array of numbers, a binary vector object in the form {"$binary": "<base64 string>"}, or null.
+      The `$vector` field must be an array of numbers, a binary vector object in the form `{"$binary": "<base64 string>"}`, or null.
 
-      Resend the command with a valid '$vector' value.
+      Resend the command with a valid `$vector` value.
 
   - scope: DOCUMENT
     code: SHRED_BAD_DOCUMENT_LEXICAL_TYPE
-    title: Bad $lexical value to shred
+    title: Bad `$lexical` value to shred
     body: |-
-      Bad $lexical value to shred: ${errorMessage}.
+      Bad `$lexical` value to shred: ${errorMessage}.
 
-      The '$lexical' field must be a string or null. Resend the command with a valid '$lexical' value.
+      The `$lexical` field must be a string or null. Resend the command with a valid `$lexical` value.
 
   - scope: DOCUMENT
     code: SHRED_BAD_EJSON_VALUE
@@ -471,25 +471,25 @@ request-errors:
     body: |-
       Document field name not valid: ${errorMessage}.
 
-      Field names cannot start with $ (except for the reserved top-level fields '$vector', '$vectorize', and '$lexical') and cannot be exactly *.
+      Field names cannot start with $ (except for the reserved top-level fields `$vector`, `$vectorize`, and `$lexical`) and cannot be exactly *.
       
       Resend the command with the field renamed.
       
   - scope: DOCUMENT
     code: SHRED_BAD_VECTOR_SIZE
-    title: Bad $vector value
+    title: Bad `$vector` value
     body: |-
-      Bad $vector value: cannot be empty Array.
+      Bad `$vector` value: cannot be empty Array.
 
-      Resend the command with a '$vector' array that has one number for each dimension configured for the collection, or set '$vector' to null.
+      Resend the command with a `$vector` array that has one number for each dimension configured for the collection, or set `$vector` to null.
 
   - scope: DOCUMENT
     code: SHRED_BAD_VECTOR_VALUE
-    title: Bad $vector value
+    title: Bad `$vector` value
     body: |-
-      Bad $vector value: needs to be an array containing only numbers but has a ${nodeType} value (${nodeValue}).
+      Bad `$vector` value: needs to be an array containing only numbers but has a ${nodeType} value (${nodeValue}).
 
-      Resend the command with a '$vector' array that contains only numbers.
+      Resend the command with a `$vector` array that contains only numbers.
 
   - scope: DOCUMENT
     code: SHRED_DOC_LIMIT_VIOLATION
@@ -539,11 +539,11 @@ request-errors:
     code: UNSUPPORTED_VECTORIZE_CONFIGURATIONS
     title: Unsupported combination of vectorize configurations
     body: |-
-      A request cannot target vector columns with different vectorize configurations in the same command.
+      A request cannot target `vector` columns with different vectorize configurations in the same command.
       
-      The following vectorize configurations were found across the vector columns in the request: ${vectorizeIdentities}.
+      The following vectorize configurations were found across the `vector` columns in the request: ${vectorizeIdentities}.
       
-      Resend the command targeting only vector columns that share the same vectorize configuration.
+      Resend the command targeting only `vector` columns that share the same vectorize configuration.
       
       Support for these features will be expanded in future releases.
 
@@ -555,10 +555,10 @@ request-errors:
       
       ${SNIPPET.ADD_VECTORIZE_CONFIG}
       
-      The table ${keyspace}.${table} defines the vector columns with vectorize definition: ${validVectorizeColumns}.
-      The command included the following vector columns without vectorize definition: ${invalidVectorizeColumns}.
+      The table ${keyspace}.${table} defines the `vector` columns with vectorize definition: ${validVectorizeColumns}.
+      The command included the following `vector` columns without vectorize definition: ${invalidVectorizeColumns}.
       
-      Resend the command using only vector columns with a vectorize definition, or use the alterTable command to add a vectorize configuration to the columns that are missing it.
+      Resend the command using only `vector` columns with a vectorize definition, or use the `alterTable` command to add a vectorize configuration to the columns that are missing it.
 
   - scope: DOCUMENT
     code: LEXICAL_CONTENT_TOO_LONG
@@ -574,7 +574,7 @@ request-errors:
     code: INVALID_VECTOR_LENGTH
     title: Vector values in documents are not valid
     body: |-
-      The command attempted to update or find using `$vector` with a vector that has a length different to the declared '$vector' dimension for the collection.
+      The command attempted to update or find using `$vector` with a vector that has a length different to the declared `$vector` dimension for the collection.
       
       The collection was: ${keyspace}.${table}.
       The configured vector dimension is: ${configVectorLength}.
@@ -604,17 +604,17 @@ request-errors:
     body: |-
       Filter has ${fieldCount} fields, which exceeds the maximum allowed (${maxFieldCount}).
       
-      Every comparison in the filter, including those nested in '$and' and '$or', counts as a field.
+      Every comparison in the filter, including those nested in `$and` and `$or`, counts as a field.
 
       Resend the command with a filter that does not exceed the maximum field count, for example by simplifying the filter or splitting the work across several commands.
 
   - scope: FILTER
     code: FILTER_ID_NOT_INDEXED
-    title: Collection field '_id' not indexed can only filter with '$eq' or '$in'
+    title: Collection field `_id` not indexed can only filter with `$eq` or `$in`
     body: |-
-      Collection field '_id' is never indexed, so filtering can only be done using operators '$eq' or '$in', not '${operator}'.
+      Collection field `_id` is never indexed, so filtering can only be done using operators `$eq` or `$in`, not '${operator}'.
       
-      Resend the command filtering '_id' using only '$eq' or '$in', or filter on other indexed fields instead.
+      Resend the command filtering `_id` using only `$eq` or `$in`, or filter on other indexed fields instead.
 
   - scope: FILTER
     code: FILTER_INVALID_EXPRESSION
@@ -626,9 +626,9 @@ request-errors:
 
   - scope: FILTER
     code: FILTER_MULTIPLE_ID_FILTER
-    title: Can only have one '_id' equals filter clause
+    title: Can only have one `_id` equals filter clause
     body: |-
-      Command included more than one '_id' equals filter clauses, which is not supported. To filter on multiple '_id' values, use the '$in' operator instead. For example, {"_id": {"$in": ["id1", "id2"]}}.
+      Command included more than one `_id` equals filter clauses, which is not supported. To filter on multiple `_id` values, use the `$in` operator instead. For example, `{"_id": {"$in": ["id1", "id2"]}}`.
 
   - scope: FILTER
     code: FILTER_PATH_UNINDEXED
@@ -679,19 +679,19 @@ request-errors:
 
   - scope: FILTER
     code: INVALID_MAP_SET_LIST_FILTER
-    title: Command has invalid filter against a map, set, or list column
+    title: Command has invalid filter against a `map`, `set`, or `list` column
     body: |-
       Command has an invalid filter: ${detailedReason}.
       
-      Supported filter operators for map, set, list are '$in', '$nin', and '$all'.
-      Filter examples for map column:
-      - filter on map keys {"mapColumn": {"$keys": {"$in": ["key1", "key2"]}}}
-      - filter on map values {"mapColumn": {"$values": {"$nin": ["value1", "value2"]}}}
-      - filter on map entries {"mapColumn": {"$all": [["key1", "value1"], ["key2", "value2"]]}}
-      Filter examples for list column:
-      - filter on list {"listColumn": {"$in": ["value1", "value2"]}}
-      Filter examples for set column:
-      - filter on set {"setColumn": {"$nin": ["value1", "value2"]}}
+      Supported filter operators for map, set, list are `$in`, `$nin`, and `$all`.
+      Filter examples for `map` column:
+      - filter on map keys `{"mapColumn": {"$keys": {"$in": ["key1", "key2"]}}}`
+      - filter on map values `{"mapColumn": {"$values": {"$nin": ["value1", "value2"]}}}`
+      - filter on map entries `{"mapColumn": {"$all": [["key1", "value1"], ["key2", "value2"]]}}`
+      Filter examples for `list` column:
+      - filter on list `{"listColumn": {"$in": ["value1", "value2"]}}`
+      Filter examples for `set` column:
+      - filter on set `{"setColumn": {"$nin": ["value1", "value2"]}}`
       
       Resend the command with a filter in one of these formats.
 
@@ -712,7 +712,7 @@ request-errors:
     code: UNSUPPORTED_FILTERING_FOR_COLUMN_TYPES
     title: Column types in the filter do not support the filter operations
     body: |-
-      Supported filter operators for map, set, list are '$in', '$nin', and '$all'.
+      Supported filter operators for map, set, list are `$in`, `$nin`, and `$all`.
       
       ${SNIPPET.CURRENTLY_UNSUPPORTED}
       
@@ -725,12 +725,12 @@ request-errors:
     code: UNSUPPORTED_COMPARISON_FILTER_AGAINST_DURATION
     title: Duration data type does not support comparison filters
     body: |-
-      Filtering using the comparison operations ($lt, $gt, $lte, $gte) is not supported against `duration` column types.
+      Filtering using the comparison operations (`$lt`, `$gt`, `$lte`, `$gte`) is not supported against `duration` column types.
     
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The request used a comparison operation on duration columns: ${durationFilters}.
+      The request used a comparison operation on `duration` columns: ${durationFilters}.
       
-      Resend the command using only supported operations on `duration` columns, such as $eq.
+      Resend the command using only supported operations on `duration` columns, such as `$eq`.
 
   - scope: FILTER
     code: MISSING_FILTER_FOR_UPDATE_DELETE
@@ -749,7 +749,7 @@ request-errors:
 
   - scope: FILTER
     code: UNSUPPORTED_FILTER_FOR_UPDATE_ONE_DELETE_ONE
-    title: updateOne and deleteOne commands only support filtering using $eq
+    title: "`updateOne` and `deleteOne` commands only support filtering using `$eq`"
     body: |-
       The `updateOne` and `deleteOne` commands only support filtering using the `$eq` operator.
       
@@ -772,7 +772,7 @@ request-errors:
 
   - scope: FILTER
     code: MISSING_FULL_PRIMARY_KEY_FOR_UPDATE_DELETE
-    title: updateOne and deleteOne commands require filtering on the full primary key
+    title: "`updateOne` and `deleteOne` commands require filtering on the full primary key"
     body: |-
       The `updateOne` and `deleteOne` commands must filter using the full primary key for the table.
 
@@ -829,7 +829,7 @@ request-errors:
     body: |-
       Only update operators that are supported by the column type can be used in the update clause.
       
-      Note, $push and $pullAll are only supported against map, set, list columns.
+      Note, `$push` and `$pullAll` are only supported against `map`, `set`, `list` columns.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command used the update operator: ${operator}.
@@ -839,59 +839,59 @@ request-errors:
 
   - scope: UPDATE
     code: UNSUPPORTED_UPDATE_OPERATOR_FOR_DOC_ID
-    title: Update operators cannot be used on _id field
+    title: Update operators cannot be used on `_id` field
     body: |-
-      The command used the update operator ${operator} to update the _id field.
+      The command used the update operator ${operator} to update the `_id` field.
       
-      The '_id' of an existing document cannot be changed. Resend the command without trying to update the _id field.
+      The `_id` of an existing document cannot be changed. Resend the command without trying to update the `_id` field.
 
   - scope: UPDATE
     code: UNSUPPORTED_UPDATE_OPERATOR_FOR_LEXICAL
-    title: Update operator cannot be used on $lexical field
+    title: Update operator cannot be used on `$lexical` field
     body: |-
       The command used the update operator: ${operator}.
-      Supported operators for the $lexical field are: $set, $setOnInsert, $unset.
+      Supported operators for the `$lexical` field are: `$set`, `$setOnInsert`, `$unset`.
       
       Resend the command using only supported update operators.
 
   - scope: UPDATE
     code: UNSUPPORTED_UPDATE_OPERATOR_FOR_VECTOR
-    title: Update operator cannot be used on $vector field
+    title: Update operator cannot be used on `$vector` field
     body: |-
       The command used the update operator: ${operator}.
-      Supported operators for $vector field are: $set, $setOnInsert, $unset.
+      Supported operators for `$vector` field are: `$set`, `$setOnInsert`, `$unset`.
       
       Resend the command using only supported update operators.
 
   - scope: UPDATE
     code: UNSUPPORTED_UPDATE_OPERATOR_FOR_VECTORIZE
-    title: Update operator cannot be used on $vectorize field
+    title: Update operator cannot be used on `$vectorize` field
     body: |-
       The command used the update operator: ${operator}.
-      Supported operators for $vectorize field are: $set, $setOnInsert, $unset.
+      Supported operators for `$vectorize` field are: `$set`, `$setOnInsert`, `$unset`.
       
       Resend the command using only supported update operators.
 
   - scope: UPDATE
     code: INVALID_PUSH_OPERATOR_USAGE
-    title: The command has invalid usage of $push operator
+    title: The command has invalid usage of `$push` operator
     body: |-
-      The command has invalid usage of $push operator, ${reason}.
+      The command has invalid usage of `$push` operator, ${reason}.
       
-      The $push operator appends a single element to a map, list, or set.
-      To append multiple items, use the $each operator with $push.
+      The `$push` operator appends a single element to a map, list, or set.
+      To append multiple items, use the `$each` operator with `$push`.
       
       For example:
       Push a single element to a set/list. 
-      {"$push": {"listColumn": "value"}}
+      `{"$push": {"listColumn": "value"}}`
       Push multiple elements to a set/list. 
-      {"$push": {"listColumn": {"$each": ["value1","value2"]}}}
+      `{"$push": {"listColumn": {"$each": ["value1","value2"]}}}`
       Push a single entry to a map.
-      {"$push": {"mapColumn": ["key1", "value1"]}} or {"$push": {"mapColumn": {"key1":"value1"}}}
+      `{"$push": {"mapColumn": ["key1", "value1"]}}` or `{"$push": {"mapColumn": {"key1":"value1"}}}`
       Push multiple entries to a map.
-      {"$push": {"mapColumn": {"$each": [["key1","value1"],["key2", "value2"]]}}} or {"$push": {"mapColumn": {"$each": [{"key1":"value1"},{"key2":"value2"}]}}}
+      `{"$push": {"mapColumn": {"$each": [["key1","value1"],["key2", "value2"]]}}}` or `{"$push": {"mapColumn": {"$each": [{"key1":"value1"},{"key2":"value2"}]}}}`
 
-      Resend the command with valid usage of the $push operator.
+      Resend the command with valid usage of the `$push` operator.
 
   - scope: UPDATE
     code: UNSUPPORTED_UPDATE_DATA_TYPE
@@ -967,7 +967,7 @@ request-errors:
     code: UNSUPPORTED_OVERLAPPING_UPDATE_OPERATIONS
     title: Columns cannot be changed by multiple update operations
     body: |-
-      The command included multiple update operations that attempted to change the same column. For example, attempting to both $set and $unset a column.
+      The command included multiple update operations that attempted to change the same column. For example, attempting to use both `$set` and `$unset` on the same column.
     
       Multiple assignments attempted to change the columns: ${duplicateAssignmentColumns}.
       
@@ -982,10 +982,10 @@ request-errors:
       
       ${SNIPPET.ADD_VECTORIZE_CONFIG}
       
-      The table ${keyspace}.${table} defines the vector columns with vectorize configuration: ${validVectorizeColumns}.
-      The update included the following vector columns without vectorize configuration: ${invalidVectorizeColumns}.
+      The table ${keyspace}.${table} defines the `vector` columns with vectorize configuration: ${validVectorizeColumns}.
+      The update included the following `vector` columns without vectorize configuration: ${invalidVectorizeColumns}.
       
-      Resend the command using only vector columns that have a vectorize configuration, or use the alterTable command to add a vectorize configuration to the columns that are missing it.
+      Resend the command using only `vector` columns that have a vectorize configuration, or use the `alterTable` command to add a vectorize configuration to the columns that are missing it.
 
   - scope: UPDATE
     code: UNSUPPORTED_COLUMN_TYPES
@@ -1021,41 +1021,41 @@ request-errors:
 
   - scope: WARNING
     code: NOT_EQUALS_UNSUPPORTED_BY_INDEXING
-    title: Use of $ne (not equals) on indexed columns
+    title: Use of `$ne` (not equals) on indexed columns
     body: |-
-      The filter uses $ne (not equals) on columns that, while indexed, are still inefficient to filter on using $ne.  
+      The filter uses `$ne` (not equals) on columns that, while indexed, are still inefficient to filter on using `$ne`.  
       
-      Filtering using $ne on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
+      Filtering using `$ne` on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
       
       The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
-      The request applied $ne to the columns: ${inefficientFilters}.
+      The request applied `$ne` to the columns: ${inefficientFilters}.
       
       ${SNIPPET.INEFFICIENT_FILTER}
 
 
   - scope: WARNING
     code: COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING
-    title: Use of $lt, $gt, $lte, $gte (comparison filter) on indexed columns
+    title: Use of `$lt`, `$gt`, `$lte`, `$gte` (comparison filter) on indexed columns
     body: |-
-      The filter uses $lt, $gt, $lte, $gte (comparison filters) on columns that, while indexed, are still inefficient to filter on using those operators.  
+      The filter uses `$lt`, `$gt`, `$lte`, `$gte` (comparison filters) on columns that, while indexed, are still inefficient to filter on using those operators.  
       
-      Filtering using $lt, $gt, $lte, $gte on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
+      Filtering using `$lt`, `$gt`, `$lte`, `$gte` on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
       
       The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
-      The request applied $lt, $gt, $lte, $gte to the indexed columns: ${inefficientFilterColumns}.
+      The request applied `$lt`, `$gt`, `$lte`, `$gte` to the indexed columns: ${inefficientFilterColumns}.
       
       ${SNIPPET.INEFFICIENT_FILTER}
 
   - scope: WARNING
     code: NOT_IN_FILTER_UNSUPPORTED_BY_INDEXING
-    title: Use of $nin on indexed columns
+    title: Use of `$nin` on indexed columns
     body: |-
-      The filter uses $nin on columns that, while indexed, are still inefficient to filter on using $nin.  
+      The filter uses `$nin` on columns that, while indexed, are still inefficient to filter on using `$nin`.  
       
-      Filtering using $nin on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
+      Filtering using `$nin` on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
       
       The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
-      The request applied $nin to the indexed columns: ${inefficientFilterColumns}.
+      The request applied `$nin` to the indexed columns: ${inefficientFilterColumns}.
       
       ${SNIPPET.INEFFICIENT_FILTER}
 
@@ -1127,7 +1127,7 @@ request-errors:
 
   - scope: WARNING
     code: IN_MEMORY_SORTING_DUE_SKIP_OPTIONS
-    title: Sorting uses skip option, performing as in-memory sort
+    title: Sorting uses `skip` option, performing as in-memory sort
     body: |-
       The command used the `skip` option together with a sort clause, so the sorting was performed in memory rather than by the database.
 
@@ -1139,7 +1139,7 @@ request-errors:
     body: |-
       The command wants to perform sort, but the filter clause does not have partition keys correctly restricted.
       
-      When sorting by the partition sorting columns, partition keys need to be restricted by $eq in the filter clause.
+      When sorting by the partition sorting columns, partition keys need to be restricted by `$eq` in the filter clause.
       
       The table ${keyspace}.${table} has the partition keys: ${partitionKeys}.
       The table ${keyspace}.${table} has the partition sorting columns: ${partitionSorting}.
@@ -1252,20 +1252,20 @@ request-errors:
       The database recorded the previously dropped column type as: ${previousType}.
       The command used the table: ${keyspace}.${table}.
 
-      This can happen after dropping a user-defined type (UDT) column because the database may retain the dropped column as its expanded tuple type rather than the UDT name.
+      This can happen after dropping a user-defined type (UDT) column because the database may retain the dropped column as its expanded `tuple` type rather than the UDT name.
 
       Resend the command using a different column name, or recreate the table before adding this column again.
 
   - scope: SCHEMA
     code: CANNOT_ANALYZE_ENTRIES_ON_MAP_COLUMNS
-    title: Cannot create index on map column with index function entries and specify analyze options
+    title: Cannot create index on `map` column with index function entries and specify `analyze` options
     body: |-
-      The index function `entries` cannot apply to a map column when analyze options are specified.
+      The index function `entries` cannot apply to a `map` column when `analyze` options are specified.
       
-      The command contains analyze options: ${analyzedOptions}.
+      The command contains `analyze` options: ${analyzedOptions}.
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       
-      Resend the command without analyze options, or index the map's `keys` or `values` instead of its `entries`.
+      Resend the command without `analyze` options, or index the map's `keys` or `values` instead of its `entries`.
 
   - scope: SCHEMA
     code: CANNOT_DROP_PRIMARY_KEY_COLUMNS
@@ -1345,7 +1345,7 @@ request-errors:
       The command attempted to drop vectorize configuration from columns that are not in the table schema.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      And has the vector columns: ${vectorColumns}.
+      And has the `vector` columns: ${vectorColumns}.
       The command attempted to drop vectorize configuration from the unknown columns: ${unknownColumns}.  
       
       Resend the command using only columns defined in the table schema.
@@ -1357,7 +1357,7 @@ request-errors:
       Columns can only be vectorized if they use the `vector` column type.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      And has the vector columns: ${vectorColumns}.
+      And has the `vector` columns: ${vectorColumns}.
       The command attempted to vectorize the non-vector columns: ${nonVectorColumns}.
       
       Resend the command using only columns that use the `vector` type.
@@ -1381,7 +1381,7 @@ request-errors:
       
       Collection must be recreated with embedding service configuration to allow vectorization.
 
-      Either create a new collection with the `vector.service` option set in the `createCollection` command and reload the data, or resend the command with a '$vector' value instead of '$vectorize'.
+      Either create a new collection with the `vector.service` option set in the `createCollection` command and reload the data, or resend the command with a `$vector` value instead of `$vectorize`.
 
   - scope: SCHEMA
     code: END_OF_LIFE_AI_MODEL
@@ -1398,11 +1398,11 @@ request-errors:
     code: EXISTING_COLLECTION_DIFFERENT_SETTINGS
     title: Collection already exists with different settings
     body: |-
-      Collection '${collectionName}' already exists but with settings different from ones passed with 'createCollection' command.
+      Collection '${collectionName}' already exists but with settings different from ones passed with `createCollection` command.
 
-      Either resend 'createCollection' with settings that exactly match the existing collection, or use a different collection name.
+      Either resend `createCollection` with settings that exactly match the existing collection, or use a different collection name.
 
-      If you need to change collection settings you will need to 'deleteCollection', then re-create with new settings. Deleting a collection deletes all of its data.
+      If you need to change collection settings you will need to `deleteCollection`, then re-create with new settings. Deleting a collection deletes all of its data.
 
   - scope: SCHEMA
     code: EXISTING_TABLE_NOT_DATA_API_COLLECTION
@@ -1419,34 +1419,34 @@ request-errors:
       Columns can only have the vectorize configuration dropped if they use the `vector` column type.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      And has the vector columns: ${vectorColumns}.
+      And has the `vector` columns: ${vectorColumns}.
       The command attempted to drop vectorize configuration from the non-vector columns: ${nonVectorColumns}.  
       
       Resend the command using only columns that use the `vector` type.
 
   - scope: SCHEMA
     code: INVALID_CREATE_COLLECTION_OPTIONS
-    title: Invalid options for createCollection
+    title: Invalid options for `createCollection`
     body: |-
-      'createCollection' command option(s) invalid: ${message}
+      `createCollection` command option(s) invalid: ${message}
       
-      Resend 'createCollection' with valid options.
+      Resend `createCollection` with valid options.
 
   - scope: SCHEMA
     code: INVALID_INDEXING_DEFINITION
     title: Invalid indexing definition
     body: |-
-      'createCollection' indexing definition invalid: ${errorMessage}.
+      `createCollection` indexing definition invalid: ${errorMessage}.
       
-      Resend 'createCollection' with a valid indexing definition.
+      Resend `createCollection` with a valid indexing definition.
 
   - scope: SCHEMA
     code: INVALID_USAGE_OF_VECTORIZE
-    title: Invalid use of '$vector' and '$vectorize'
+    title: Invalid use of `$vector` and `$vectorize`
     body: |-
-      '$vector' and '$vectorize' cannot be used together in same document${extraDesc}.
+      `$vector` and `$vectorize` cannot be used together in same document${extraDesc}.
       
-      Resend the command with either '$vector' or '$vectorize'.
+      Resend the command with either `$vector` or `$vectorize`.
 
   - scope: SCHEMA
     code: LEXICAL_FEATURE_NOT_ENABLED
@@ -1496,13 +1496,13 @@ request-errors:
 
   - scope: SCHEMA
     code: MISSING_DIMENSION_IN_VECTOR_COLUMN
-    title: Dimension is required for vector column if embedding service is not specified
+    title: Dimension is required for `vector` column if embedding service is not specified
     body: |-
-      The dimension is required for vector columns if the embedding service is not specified.
+      The dimension is required for `vector` columns if the embedding service is not specified.
       
-      The command attempted to create the vector column without a dimension.
+      The command attempted to create the `vector` column without a dimension.
       
-      Resend the command with a dimension for the vector column, or configure an embedding service for the column so the dimension can be determined from the model.
+      Resend the command with a dimension for the `vector` column, or configure an embedding service for the column so the dimension can be determined from the model.
 
   - scope: SCHEMA
     code: MISSING_FIELDS_FOR_TYPE_CREATION
@@ -1671,9 +1671,9 @@ request-errors:
     code: UNSUPPORTED_MAP_DEFINITION
     title: Map definition contains unsupported data types
     body: |-
-      The command attempted to create a map column that used unsupported types for either the key or value.
+      The command attempted to create a `map` column that used unsupported types for either the key or value.
       
-      Maps can use most primitive types for the key and value, and userDefined types for the value.
+      Maps can use most primitive types for the key and value, and `userDefined` types for the value.
       
       The supported key types are: ${supportedKeyTypes}.
       The supported value types are: ${supportedValueTypes}.
@@ -1687,10 +1687,10 @@ request-errors:
     code: UNSUPPORTED_LIST_DEFINITION
     title: List definition contains unsupported data types
     body: |-
-      The command attempted to create a list column that used an unsupported type for the value.
+      The command attempted to create a `list` column that used an unsupported type for the value.
       
-      Lists can use primitive type for the value, except for counter and timeuuid.
-      Lists can use userDefined type for the value.
+      Lists can use primitive type for the value, except for `counter` and `timeuuid`.
+      Lists can use `userDefined` type for the value.
       
       The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.
@@ -1713,10 +1713,10 @@ request-errors:
     code: UNSUPPORTED_SET_DEFINITION
     title: Set definition contains unsupported data types
     body: |-
-      The command attempted to create a set column that used an unsupported type for the value.
+      The command attempted to create a `set` column that used an unsupported type for the value.
       
-      Sets can use primitive type for the value, except for counter and timeuuid.
-      Sets can use userDefined type for the value.
+      Sets can use primitive type for the value, except for `counter` and `timeuuid`.
+      Sets can use `userDefined` type for the value.
       
       The primitive data types are: ${supportedTypes}.
       The command used the value type: ${unsupportedValueType}.
@@ -1738,7 +1738,7 @@ request-errors:
     code: UNSUPPORTED_VECTOR_DIMENSION
     title: Vector definition contains unsupported dimension
     body: |-
-      The command attempted to create a vector column that used an unsupported dimension.
+      The command attempted to create a `vector` column that used an unsupported dimension.
       
       The dimension of the vector must be a positive integer.
       
@@ -1789,12 +1789,12 @@ request-errors:
 
   - scope: SCHEMA
     code: UNSUPPORTED_INDEXING_FOR_FROZEN_COLUMN
-    title: Index creation on a frozen column is not supported
+    title: Index creation on a `frozen` column is not supported
     body: |-
       The command attempted to create an index on a column that is frozen.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The table has the frozen column: ${targetColumn}.
+      The table has the `frozen` column: ${targetColumn}.
       
       Resend the command using a non-frozen column.
 
@@ -1831,9 +1831,9 @@ request-errors:
       
       Text analysis options `ascii`, `caseSensitive`, and `normalize` can be used on:
       * primitive columns of type `text` or `ascii`
-      * list and set columns with value type `text` or `ascii`
-      * map columns with key type `text` or `ascii` when indexing on keys
-      * map columns with value type `text` or `ascii` when indexing on values
+      * `list` and `set` columns with value type `text` or `ascii`
+      * `map` columns with key type `text` or `ascii` when indexing on keys
+      * `map` columns with value type `text` or `ascii` when indexing on values
   
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The command attempted to index the unsupported columns: ${unsupportedColumns}.
@@ -2069,13 +2069,13 @@ request-errors:
       The command has an invalid format for the index creation column.
       
       The column string can have different formats:
-      - Primitive column: {"column": "primitiveColumn"}
-      - List column: {"column": "listColumn"}
-      - Set column: {"column": "setColumn"}
+      - Primitive column: `{"column": "primitiveColumn"}`
+      - List column: `{"column": "listColumn"}`
+      - Set column: `{"column": "setColumn"}`
       - Map column:
-        - Default to index on map entries: {"column": "mapColumn"}
-        - Index on map keys: {"column": {"mapColumn" : "$keys"}}
-        - Index on map values: {"column": {"mapColumn" : "$values"}}
+        - Default to index on map entries: `{"column": "mapColumn"}`
+        - Index on map keys: `{"column": {"mapColumn" : "$keys"}}`
+        - Index on map values: `{"column": {"mapColumn" : "$values"}}`
       
       Resend the command using a valid format for the index creation column.
 
@@ -2107,7 +2107,7 @@ request-errors:
     code: COLUMN_NOT_FOUND
     title: Column doesn't exist in the table.
     body: |-
-      Column `${column}` doesn't exist in the table.
+      Column ${column} doesn't exist in the table.
 
   - scope: SCHEMA
     code: TOO_MANY_INDEXES_FOR_COLLECTION
@@ -2154,11 +2154,11 @@ request-errors:
     code: CANNOT_LEXICAL_SORT_WITH_SKIP_OPTION
     title: Skip option cannot be used with lexical sort
     body: |-
-      The command attempted to lexical sort a column along with the skip option set.
+      The command attempted to lexical sort a column along with the `skip` option set.
       
       ${SNIPPET.LEXICAL_SORT_EXPLANATION}
       
-      Resend the command without the skip option.
+      Resend the command without the `skip` option.
 
   - scope: SORT
     code: CANNOT_SORT_ON_MULTIPLE_VECTORS
@@ -2168,7 +2168,7 @@ request-errors:
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      The table ${keyspace}.${table} defines the `vector` columns: ${vectorColumns}.
       The command attempted to vector sort on the columns: ${sortColumns}.
       
       Resend the command with only one vector sort.
@@ -2181,7 +2181,7 @@ request-errors:
 
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      The table ${keyspace}.${table} defines the `vector` columns: ${vectorColumns}.
       The command attempted to vectorize sort on the columns: ${sortColumns}.
       
       Resend the command with only one vectorize sort.
@@ -2229,7 +2229,7 @@ request-errors:
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines vector columns: ${vectorColumns}.
+      The table ${keyspace}.${table} defines `vector` columns: ${vectorColumns}.
       The command attempted to sort the non-vector columns: ${sortColumns}.
       
       Resend the command using only `vector` columns.
@@ -2242,7 +2242,7 @@ request-errors:
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines vector columns: ${vectorColumns}.
+      The table ${keyspace}.${table} defines `vector` columns: ${vectorColumns}.
       The command attempted to sort the non-vector columns: ${sortColumns}.
       
       Resend the command using only `vector` columns with vectorize enabled.
@@ -2255,8 +2255,8 @@ request-errors:
       
       ${SNIPPET.ADD_VECTORIZE_CONFIG}
       
-      The table ${keyspace}.${table} defines the vector columns with vectorize definition: ${validVectorizeColumns}.
-      The command included the following vector columns without vectorize definition: ${invalidVectorizeColumns}.
+      The table ${keyspace}.${table} defines the `vector` columns with vectorize definition: ${validVectorizeColumns}.
+      The command included the following `vector` columns without vectorize definition: ${invalidVectorizeColumns}.
       
       Resend the command using only `vector` columns with a vectorize definition.
 
@@ -2267,7 +2267,7 @@ request-errors:
         The command attempted to vector sort columns with a limit that exceeds the maximum allowed.
         
         Vector sorting is limited to a maximum of ${maxLimit} rows.
-        The command attempted to sort the vector column: ${sortColumn} with a limit of ${limit}.
+        The command attempted to sort the `vector` column: ${sortColumn} with a limit of ${limit}.
         
         Resend the command using a limit of ${maxLimit} or less.
 
@@ -2275,40 +2275,40 @@ request-errors:
     code: CANNOT_VECTOR_SORT_WITH_SKIP_OPTION
     title: Skip option cannot be used with  vector sort
     body: |-
-      The command attempted to vector sort columns along with the skip option set. 
+      The command attempted to vector sort columns along with the `skip` option set. 
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      Resend the command without the skip option.
+      Resend the command without the `skip` option.
 
   - scope: SORT
     code: CANNOT_VECTOR_SORT_NON_INDEXED_VECTOR_COLUMNS
-    title: Vector sort cannot be used for non-indexed vector columns
+    title: Vector sort cannot be used for non-indexed `vector` columns
     body: |-
-      The command attempted to vector sort vector columns that are not indexed.
+      The command attempted to vector sort `vector` columns that are not indexed.
       
-      Vector sorting is only supported on vector columns that have been indexed.
+      Vector sorting is only supported on `vector` columns that have been indexed.
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
-      And has indexes on the vector columns: ${indexedColumns}.
-      The command attempted to sort vector columns: ${sortColumns}.  
+      The table ${keyspace}.${table} defines the `vector` columns: ${vectorColumns}.
+      And has indexes on the `vector` columns: ${indexedColumns}.
+      The command attempted to sort `vector` columns: ${sortColumns}.  
       
-      Resend the command using only indexed vector columns, or create a vector index on the column using the `createVectorIndex` command.
+      Resend the command using only indexed `vector` columns, or create a vector index on the column using the `createVectorIndex` command.
 
   - scope: SORT
     code: CANNOT_SORT_VECTOR_AND_NON_VECTOR_COLUMNS
     title: Vector sort cannot be used with non-vector sorting
     body: |-
-      The command attempted to vector sort vector columns and other non-vector columns.
+      The command attempted to vector sort `vector` columns and other non-vector columns.
       
-      Vector sorts must use a single vector column, and cannot include any other non-vector sort columns.
+      Vector sorts must use a single `vector` column, and cannot include any other non-vector sort columns.
       
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
-      The command attempted to sort the vector columns: ${sortVectorColumns}.
+      The table ${keyspace}.${table} defines the `vector` columns: ${vectorColumns}.
+      The command attempted to sort the `vector` columns: ${sortVectorColumns}.
       The command attempted to sort the non-vector columns: ${sortNonVectorColumns}.
       
       Resend the command using either vector or non-vector sorting.
@@ -2317,15 +2317,15 @@ request-errors:
     code: CANNOT_VECTOR_SORT_ON_MISMATCHED_VECTOR_DIMENSIONS
     title: Vector sort cannot be used with mismatched vector dimensions
     body: |-
-      The command attempted to vector sort vector columns with a mismatched vector dimension.
-      Target vector column is `${targetVectorColumn}`, which has a dimension of `${actualDimension}`.
-      The command provided a vector with a dimension of `${providedDimension}`.
+      The command attempted to vector sort `vector` columns with a mismatched vector dimension.
+      Target `vector` column is '${targetVectorColumn}', which has a dimension of ${actualDimension}.
+      The command provided a vector with a dimension of ${providedDimension}.
 
       ${SNIPPET.VECTOR_SORT_EXPLANATION}
       
-      The table ${keyspace}.${table} defines the vector columns: ${vectorColumns}.
+      The table ${keyspace}.${table} defines the `vector` columns: ${vectorColumns}.
       
-      Resend the command providing a vector that has the same dimension as the target vector column.
+      Resend the command providing a vector that has the same dimension as the target `vector` column.
 
   - scope: SORT
     code: INVALID_REGULAR_SORT_EXPRESSION
@@ -2359,7 +2359,7 @@ request-errors:
 
   - scope: SORT
     code: MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT
-    title: Hybrid sort requires $vector or $vectorize
+    title: Hybrid sort requires `$vector` or `$vectorize`
     body: |-
       The command attempted to use a `$hybrid` sort that has a value for `$lexical`, but no value for `$vectorize` or `$vector`.
 
@@ -2402,11 +2402,11 @@ request-errors:
 
   - scope: SORT
     code: UNSUPPORTED_FIND_AND_RERANK_SORT
-    title: Hybrid sort required by findAndRerank
+    title: Hybrid sort required by `findAndRerank`
     body: |-
-      The command attempted to run findAndRerank with no sort or with an empty sort.
+      The command attempted to run `findAndRerank` with no sort or with an empty sort.
 
-      The findAndRerank command finds the documents to rerank with a `$hybrid` sort, e.g. `{"$hybrid": "query text"}` or `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`. Reranking the documents matched by the filter alone is not supported.
+      The `findAndRerank` command finds the documents to rerank with a `$hybrid` sort, e.g. `{"$hybrid": "query text"}` or `{"$hybrid": {"$vectorize": "query text", "$lexical": "query text"}}`. Reranking the documents matched by the filter alone is not supported.
 
       Resend the command with a `$hybrid` sort.
 
@@ -2458,7 +2458,7 @@ request-errors:
     code: UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION
     title: Vectorize sorting not supported by the collection
     body: |-
-      The command attempted to use vectorize sort (keyword '$vectorize' or '$hybrid') against a collection that does not have vectorize enabled.
+      The command attempted to use vectorize sort (keyword `$vectorize` or `$hybrid`) against a collection that does not have vectorize enabled.
 
       Vectorize allows the collection to calculate the sort vector for a text value server side.
       Vectorize can only be enabled at collection creation time, via the `vector.service` option.
