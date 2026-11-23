@@ -84,29 +84,28 @@ snippets:
   - name: REGULAR_SORT_EXPLANATION
     body: |-
       A regular sort expression in the sort clause identifies the column by name and then provides either:  
-      - `1` for ascending
-      - `-1` for descending
+      * `1` for ascending
+      * `-1` for descending
 
   - name: LEXICAL_SORT_EXPLANATION
     body: |-
-      A lexical sort expression in the sort clause identifies the column by name and then provides:
-      - String to use for lexical matching to sort by (most similar first)
+      A lexical sort expression in the sort clause identifies the column by name and then provides a string to use for lexical matching to sort by (most similar first)
 
   - name: VECTOR_SORT_EXPLANATION
     body: |-
       A vector sort in the sort clause identifies the `vector` column by name and then provides either:  
-      - The vector as an array of decimal numbers.
-      - The vector as a base64-encoded `{"$binary": "base64-encoded-vector"}` object.
-      - A string to be vectorized if enabled for the column.
+      * The vector as an array of decimal numbers.
+      * The vector as a base64-encoded `{"$binary": "base64-encoded-vector"}` object.
+      * A string to be vectorized if enabled for the column.
 
   - name: CURRENTLY_UNSUPPORTED
     body: |-
       Currently API tables have limited support for: 
       
-      - Cassandra `timeuuid`, `counter` types.
-      - Tuple types.
-      - Filtering and indexing on Cassandra collection types `list`, `map`, `set`.
-      - Defining `maps`, `list`, or `set` columns using any key type other than `text` or `ascii`.
+      * Cassandra `timeuuid`, `counter` types.
+      * Tuple types.
+      * Filtering and indexing on Cassandra collection types `list`, `map`, `set`.
+      * Defining `maps`, `list`, or `set` columns using any key type other than `text` or `ascii`.
       
       Support for these features will be expanded in future releases.
 
@@ -471,7 +470,7 @@ request-errors:
     body: |-
       Document field name not valid: ${errorMessage}.
 
-      Field names cannot start with $ (except for the reserved top-level fields `$vector`, `$vectorize`, and `$lexical`) and cannot be exactly *.
+      Field names cannot start with $ (except for the reserved top-level fields `$vector`, `$vectorize`, and `$lexical`) and cannot be exactly `*`.
       
       Resend the command with the field renamed.
       
@@ -685,13 +684,13 @@ request-errors:
       
       Supported filter operators for map, set, list are `$in`, `$nin`, and `$all`.
       Filter examples for `map` column:
-      - filter on map keys `{"mapColumn": {"$keys": {"$in": ["key1", "key2"]}}}`
-      - filter on map values `{"mapColumn": {"$values": {"$nin": ["value1", "value2"]}}}`
-      - filter on map entries `{"mapColumn": {"$all": [["key1", "value1"], ["key2", "value2"]]}}`
+      * filter on map keys `{"mapColumn": {"$keys": {"$in": ["key1", "key2"]}}}`
+      * filter on map values `{"mapColumn": {"$values": {"$nin": ["value1", "value2"]}}}`
+      * filter on map entries `{"mapColumn": {"$all": [["key1", "value1"], ["key2", "value2"]]}}`
       Filter examples for `list` column:
-      - filter on list `{"listColumn": {"$in": ["value1", "value2"]}}`
+      * filter on list `{"listColumn": {"$in": ["value1", "value2"]}}`
       Filter examples for `set` column:
-      - filter on set `{"setColumn": {"$nin": ["value1", "value2"]}}`
+      * filter on set `{"setColumn": {"$nin": ["value1", "value2"]}}`
       
       Resend the command with a filter in one of these formats.
 
@@ -738,8 +737,8 @@ request-errors:
     body: |-
       Update and delete commands for tables require a filter:
       
-      - `updateOne` and `deleteOne` require a filter that identifies a single row
-      - `deleteMany` requires a filter that identifies a partition and a sequence of rows
+      * `updateOne` and `deleteOne` require a filter that identifies a single row
+      * `deleteMany` requires a filter that identifies a partition and a sequence of rows
       
       Note: using the `deleteMany` command without a filter truncates all rows from the table.
       
@@ -792,8 +791,8 @@ request-errors:
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
       
       The filter has the following issues: 
-        - Missing partition keys: ${missingPartitionKeys}.
-        - Out of order partition sort keys: ${outOfOrderClusteringKeys}.
+        * Missing partition keys: ${missingPartitionKeys}.
+        * Out of order partition sort keys: ${outOfOrderClusteringKeys}.
       
       Resend the command using a filter that includes all partitioning keys and, optionally, the partition sort keys in order.
 
@@ -882,14 +881,10 @@ request-errors:
       To append multiple items, use the `$each` operator with `$push`.
       
       For example:
-      Push a single element to a set/list. 
-      `{"$push": {"listColumn": "value"}}`
-      Push multiple elements to a set/list. 
-      `{"$push": {"listColumn": {"$each": ["value1","value2"]}}}`
-      Push a single entry to a map.
-      `{"$push": {"mapColumn": ["key1", "value1"]}}` or `{"$push": {"mapColumn": {"key1":"value1"}}}`
-      Push multiple entries to a map.
-      `{"$push": {"mapColumn": {"$each": [["key1","value1"],["key2", "value2"]]}}}` or `{"$push": {"mapColumn": {"$each": [{"key1":"value1"},{"key2":"value2"}]}}}`
+      * Push a single element to a set/list: `{"$push": {"listColumn": "value"}}`
+      * Push multiple elements to a set/list: `{"$push": {"listColumn": {"$each": ["value1","value2"]}}}`
+      * Push a single entry to a map: `{"$push": {"mapColumn": ["key1", "value1"]}}` or `{"$push": {"mapColumn": {"key1":"value1"}}}`
+      * Push multiple entries to a map. `{"$push": {"mapColumn": {"$each": [["key1","value1"],["key2", "value2"]]}}}` or `{"$push": {"mapColumn": {"$each": [{"key1":"value1"},{"key2":"value2"}]}}}`
 
       Resend the command with valid usage of the `$push` operator.
 
@@ -1080,8 +1075,8 @@ request-errors:
       
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
       The filter has the following issues: 
-        - Missing partition keys: ${missingPartitionKeys}.
-        - Out of order partition sort keys: ${outOfOrderClusteringKeys}.
+        * Missing partition keys: ${missingPartitionKeys}.
+        * Out of order partition sort keys: ${outOfOrderClusteringKeys}.
       
       For the best performance, filter on all partition columns and optionally on clustering columns in the order they are specified. 
       
@@ -2069,13 +2064,13 @@ request-errors:
       The command has an invalid format for the index creation column.
       
       The column string can have different formats:
-      - Primitive column: `{"column": "primitiveColumn"}`
-      - List column: `{"column": "listColumn"}`
-      - Set column: `{"column": "setColumn"}`
-      - Map column:
-        - Default to index on map entries: `{"column": "mapColumn"}`
-        - Index on map keys: `{"column": {"mapColumn" : "$keys"}}`
-        - Index on map values: `{"column": {"mapColumn" : "$values"}}`
+      * Primitive column: `{"column": "primitiveColumn"}`
+      * List column: `{"column": "listColumn"}`
+      * Set column: `{"column": "setColumn"}`
+      * Map column:
+      ** Default to index on map entries: `{"column": "mapColumn"}`
+      ** Index on map keys: `{"column": {"mapColumn" : "$keys"}}`
+      ** Index on map values: `{"column": {"mapColumn" : "$values"}}`
       
       Resend the command using a valid format for the index creation column.
 
