@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.Rank;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.RerankingQuery;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
@@ -12,23 +13,24 @@ import java.util.Set;
 
 /**
  * The steps a findAndRerank command runs: vectorize the sort text when there is a {@link
- * VectorizeStep}, read with each {@link RerankLeg}, then rerank what the legs read with the {@link
+ * VectorizeStep}, run each {@link ReadPlan}, then rerank what the reads find with the {@link
  * RerankStep}. {@link FindAndRerankOperationBuilder} builds the tasks from it.
  *
  * <p><b>NOTE:</b> create new plans with {@link FindAndRerankPlanner#plan}, that is where the
  * command is validated. The checks in the constructors of these records are sanity checks that the
  * code making a plan is correct, they do not validate the command.
  *
- * @param vectorizeStep The vectorize step for the vector leg, <code>null</code> when the command
- *     does not vectorize.
- * @param legs The reads that find the documents to rerank, never empty, at most one of each type.
+ * @param vectorizeStep The vectorize step for the {@link VectorizeReadPlan}, <code>null</code> when
+ *     the command does not vectorize.
+ * @param reads The reads that find the documents to rerank, never empty, at most one for each rank
+ *     source.
  * @param rerankStep How to rerank the documents and how many to return.
  * @param includeScores The <code>includeScores</code> option of the command.
  * @param includeSortVector The <code>includeSortVector</code> option of the command.
  */
 record FindAndRerankPlan(
     VectorizeStep vectorizeStep,
-    List<RerankLeg> legs,
+    List<ReadPlan> reads,
     RerankStep rerankStep,
     // TODO: move includeScores, includeSortVector and the projector of the RerankStep into a
     // ProjectionStep
@@ -37,32 +39,32 @@ record FindAndRerankPlan(
 
   FindAndRerankPlan {
     // sanity checks, the planner never makes a plan that fails these
-    Objects.requireNonNull(legs, "legs must not be null");
+    Objects.requireNonNull(reads, "reads must not be null");
     Objects.requireNonNull(rerankStep, "rerankStep must not be null");
-    if (legs.isEmpty()) {
-      throw new IllegalArgumentException("legs must not be empty");
+    if (reads.isEmpty()) {
+      throw new IllegalArgumentException("reads must not be empty");
     }
-    legs = List.copyOf(legs);
+    reads = List.copyOf(reads);
 
     // all the checks below are sanity checks to make sure the plan is valid, not the user input
     // validation
-    var legTypes = legs.stream().map(RerankLeg::legType).toList();
-    if (legTypes.size() != Set.copyOf(legTypes).size()) {
+
+    // at most one read for each rank source, so a document has at most one rank from each source
+    var rankSources = reads.stream().map(ReadPlan::rankSource).toList();
+    if (rankSources.size() != Set.copyOf(rankSources).size()) {
       throw new IllegalArgumentException(
-          "legs must have at most one of each type, legs=" + legTypes);
+          "reads must have at most one read for each rank source, rankSources=" + rankSources);
     }
 
-    // the vectorize step is for a vector leg without a vector, and only for that
-    var needsVectorizeStep =
-        legs.stream()
-            .anyMatch(leg -> leg.legType() == RerankLegType.VECTOR_LEG && leg.vector() == null);
+    // the vectorize step is for a VectorizeReadPlan, and only for that
+    var needsVectorizeStep = reads.stream().anyMatch(read -> read instanceof VectorizeReadPlan);
     if (needsVectorizeStep && vectorizeStep == null) {
       throw new IllegalArgumentException(
-          "vectorizeStep must not be null when the VECTOR_LEG has no vector");
+          "vectorizeStep must not be null when there is a VectorizeReadPlan");
     }
     if (!needsVectorizeStep && vectorizeStep != null) {
       throw new IllegalArgumentException(
-          "vectorizeStep must be null when there is no VECTOR_LEG without a vector");
+          "vectorizeStep must be null when there is no VectorizeReadPlan");
     }
   }
 
@@ -82,66 +84,92 @@ record FindAndRerankPlan(
   }
 
   /**
-   * One read that finds documents to rerank, with the filter of the command and, except for a
-   * FILTER_LEG, one sort.
+   * One read that finds documents to rerank, with the filter of the command and the sort of the
+   * read. There is one record for each kind of read.
+   */
+  sealed interface ReadPlan permits VectorReadPlan, VectorizeReadPlan, LexicalReadPlan {
+
+    /** The maximum number of documents to read. */
+    int readLimit();
+
+    /** The source of the ranks of the documents the read finds. */
+    Rank.RankSource rankSource();
+  }
+
+  /**
+   * A read with a vector sort, the vector is from the command.
    *
-   * @param legType The kind of read.
-   * @param vector For a VECTOR_LEG, the vector from the command, or <code>null</code> to use the
-   *     vector from the {@link VectorizeStep}. Always <code>null</code> for other legs.
-   * @param lexicalText For a LEXICAL_LEG, the text to sort with. Always <code>null</code> for other
-   *     legs.
+   * @param vector The vector to sort with.
    * @param readLimit The maximum number of documents to read.
    */
-  record RerankLeg(RerankLegType legType, float[] vector, String lexicalText, int readLimit) {
+  record VectorReadPlan(float[] vector, int readLimit) implements ReadPlan {
 
-    RerankLeg {
-      // sanity checks, the planner never makes a leg that fails these
-      Objects.requireNonNull(legType, "legType must not be null");
-      switch (legType) {
-        case VECTOR_LEG -> {
-          if (lexicalText != null) {
-            throw new IllegalArgumentException("lexicalText must be null for a VECTOR_LEG");
-          }
-        }
-        case LEXICAL_LEG -> {
-          Objects.requireNonNull(lexicalText, "lexicalText must not be null for a LEXICAL_LEG");
-          if (vector != null) {
-            throw new IllegalArgumentException("vector must be null for a LEXICAL_LEG");
-          }
-        }
-        case FILTER_LEG -> {
-          if (vector != null) {
-            throw new IllegalArgumentException("vector must be null for a FILTER_LEG");
-          }
-          if (lexicalText != null) {
-            throw new IllegalArgumentException("lexicalText must be null for a FILTER_LEG");
-          }
-        }
-      }
-      if (readLimit < 1) {
-        throw new IllegalArgumentException("readLimit must be at least 1, readLimit=" + readLimit);
-      }
+    VectorReadPlan {
+      // sanity checks, the planner never makes a read that fails these
+      Objects.requireNonNull(vector, "vector must not be null");
+      checkReadLimit(readLimit);
+    }
+
+    @Override
+    public Rank.RankSource rankSource() {
+      return Rank.RankSource.VECTOR;
     }
 
     /** Override to do a value equality check on the vector */
     @Override
     public boolean equals(Object obj) {
-      return (obj instanceof RerankLeg other)
-          && legType == other.legType
+      return (obj instanceof VectorReadPlan other)
           && Arrays.equals(vector, other.vector)
-          && Objects.equals(lexicalText, other.lexicalText)
           && readLimit == other.readLimit;
     }
 
     /** Override to do a value equality hash on the vector */
     @Override
     public int hashCode() {
-      return Objects.hash(legType, Arrays.hashCode(vector), lexicalText, readLimit);
+      return Objects.hash(Arrays.hashCode(vector), readLimit);
     }
   }
 
   /**
-   * Rerank the documents the legs read, and return the top documents.
+   * A read with a vector sort, the vector is from the {@link VectorizeStep} of the plan.
+   *
+   * @param readLimit The maximum number of documents to read.
+   */
+  record VectorizeReadPlan(int readLimit) implements ReadPlan {
+
+    VectorizeReadPlan {
+      // sanity check, the planner never makes a read that fails it
+      checkReadLimit(readLimit);
+    }
+
+    @Override
+    public Rank.RankSource rankSource() {
+      return Rank.RankSource.VECTOR;
+    }
+  }
+
+  /**
+   * A read with a lexical (BM25) sort.
+   *
+   * @param lexicalText The text to sort with.
+   * @param readLimit The maximum number of documents to read.
+   */
+  record LexicalReadPlan(String lexicalText, int readLimit) implements ReadPlan {
+
+    LexicalReadPlan {
+      // sanity checks, the planner never makes a read that fails these
+      Objects.requireNonNull(lexicalText, "lexicalText must not be null");
+      checkReadLimit(readLimit);
+    }
+
+    @Override
+    public Rank.RankSource rankSource() {
+      return Rank.RankSource.BM25;
+    }
+  }
+
+  /**
+   * Rerank the documents the reads find, and return the top documents.
    *
    * @param rerankServiceDef The reranking service, from the command or the collection.
    * @param rerankingQuery The query to rerank with.
@@ -164,6 +192,13 @@ record FindAndRerankPlan(
       if (limit < 1) {
         throw new IllegalArgumentException("limit must be at least 1, limit=" + limit);
       }
+    }
+  }
+
+  /** Checks the read limit of a {@link ReadPlan} is at least 1. */
+  private static void checkReadLimit(int readLimit) {
+    if (readLimit < 1) {
+      throw new IllegalArgumentException("readLimit must be at least 1, readLimit=" + readLimit);
     }
   }
 }

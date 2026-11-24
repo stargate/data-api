@@ -13,11 +13,11 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort.FilterLeg;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort.FilterLegSort;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort.HybridObject;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort.HybridText;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort.LexicalLeg;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort.VectorLeg;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort.LexicalLegSort;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort.VectorLegSort;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.FieldSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
@@ -93,9 +93,9 @@ public class FindAndRerankSortClauseDeserializerTest {
             CommandFeatures.EMPTY);
     var diffForm = new HybridText("vectorize sort", CommandFeatures.EMPTY);
 
-    var vectorLeg = new VectorLeg(new VectorSortExpression(new float[] {1.1f, 2.2f, 3.3f}));
-    var sameVectorLeg = new VectorLeg(new VectorSortExpression(new float[] {1.1f, 2.2f, 3.3f}));
-    var diffVectorLeg = new VectorLeg(new VectorSortExpression(new float[] {1.1f, 2.2f, 4.4f}));
+    var vectorLeg = new VectorLegSort(new VectorSortExpression(new float[] {1.1f, 2.2f, 3.3f}));
+    var sameVectorLeg = new VectorLegSort(new VectorSortExpression(new float[] {1.1f, 2.2f, 3.3f}));
+    var diffVectorLeg = new VectorLegSort(new VectorSortExpression(new float[] {1.1f, 2.2f, 4.4f}));
 
     assertThat(value1).as("Object equals self").isEqualTo(value1);
     assertThat(value1).as("same values, vector compared by value").isEqualTo(sameValue);
@@ -301,59 +301,59 @@ public class FindAndRerankSortClauseDeserializerTest {
             """
             { "$vectorize" : "cheese" }
             """,
-            new VectorLeg(new VectorizeSortExpression("cheese"))),
+            new VectorLegSort(new VectorizeSortExpression("cheese"))),
         Arguments.of(
             """
             { "$vectorize" : "  padded text  " }
             """,
-            new VectorLeg(new VectorizeSortExpression("padded text"))),
+            new VectorLegSort(new VectorizeSortExpression("padded text"))),
         Arguments.of(
             """
             { "$vector" : [1.1, 2.2, 3.3] }
             """,
-            new VectorLeg(new VectorSortExpression(vector))),
+            new VectorLegSort(new VectorSortExpression(vector))),
         Arguments.of(
                 """
             { "$vector" : {"$binary": "%s"} }
             """
                 .formatted(vectorBase64),
-            new VectorLeg(new VectorSortExpression(vector))),
+            new VectorLegSort(new VectorSortExpression(vector))),
         Arguments.of(
             """
             { "$lexical" : "cows" }
             """,
-            new LexicalLeg(new LexicalSortExpression("cows"))),
+            new LexicalLegSort(new LexicalSortExpression("cows"))),
         Arguments.of(
             """
             { "$lexical" : "  padded text  " }
             """,
-            new LexicalLeg(new LexicalSortExpression("padded text"))),
+            new LexicalLegSort(new LexicalSortExpression("padded text"))),
         // ----
         // field sorts, in the order sent
         Arguments.of(
             """
             { "age" : -1, "name" : 1 }
             """,
-            new FilterLeg(
+            new FilterLegSort(
                 List.of(
                     new FieldSortExpression("age", false), new FieldSortExpression("name", true)))),
         Arguments.of(
             """
             { "name" : 1, "age" : -1 }
             """,
-            new FilterLeg(
+            new FilterLegSort(
                 List.of(
                     new FieldSortExpression("name", true), new FieldSortExpression("age", false)))),
         Arguments.of(
             """
             { "address.city" : 1 }
             """,
-            new FilterLeg(List.of(new FieldSortExpression("address.city", true)))),
+            new FilterLegSort(List.of(new FieldSortExpression("address.city", true)))),
         Arguments.of(
             """
             { " " : 1 }
             """,
-            new FilterLeg(List.of(new FieldSortExpression(" ", true)))));
+            new FilterLegSort(List.of(new FieldSortExpression(" ", true)))));
   }
 
   /**

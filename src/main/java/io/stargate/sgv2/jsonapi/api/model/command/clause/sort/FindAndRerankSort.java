@@ -67,7 +67,7 @@ public sealed interface FindAndRerankSort extends Recordable
     permits FindAndRerankSort.MultiLeg, FindAndRerankSort.SingleLeg {
 
   /** A command with no sort, a null sort or an empty sort: the filter leg, without sorting. */
-  FilterLeg NO_ARG_SORT = new FilterLeg(List.of());
+  FilterLegSort NO_ARG_SORT = new FilterLegSort(List.of());
 
   /** The metrics features of the sort. */
   CommandFeatures commandFeatures();
@@ -141,15 +141,16 @@ public sealed interface FindAndRerankSort extends Recordable
   }
 
   /** A sort without $hybrid, the command reads with one leg. */
-  sealed interface SingleLeg extends FindAndRerankSort permits VectorLeg, LexicalLeg, FilterLeg {}
+  sealed interface SingleLeg extends FindAndRerankSort
+      permits VectorLegSort, LexicalLegSort, FilterLegSort {}
 
   /**
    * <code>{"$vectorize": "cheese"}</code> or <code>{"$vector": [0.1, 0.2]}</code>: reads with the
    * vector leg.
    */
-  record VectorLeg(@JsonIgnore VectorSimilaritySortExpression sort) implements SingleLeg {
+  record VectorLegSort(@JsonIgnore VectorSimilaritySortExpression sort) implements SingleLeg {
 
-    public VectorLeg {
+    public VectorLegSort {
       Objects.requireNonNull(sort, "sort must not be null");
     }
 
@@ -168,9 +169,9 @@ public sealed interface FindAndRerankSort extends Recordable
   }
 
   /** <code>{"$lexical": "cows"}</code>: reads with the lexical leg. */
-  record LexicalLeg(@JsonIgnore LexicalSortExpression sort) implements SingleLeg {
+  record LexicalLegSort(@JsonIgnore LexicalSortExpression sort) implements SingleLeg {
 
-    public LexicalLeg {
+    public LexicalLegSort {
       Objects.requireNonNull(sort, "sort must not be null");
     }
 
@@ -189,9 +190,9 @@ public sealed interface FindAndRerankSort extends Recordable
    * <code>{"age": -1, "name": 1}</code>: reads the documents the filter matches with the filter
    * leg, sorted by the fields.
    */
-  record FilterLeg(@JsonIgnore List<FieldSortExpression> sorts) implements SingleLeg {
+  record FilterLegSort(@JsonIgnore List<FieldSortExpression> sorts) implements SingleLeg {
 
-    public FilterLeg {
+    public FilterLegSort {
       sorts = List.copyOf(Objects.requireNonNull(sorts, "sorts must not be null"));
     }
 

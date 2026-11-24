@@ -38,7 +38,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Tests for {@link FindAndRerankPlanner}: the legs it plans for each kind of sort, and the error
+ * Tests for {@link FindAndRerankPlanner}: the reads it plans for each kind of sort, and the error
  * for each check.
  */
 class FindAndRerankPlannerTest {
@@ -84,26 +84,26 @@ class FindAndRerankPlannerTest {
   private final TestConstants TEST_CONSTANTS = new TestConstants();
 
   // ===========================================================================================
-  // Legs
+  // Reads
   // ===========================================================================================
 
   @ParameterizedTest(name = "{0}")
-  @MethodSource("legCases")
-  void plansLegs(LegCase legCase) throws Exception {
+  @MethodSource("readCases")
+  void plansReads(ReadCase readCase) throws Exception {
     var plan =
         FindAndRerankPlanner.plan(
-            command(legCase.sort(), legCase.options()), commandContext(legCase.collection()));
+            command(readCase.sort(), readCase.options()), commandContext(readCase.collection()));
 
     assertThat(plan.vectorizeStep() == null ? null : plan.vectorizeStep().text())
-        .as("%s: text to vectorize", legCase.description())
-        .isEqualTo(legCase.vectorizeText());
-    assertThat(plan.legs())
-        .as("%s: legs", legCase.description())
-        .containsExactlyInAnyOrderElementsOf(legCase.legs());
+        .as("%s: text to vectorize", readCase.description())
+        .isEqualTo(readCase.vectorizeText());
+    assertThat(plan.reads())
+        .as("%s: reads", readCase.description())
+        .containsExactlyInAnyOrderElementsOf(readCase.reads());
   }
 
   /**
-   * A case for {@link #plansLegs}. The name of the test is the description.
+   * A case for {@link #plansReads}. The name of the test is the description.
    *
    * @param description What the case is about.
    * @param sort The JSON for the sort.
@@ -111,15 +111,15 @@ class FindAndRerankPlannerTest {
    * @param collection The collection the command runs on.
    * @param vectorizeText The text the plan vectorizes, or <code>null</code> when the plan has no
    *     vectorize step.
-   * @param legs The legs the plan has, in any order.
+   * @param reads The reads the plan has, in any order.
    */
-  private record LegCase(
+  private record ReadCase(
       String description,
       String sort,
       String options,
       Collection collection,
       String vectorizeText,
-      List<FindAndRerankPlan.RerankLeg> legs) {
+      List<FindAndRerankPlan.ReadPlan> reads) {
 
     @Override
     public String toString() {
@@ -127,9 +127,9 @@ class FindAndRerankPlannerTest {
     }
   }
 
-  static Stream<LegCase> legCases() {
+  static Stream<ReadCase> readCases() {
     return Stream.of(
-        new LegCase(
+        new ReadCase(
             "$hybrid text, collection with a lexical index",
             """
             {"$hybrid": "cheese"}
@@ -137,8 +137,8 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.VECTORIZE_LEXICAL,
             "cheese",
-            List.of(vectorizedLeg(DEFAULT_READ_LIMIT), lexicalLeg("cheese", DEFAULT_READ_LIMIT))),
-        new LegCase(
+            List.of(vectorizeRead(DEFAULT_READ_LIMIT), lexicalRead("cheese", DEFAULT_READ_LIMIT))),
+        new ReadCase(
             "$hybrid text, collection without a lexical index",
             """
             {"$hybrid": "cheese"}
@@ -146,8 +146,8 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
-            List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        new LegCase(
+            List.of(vectorizeRead(DEFAULT_READ_LIMIT))),
+        new ReadCase(
             "$vectorize",
             """
             {"$hybrid": {"$vectorize": "cheese"}}
@@ -155,15 +155,15 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
-            List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        new LegCase(
+            List.of(vectorizeRead(DEFAULT_READ_LIMIT))),
+        new ReadCase(
             "$vector",
             VECTOR_SORT,
             RERANK_OPTIONS,
             Collection.VECTOR_LEXICAL,
             null,
-            List.of(vectorLeg(DEFAULT_READ_LIMIT))),
-        new LegCase(
+            List.of(vectorRead(DEFAULT_READ_LIMIT))),
+        new ReadCase(
             "$vectorize and $vector, $vectorize is used",
             """
             {"$hybrid": {"$vectorize": "cheese", "$vector": [0.1, 0.2, 0.3]}}
@@ -171,8 +171,8 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
-            List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        new LegCase(
+            List.of(vectorizeRead(DEFAULT_READ_LIMIT))),
+        new ReadCase(
             "$vectorize and $lexical",
             """
             {"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}
@@ -180,8 +180,8 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.VECTORIZE_LEXICAL,
             "cheese",
-            List.of(vectorizedLeg(DEFAULT_READ_LIMIT), lexicalLeg("cows", DEFAULT_READ_LIMIT))),
-        new LegCase(
+            List.of(vectorizeRead(DEFAULT_READ_LIMIT), lexicalRead("cows", DEFAULT_READ_LIMIT))),
+        new ReadCase(
             "$vector and $lexical",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -189,8 +189,8 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.VECTOR_LEXICAL,
             null,
-            List.of(vectorLeg(DEFAULT_READ_LIMIT), lexicalLeg("cows", DEFAULT_READ_LIMIT))),
-        new LegCase(
+            List.of(vectorRead(DEFAULT_READ_LIMIT), lexicalRead("cows", DEFAULT_READ_LIMIT))),
+        new ReadCase(
             "$lexical null, no lexical index needed",
             """
             {"$hybrid": {"$vectorize": "cheese", "$lexical": null}}
@@ -198,8 +198,8 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
-            List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        new LegCase(
+            List.of(vectorizeRead(DEFAULT_READ_LIMIT))),
+        new ReadCase(
             "$lexical empty, no lexical index needed",
             """
             {"$hybrid": {"$vectorize": "cheese", "$lexical": ""}}
@@ -207,8 +207,8 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
-            List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        new LegCase(
+            List.of(vectorizeRead(DEFAULT_READ_LIMIT))),
+        new ReadCase(
             "hybridLimits for each leg",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -219,8 +219,8 @@ class FindAndRerankPlannerTest {
             """,
             Collection.VECTOR_LEXICAL,
             null,
-            List.of(vectorLeg(100), lexicalLeg("cows", 25))),
-        new LegCase(
+            List.of(vectorRead(100), lexicalRead("cows", 25))),
+        new ReadCase(
             "hybridLimits as one number for both legs",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -230,8 +230,8 @@ class FindAndRerankPlannerTest {
             """,
             Collection.VECTOR_LEXICAL,
             null,
-            List.of(vectorLeg(30), lexicalLeg("cows", 30))),
-        new LegCase(
+            List.of(vectorRead(30), lexicalRead("cows", 30))),
+        new ReadCase(
             "hybridLimits at the min of the bounds",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -241,8 +241,8 @@ class FindAndRerankPlannerTest {
             """,
             Collection.VECTOR_LEXICAL,
             null,
-            List.of(vectorLeg(1), lexicalLeg("cows", 1))),
-        new LegCase(
+            List.of(vectorRead(1), lexicalRead("cows", 1))),
+        new ReadCase(
             "hybridLimits at the max of the bounds",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -252,8 +252,8 @@ class FindAndRerankPlannerTest {
             """,
             Collection.VECTOR_LEXICAL,
             null,
-            List.of(vectorLeg(100), lexicalLeg("cows", 100))),
-        new LegCase(
+            List.of(vectorRead(100), lexicalRead("cows", 100))),
+        new ReadCase(
             "rerankCandidateLimit null, the option is not set",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -263,8 +263,8 @@ class FindAndRerankPlannerTest {
             """,
             Collection.VECTOR_LEXICAL,
             null,
-            List.of(vectorLeg(DEFAULT_READ_LIMIT), lexicalLeg("cows", DEFAULT_READ_LIMIT))),
-        new LegCase(
+            List.of(vectorRead(DEFAULT_READ_LIMIT), lexicalRead("cows", DEFAULT_READ_LIMIT))),
+        new ReadCase(
             "sort without $hybrid: $vectorize",
             """
             {"$vectorize": "cheese"}
@@ -272,8 +272,8 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
-            List.of(vectorizedLeg(DEFAULT_CANDIDATE_LIMIT))),
-        new LegCase(
+            List.of(vectorizeRead(DEFAULT_CANDIDATE_LIMIT))),
+        new ReadCase(
             "sort without $hybrid: $vector",
             """
             {"$vector": [0.1, 0.2, 0.3]}
@@ -281,8 +281,8 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.VECTOR_LEXICAL,
             null,
-            List.of(vectorLeg(DEFAULT_CANDIDATE_LIMIT))),
-        new LegCase(
+            List.of(vectorRead(DEFAULT_CANDIDATE_LIMIT))),
+        new ReadCase(
             "sort without $hybrid: $lexical",
             """
             {"$lexical": "cows"}
@@ -290,8 +290,8 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.VECTORIZE_LEXICAL,
             null,
-            List.of(lexicalLeg("cows", DEFAULT_CANDIDATE_LIMIT))),
-        new LegCase(
+            List.of(lexicalRead("cows", DEFAULT_CANDIDATE_LIMIT))),
+        new ReadCase(
             "sort without $hybrid: $lexical, collection without vector",
             """
             {"$lexical": "cows"}
@@ -299,7 +299,7 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.LEXICAL_NO_VECTOR,
             null,
-            List.of(lexicalLeg("cows", DEFAULT_CANDIDATE_LIMIT))));
+            List.of(lexicalRead("cows", DEFAULT_CANDIDATE_LIMIT))));
   }
 
   // ===========================================================================================
@@ -945,46 +945,46 @@ class FindAndRerankPlannerTest {
   }
 
   /**
-   * A rerankCandidateLimit inside the bounds is the read limit of the one leg of a sort without
-   * $hybrid. When the option is not set the leg reads the default from the config.
+   * A rerankCandidateLimit inside the bounds is the read limit of the one read of a sort without
+   * $hybrid. When the option is not set the read uses the default from the config.
    */
   @ParameterizedTest(name = "{0}")
   @MethodSource("validRerankCandidateLimitCases")
   void usesRerankCandidateLimitAsReadLimitOfSortWithoutHybrid(
-      String description, String sort, String limit, FindAndRerankPlan.RerankLeg leg)
+      String description, String sort, String limit, FindAndRerankPlan.ReadPlan read)
       throws Exception {
     var plan =
         FindAndRerankPlanner.plan(
             command(sort, rerankCandidateLimitOptions(limit)),
             commandContext(Collection.VECTORIZE_LEXICAL));
 
-    assertThat(plan.legs()).as(description).containsExactly(leg);
+    assertThat(plan.reads()).as(description).containsExactly(read);
   }
 
   static Stream<Arguments> validRerankCandidateLimitCases() {
     return Stream.of(
-        Arguments.of("at the min of the bounds", SINGLE_LEG_SORT, "1", vectorizedLeg(1)),
-        Arguments.of("inside the bounds", SINGLE_LEG_SORT, "50", vectorizedLeg(50)),
-        Arguments.of("at the max of the bounds", SINGLE_LEG_SORT, "100", vectorizedLeg(100)),
+        Arguments.of("at the min of the bounds", SINGLE_LEG_SORT, "1", vectorizeRead(1)),
+        Arguments.of("inside the bounds", SINGLE_LEG_SORT, "50", vectorizeRead(50)),
+        Arguments.of("at the max of the bounds", SINGLE_LEG_SORT, "100", vectorizeRead(100)),
         Arguments.of(
             "null, the option is not set",
             SINGLE_LEG_SORT,
             "null",
-            vectorizedLeg(DEFAULT_CANDIDATE_LIMIT)),
+            vectorizeRead(DEFAULT_CANDIDATE_LIMIT)),
         Arguments.of(
             "$vector sort",
             """
             {"$vector": [0.1, 0.2, 0.3]}
             """,
             "50",
-            vectorLeg(50)),
+            vectorRead(50)),
         Arguments.of(
             "$lexical sort",
             """
             {"$lexical": "cows"}
             """,
             "50",
-            lexicalLeg("cows", 50)));
+            lexicalRead("cows", 50)));
   }
 
   @Test
@@ -1113,7 +1113,7 @@ class FindAndRerankPlannerTest {
 
   /**
    * The one error order the planner keeps on purpose, see the NOTE in {@link
-   * FindAndRerankPlanner#plan}: the options are checked before the legs are planned. This command
+   * FindAndRerankPlanner#plan}: the options are checked before the reads are planned. This command
    * has no rerank query and a $hybrid sort with no value, it fails for the rerank query.
    */
   @Test
@@ -1172,9 +1172,9 @@ class FindAndRerankPlannerTest {
         .isEqualTo(
             new FindAndRerankPlan.VectorizeStep(
                 "cheese", vectorizeColumn.vectorSize(), vectorizeColumn.vectorizeDefinition()));
-    assertThat(plan.legs())
+    assertThat(plan.reads())
         .containsExactlyInAnyOrder(
-            vectorizedLeg(DEFAULT_READ_LIMIT), lexicalLeg("cheese", DEFAULT_READ_LIMIT));
+            vectorizeRead(DEFAULT_READ_LIMIT), lexicalRead("cheese", DEFAULT_READ_LIMIT));
 
     var rerankStep = plan.rerankStep();
     assertThat(rerankStep.rerankServiceDef())
@@ -1205,7 +1205,7 @@ class FindAndRerankPlannerTest {
             commandContext(Collection.VECTOR_LEXICAL));
 
     assertThat(plan.vectorizeStep()).isNull();
-    assertThat(plan.legs()).containsExactlyInAnyOrder(vectorLeg(20), lexicalLeg("cows", 30));
+    assertThat(plan.reads()).containsExactlyInAnyOrder(vectorRead(20), lexicalRead("cows", 30));
 
     var rerankStep = plan.rerankStep();
     assertThat(rerankStep.rerankingQuery().query()).isEqualTo("q");
@@ -1229,7 +1229,7 @@ class FindAndRerankPlannerTest {
             commandContext(Collection.LEXICAL_NO_VECTOR));
 
     assertThat(plan.vectorizeStep()).isNull();
-    assertThat(plan.legs()).containsExactly(lexicalLeg("cows", DEFAULT_CANDIDATE_LIMIT));
+    assertThat(plan.reads()).containsExactly(lexicalRead("cows", DEFAULT_CANDIDATE_LIMIT));
 
     var rerankStep = plan.rerankStep();
     assertThat(rerankStep.rerankServiceDef())
@@ -1350,18 +1350,18 @@ class FindAndRerankPlannerTest {
     };
   }
 
-  /** A VECTOR_LEG that reads with the vector from the vectorize step. */
-  private static FindAndRerankPlan.RerankLeg vectorizedLeg(int readLimit) {
-    return new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, null, null, readLimit);
+  /** A read with the vector from the vectorize step. */
+  private static FindAndRerankPlan.ReadPlan vectorizeRead(int readLimit) {
+    return new FindAndRerankPlan.VectorizeReadPlan(readLimit);
   }
 
-  /** A VECTOR_LEG that reads with {@link #VECTOR}. */
-  private static FindAndRerankPlan.RerankLeg vectorLeg(int readLimit) {
-    return new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, VECTOR, null, readLimit);
+  /** A read with {@link #VECTOR}. */
+  private static FindAndRerankPlan.ReadPlan vectorRead(int readLimit) {
+    return new FindAndRerankPlan.VectorReadPlan(VECTOR, readLimit);
   }
 
-  private static FindAndRerankPlan.RerankLeg lexicalLeg(String lexicalText, int readLimit) {
-    return new FindAndRerankPlan.RerankLeg(RerankLegType.LEXICAL_LEG, null, lexicalText, readLimit);
+  private static FindAndRerankPlan.ReadPlan lexicalRead(String lexicalText, int readLimit) {
+    return new FindAndRerankPlan.LexicalReadPlan(lexicalText, readLimit);
   }
 
   /** The collection configs the cases run against. */

@@ -78,7 +78,7 @@ class FindAndRerankOperationBuilderTest {
   /** The vector {@link TestEmbeddingProvider} returns for the text of {@link #VECTORIZE_STEP}. */
   private static final float[] VECTORIZED = {0.25f, 0.25f, 0.25f};
 
-  /** The text the lexical legs sort with. */
+  /** The text the lexical reads sort with. */
   private static final String LEXICAL_TEXT = "cows";
 
   /** The vectorize step of the plans that vectorize. */
@@ -118,7 +118,7 @@ class FindAndRerankOperationBuilderTest {
   void createsRerankingProviderFromRerankStep() throws Exception {
     var commandContext = commandContext();
 
-    build(commandContext, plan(null, vectorLeg(50)));
+    build(commandContext, plan(null, vectorReadPlan(50)));
 
     verify(commandContext.rerankingProviderFactory())
         .create(
@@ -144,8 +144,9 @@ class FindAndRerankOperationBuilderTest {
 
   static Stream<Arguments> plansWithoutVectorize() {
     return Stream.of(
-        Arguments.of("vector leg", plan(null, vectorLeg(50))),
-        Arguments.of("vector and lexical legs", plan(null, vectorLeg(50), lexicalLeg(25))));
+        Arguments.of("vector read", plan(null, vectorReadPlan(50))),
+        Arguments.of(
+            "vector and lexical reads", plan(null, vectorReadPlan(50), lexicalReadPlan(25))));
   }
 
   /** The embedding provider for the vectorize step uses the service and dimension of the step. */
@@ -175,10 +176,11 @@ class FindAndRerankOperationBuilderTest {
 
   static Stream<Arguments> plansWithVectorize() {
     return Stream.of(
-        Arguments.of("vectorize, then the vector leg", plan(VECTORIZE_STEP, vectorizedLeg(50))),
         Arguments.of(
-            "vectorize, then the vector and lexical legs",
-            plan(VECTORIZE_STEP, vectorizedLeg(50), lexicalLeg(25))));
+            "vectorize, then the vector read", plan(VECTORIZE_STEP, vectorizeReadPlan(50))),
+        Arguments.of(
+            "vectorize, then the vector and lexical reads",
+            plan(VECTORIZE_STEP, vectorizeReadPlan(50), lexicalReadPlan(25))));
   }
 
   // ===========================================================================================
@@ -186,8 +188,8 @@ class FindAndRerankOperationBuilderTest {
   // ===========================================================================================
 
   /**
-   * The operation runs one inner find for each leg of the plan, with the sort and the read limit of
-   * the leg. The reads run in parallel, so the test does not check their order.
+   * The operation runs one inner find for each read of the plan, with the sort and the read limit
+   * of the read. The reads run in parallel, so the test does not check their order.
    */
   @ParameterizedTest(name = "{0}")
   @MethodSource("plansAndReads")
@@ -200,21 +202,22 @@ class FindAndRerankOperationBuilderTest {
 
   static Stream<Arguments> plansAndReads() {
     return Stream.of(
-        Arguments.of("vector leg", plan(null, vectorLeg(50)), List.of(vectorRead(VECTOR, 50))),
         Arguments.of(
-            "vector and lexical legs",
-            plan(null, vectorLeg(100), lexicalLeg(25)),
+            "vector read", plan(null, vectorReadPlan(50)), List.of(vectorRead(VECTOR, 50))),
+        Arguments.of(
+            "vector and lexical reads",
+            plan(null, vectorReadPlan(100), lexicalReadPlan(25)),
             List.of(vectorRead(VECTOR, 100), lexicalRead(25))),
         Arguments.of(
-            "vectorize, then the vector leg",
-            plan(VECTORIZE_STEP, vectorizedLeg(50)),
+            "vectorize, then the vector read",
+            plan(VECTORIZE_STEP, vectorizeReadPlan(50)),
             List.of(vectorRead(VECTORIZED, 50))),
         Arguments.of(
-            "vectorize, then the vector and lexical legs",
-            plan(VECTORIZE_STEP, vectorizedLeg(50), lexicalLeg(25)),
+            "vectorize, then the vector and lexical reads",
+            plan(VECTORIZE_STEP, vectorizeReadPlan(50), lexicalReadPlan(25)),
             List.of(vectorRead(VECTORIZED, 50), lexicalRead(25))),
         // the plan of a $lexical sort without $hybrid
-        Arguments.of("lexical leg", plan(null, lexicalLeg(25)), List.of(lexicalRead(25))));
+        Arguments.of("lexical read", plan(null, lexicalReadPlan(25)), List.of(lexicalRead(25))));
   }
 
   /**
@@ -228,7 +231,7 @@ class FindAndRerankOperationBuilderTest {
     var plan =
         new FindAndRerankPlan(
             null,
-            List.of(vectorLeg(100), lexicalLeg(25)),
+            List.of(vectorReadPlan(100), lexicalReadPlan(25)),
             RERANK_STEP,
             includeScores,
             includeSortVector);
@@ -242,7 +245,7 @@ class FindAndRerankOperationBuilderTest {
   }
 
   /**
-   * The reranking task ranks each document by the leg that read it: the document from the vector
+   * The reranking task ranks each document by the read that found it: the document from the vector
    * read gets a vector rank and no BM25 rank, and the document from the lexical read gets the
    * opposite.
    */
@@ -282,7 +285,7 @@ class FindAndRerankOperationBuilderTest {
     // includeScores, so the response has the ranks of each document
     var plan =
         new FindAndRerankPlan(
-            null, List.of(vectorLeg(50), lexicalLeg(25)), RERANK_STEP, true, false);
+            null, List.of(vectorReadPlan(50), lexicalReadPlan(25)), RERANK_STEP, true, false);
     var result = build(commandContext, plan).execute(commandContext).await().indefinitely().get();
 
     assertThat(result.errors()).isEmpty();
@@ -304,7 +307,7 @@ class FindAndRerankOperationBuilderTest {
              "options": {"hybridLimits": {"$vector": 100, "$lexical": 25}}}}
             """);
 
-    build(commandContext, command, plan(null, vectorLeg(100), lexicalLeg(25)));
+    build(commandContext, command, plan(null, vectorReadPlan(100), lexicalReadPlan(25)));
 
     assertThat(commandContext.getHybridLimits().vectorLimit())
         .isEqualTo(RerankingConstants.HybridSearchLimits.MAX);
@@ -313,7 +316,7 @@ class FindAndRerankOperationBuilderTest {
 
   /**
    * A sort without $hybrid has no hybridLimits, so both limits on the command context are the read
-   * limit of its one leg. The read limits are not the hybridLimits default, so the test fails if
+   * limit of its one read. The read limits are not the hybridLimits default, so the test fails if
    * the builder copies the default.
    */
   @ParameterizedTest(name = "{0}")
@@ -344,14 +347,14 @@ class FindAndRerankOperationBuilderTest {
             """
             {"$vector": [0.1, 0.2, 0.3]}
             """,
-            plan(null, vectorLeg(80)),
+            plan(null, vectorReadPlan(80)),
             80),
         Arguments.of(
             "$lexical sort",
             """
             {"$lexical": "cows"}
             """,
-            plan(null, lexicalLeg(30)),
+            plan(null, lexicalReadPlan(30)),
             30));
   }
 
@@ -400,7 +403,7 @@ class FindAndRerankOperationBuilderTest {
     assertThat(result.errors()).isEmpty();
 
     var findCommands = ArgumentCaptor.forClass(FindCommand.class);
-    verify(findCommandResolver, times(plan.legs().size()))
+    verify(findCommandResolver, times(plan.reads().size()))
         .resolveCommand(eq(commandContext), findCommands.capture());
     return findCommands.getAllValues().stream()
         .map(findCommand -> InnerRead.from(commandContext, findCommand))
@@ -487,23 +490,23 @@ class FindAndRerankOperationBuilderTest {
   }
 
   private static FindAndRerankPlan plan(
-      FindAndRerankPlan.VectorizeStep vectorizeStep, FindAndRerankPlan.RerankLeg... legs) {
-    return new FindAndRerankPlan(vectorizeStep, List.of(legs), RERANK_STEP, false, false);
+      FindAndRerankPlan.VectorizeStep vectorizeStep, FindAndRerankPlan.ReadPlan... reads) {
+    return new FindAndRerankPlan(vectorizeStep, List.of(reads), RERANK_STEP, false, false);
   }
 
-  /** A VECTOR_LEG that reads with {@link #VECTOR}. */
-  private static FindAndRerankPlan.RerankLeg vectorLeg(int readLimit) {
-    return new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, VECTOR, null, readLimit);
+  /** A read with {@link #VECTOR}. */
+  private static FindAndRerankPlan.ReadPlan vectorReadPlan(int readLimit) {
+    return new FindAndRerankPlan.VectorReadPlan(VECTOR, readLimit);
   }
 
-  /** A VECTOR_LEG that reads with the vector from the vectorize step. */
-  private static FindAndRerankPlan.RerankLeg vectorizedLeg(int readLimit) {
-    return new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, null, null, readLimit);
+  /** A read with the vector from the vectorize step. */
+  private static FindAndRerankPlan.ReadPlan vectorizeReadPlan(int readLimit) {
+    return new FindAndRerankPlan.VectorizeReadPlan(readLimit);
   }
 
-  private static FindAndRerankPlan.RerankLeg lexicalLeg(int readLimit) {
-    return new FindAndRerankPlan.RerankLeg(
-        RerankLegType.LEXICAL_LEG, null, LEXICAL_TEXT, readLimit);
+  /** A read with {@link #LEXICAL_TEXT}. */
+  private static FindAndRerankPlan.ReadPlan lexicalReadPlan(int readLimit) {
+    return new FindAndRerankPlan.LexicalReadPlan(LEXICAL_TEXT, readLimit);
   }
 
   /**
@@ -536,12 +539,15 @@ class FindAndRerankOperationBuilderTest {
     }
   }
 
-  /** The read for a VECTOR_LEG, without includeSimilarity and includeSortVector. */
+  /** The inner find for a vector read, without includeSimilarity and includeSortVector. */
   private static InnerRead vectorRead(float[] vector, int limit) {
     return new InnerRead(vectorSort(vector), limit, false, false);
   }
 
-  /** The read for {@link #lexicalLeg(int)}, without includeSimilarity and includeSortVector. */
+  /**
+   * The inner find for {@link #lexicalReadPlan(int)}, without includeSimilarity and
+   * includeSortVector.
+   */
   private static InnerRead lexicalRead(int limit) {
     return new InnerRead(lexicalSort(), limit, false, false);
   }
