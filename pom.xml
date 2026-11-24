@@ -655,13 +655,13 @@
       <uniqueVersion>false</uniqueVersion>
       <id>stargate-central</id>
       <name>stargate-releases</name>
-      <url>https://repo.datastax.com/artifactory/stargate-private</url>
+      <url>https://na.artifactory.swg-devops.com/artifactory/datastax-team-nosql-stargate-private-maven-local</url>
     </repository>
     <snapshotRepository>
       <uniqueVersion>false</uniqueVersion>
       <id>stargate-snapshots</id>
       <name>stargate-snapshots</name>
-      <url>https://repo.datastax.com/artifactory/stargate-private</url>
+      <url>https://na.artifactory.swg-devops.com/artifactory/datastax-team-nosql-stargate-private-maven-local</url>
     </snapshotRepository>
   </distributionManagement>
 </project>
