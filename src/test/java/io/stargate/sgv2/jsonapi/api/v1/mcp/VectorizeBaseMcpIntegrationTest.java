@@ -1,10 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1.mcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertAll;
 
 import io.quarkiverse.mcp.server.ToolResponse;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -59,7 +61,13 @@ class VectorizeBaseMcpIntegrationTest extends McpIntegrationTestBase {
   @AfterAll
   void removeTestKeyspace() {
     if (keyspaceCreated) {
-      dropKeyspace(keyspaceName);
+      assertAll(
+          () ->
+              callToolAndAssert(
+                  CommandName.Names.DELETE_COLLECTION,
+                  Map.of("keyspace", keyspaceName, "collection", collectionName),
+                  assertStatusOnlyOk()),
+          () -> dropKeyspace(keyspaceName));
     }
   }
 
