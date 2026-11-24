@@ -14,13 +14,17 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * <p>Has the columns and the primary key definition, not the name of the table.
  */
 public record TableDefinitionDesc(
-    @Schema(description = "API table columns definitions", type = SchemaType.OBJECT)
+    @Schema(
+            description =
+                "Columns of the table, mapping each column name to its type, for example {\"id\": \"text\", \"title\": \"text\"}",
+            type = SchemaType.OBJECT)
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @JsonProperty(TableDescConstants.TableDefinitionDesc.COLUMNS)
         ColumnsDescContainer columns,
     @Valid
         @Schema(
-            description = "Primary key definition for the table",
+            description =
+                "Primary key of the table, either the name of one column or an object with partitionBy and partitionSort",
             anyOf = {String.class, PrimaryKeyDesc.class})
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @JsonProperty(TableDescConstants.TableDefinitionDesc.PRIMARY_KEY)

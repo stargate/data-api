@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static io.stargate.sgv2.jsonapi.TestConstants.rerankingModelConfig;
 import static io.stargate.sgv2.jsonapi.TestConstants.rerankingProvidersConfig;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.LEXICAL_CONTENT_FIELD;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
@@ -53,10 +54,22 @@ class FindAndRerankPlannerTest {
       {"$hybrid": {"$vector": [0.1, 0.2, 0.3]}}
       """;
 
+  /** A sort without $hybrid, for the cases of the limit options. */
+  private static final String SINGLE_LEG_SORT =
+      """
+      {"$vectorize": "cheese"}
+      """;
+
   /** The vector in the sorts of the cases. */
   private static final float[] VECTOR = {0.1f, 0.2f, 0.3f};
 
   private static final int DEFAULT_READ_LIMIT = RerankingConstants.HybridSearchLimits.DEFAULT;
+
+  /**
+   * The default rerankCandidateLimit in the config of the cases. It is not the hybridLimits
+   * default, so a case fails if a sort without $hybrid reads with the hybridLimits default.
+   */
+  private static final int DEFAULT_CANDIDATE_LIMIT = 40;
 
   // The lines of the errors that name the collection, formatted with the keyspace and collection
   private static final String NO_VECTOR_LINE =
@@ -76,25 +89,47 @@ class FindAndRerankPlannerTest {
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("legCases")
-  void plansLegs(
+  void plansLegs(LegCase legCase) throws Exception {
+    var plan =
+        FindAndRerankPlanner.plan(
+            command(legCase.sort(), legCase.options()), commandContext(legCase.collection()));
+
+    assertThat(plan.vectorizeStep() == null ? null : plan.vectorizeStep().text())
+        .as("%s: text to vectorize", legCase.description())
+        .isEqualTo(legCase.vectorizeText());
+    assertThat(plan.legs())
+        .as("%s: legs", legCase.description())
+        .containsExactlyInAnyOrderElementsOf(legCase.legs());
+  }
+
+  /**
+   * A case for {@link #plansLegs}. The name of the test is the description.
+   *
+   * @param description What the case is about.
+   * @param sort The JSON for the sort.
+   * @param options The JSON for the options.
+   * @param collection The collection the command runs on.
+   * @param vectorizeText The text the plan vectorizes, or <code>null</code> when the plan has no
+   *     vectorize step.
+   * @param legs The legs the plan has, in any order.
+   */
+  private record LegCase(
       String description,
       String sort,
       String options,
       Collection collection,
       String vectorizeText,
-      List<FindAndRerankPlan.RerankLeg> legs)
-      throws Exception {
-    var plan = FindAndRerankPlanner.plan(command(sort, options), commandContext(collection));
+      List<FindAndRerankPlan.RerankLeg> legs) {
 
-    assertThat(plan.vectorizeStep() == null ? null : plan.vectorizeStep().text())
-        .as("%s: text to vectorize", description)
-        .isEqualTo(vectorizeText);
-    assertThat(plan.legs()).as("%s: legs", description).containsExactlyInAnyOrderElementsOf(legs);
+    @Override
+    public String toString() {
+      return description;
+    }
   }
 
-  static Stream<Arguments> legCases() {
+  static Stream<LegCase> legCases() {
     return Stream.of(
-        Arguments.of(
+        new LegCase(
             "$hybrid text, collection with a lexical index",
             """
             {"$hybrid": "cheese"}
@@ -103,7 +138,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT), lexicalLeg("cheese", DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$hybrid text, collection without a lexical index",
             """
             {"$hybrid": "cheese"}
@@ -112,7 +147,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$vectorize",
             """
             {"$hybrid": {"$vectorize": "cheese"}}
@@ -121,14 +156,14 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$vector",
             VECTOR_SORT,
             RERANK_OPTIONS,
             Collection.VECTOR_LEXICAL,
             null,
             List.of(vectorLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$vectorize and $vector, $vectorize is used",
             """
             {"$hybrid": {"$vectorize": "cheese", "$vector": [0.1, 0.2, 0.3]}}
@@ -137,7 +172,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$vectorize and $lexical",
             """
             {"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}
@@ -146,7 +181,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT), lexicalLeg("cows", DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$vector and $lexical",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -155,7 +190,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTOR_LEXICAL,
             null,
             List.of(vectorLeg(DEFAULT_READ_LIMIT), lexicalLeg("cows", DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$lexical null, no lexical index needed",
             """
             {"$hybrid": {"$vectorize": "cheese", "$lexical": null}}
@@ -164,7 +199,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "$lexical empty, no lexical index needed",
             """
             {"$hybrid": {"$vectorize": "cheese", "$lexical": ""}}
@@ -173,7 +208,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTORIZE_NO_LEXICAL,
             "cheese",
             List.of(vectorizedLeg(DEFAULT_READ_LIMIT))),
-        Arguments.of(
+        new LegCase(
             "hybridLimits for each leg",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -185,7 +220,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTOR_LEXICAL,
             null,
             List.of(vectorLeg(100), lexicalLeg("cows", 25))),
-        Arguments.of(
+        new LegCase(
             "hybridLimits as one number for both legs",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -196,7 +231,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTOR_LEXICAL,
             null,
             List.of(vectorLeg(30), lexicalLeg("cows", 30))),
-        Arguments.of(
+        new LegCase(
             "hybridLimits at the min of the bounds",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -207,7 +242,7 @@ class FindAndRerankPlannerTest {
             Collection.VECTOR_LEXICAL,
             null,
             List.of(vectorLeg(1), lexicalLeg("cows", 1))),
-        Arguments.of(
+        new LegCase(
             "hybridLimits at the max of the bounds",
             """
             {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
@@ -217,7 +252,54 @@ class FindAndRerankPlannerTest {
             """,
             Collection.VECTOR_LEXICAL,
             null,
-            List.of(vectorLeg(100), lexicalLeg("cows", 100))));
+            List.of(vectorLeg(100), lexicalLeg("cows", 100))),
+        new LegCase(
+            "rerankCandidateLimit null, the option is not set",
+            """
+            {"$hybrid": {"$vector": [0.1, 0.2, 0.3], "$lexical": "cows"}}
+            """,
+            """
+            {"rerankQuery": "q", "rerankOn": "body", "rerankCandidateLimit": null}
+            """,
+            Collection.VECTOR_LEXICAL,
+            null,
+            List.of(vectorLeg(DEFAULT_READ_LIMIT), lexicalLeg("cows", DEFAULT_READ_LIMIT))),
+        new LegCase(
+            "sort without $hybrid: $vectorize",
+            """
+            {"$vectorize": "cheese"}
+            """,
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_NO_LEXICAL,
+            "cheese",
+            List.of(vectorizedLeg(DEFAULT_CANDIDATE_LIMIT))),
+        new LegCase(
+            "sort without $hybrid: $vector",
+            """
+            {"$vector": [0.1, 0.2, 0.3]}
+            """,
+            RERANK_OPTIONS,
+            Collection.VECTOR_LEXICAL,
+            null,
+            List.of(vectorLeg(DEFAULT_CANDIDATE_LIMIT))),
+        new LegCase(
+            "sort without $hybrid: $lexical",
+            """
+            {"$lexical": "cows"}
+            """,
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_LEXICAL,
+            null,
+            List.of(lexicalLeg("cows", DEFAULT_CANDIDATE_LIMIT))),
+        new LegCase(
+            "sort without $hybrid: $lexical, collection without vector",
+            """
+            {"$lexical": "cows"}
+            """,
+            RERANK_OPTIONS,
+            Collection.LEXICAL_NO_VECTOR,
+            null,
+            List.of(lexicalLeg("cows", DEFAULT_CANDIDATE_LIMIT))));
   }
 
   // ===========================================================================================
@@ -319,6 +401,66 @@ class FindAndRerankPlannerTest {
             SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT));
   }
 
+  /**
+   * Until GH #2603, a sort that needs the filter leg parses but cannot be planned. The error must
+   * not tell the user they sent no sort. A valid rerankCandidateLimit passes its checks, then the
+   * command fails for the sort.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("filterLegSorts")
+  void rejectsFilterLegSort(String description, String sort, String options, Collection collection)
+      throws Exception {
+    var ex =
+        assertPlanFails(
+            description,
+            command(sort, options),
+            collection,
+            SortException.class,
+            SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT);
+
+    assertThat(ex)
+        .hasMessageContaining(
+            "The command attempted to run findAndRerank with a sort by document fields, or without a sort.");
+  }
+
+  static Stream<Arguments> filterLegSorts() {
+    var fieldSort =
+        """
+        {"age": -1}
+        """;
+    return Stream.of(
+        Arguments.of("field sort", fieldSort, RERANK_OPTIONS, Collection.VECTORIZE_LEXICAL),
+        Arguments.of(
+            "two field sorts",
+            """
+            {"age": -1, "name": 1}
+            """,
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_LEXICAL),
+        Arguments.of(
+            "field sort, collection without vector",
+            fieldSort,
+            RERANK_OPTIONS,
+            Collection.LEXICAL_NO_VECTOR),
+        Arguments.of(
+            "field sort and a valid rerankCandidateLimit",
+            fieldSort,
+            rerankCandidateLimitOptions("50"),
+            Collection.VECTORIZE_LEXICAL),
+        Arguments.of(
+            "no sort and a valid rerankCandidateLimit",
+            null,
+            rerankCandidateLimitOptions("50"),
+            Collection.VECTORIZE_LEXICAL),
+        Arguments.of(
+            "sort empty and a valid rerankCandidateLimit",
+            """
+            {}
+            """,
+            rerankCandidateLimitOptions("50"),
+            Collection.VECTORIZE_LEXICAL));
+  }
+
   // ===========================================================================================
   // Sorts the collection cannot run
   // ===========================================================================================
@@ -393,6 +535,42 @@ class FindAndRerankPlannerTest {
             "$lexical, collection without a lexical index",
             """
             {"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}
+            """,
+            Collection.VECTORIZE_NO_LEXICAL,
+            SchemaException.class,
+            SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION,
+            NO_LEXICAL_INDEX_LINE),
+        Arguments.of(
+            "sort without $hybrid: $vectorize, collection without vectorize",
+            """
+            {"$vectorize": "cheese"}
+            """,
+            Collection.VECTOR_LEXICAL,
+            SortException.class,
+            SortException.Code.UNSUPPORTED_VECTORIZE_SORT_FOR_COLLECTION,
+            NO_VECTORIZE_LINE),
+        Arguments.of(
+            "sort without $hybrid: $vectorize, collection without vector",
+            """
+            {"$vectorize": "cheese"}
+            """,
+            Collection.LEXICAL_NO_VECTOR,
+            SortException.class,
+            SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION,
+            NO_VECTOR_LINE),
+        Arguments.of(
+            "sort without $hybrid: $vector, collection without vector",
+            """
+            {"$vector": [0.1, 0.2, 0.3]}
+            """,
+            Collection.LEXICAL_NO_VECTOR,
+            SortException.class,
+            SortException.Code.UNSUPPORTED_VECTOR_SORT_FOR_COLLECTION,
+            NO_VECTOR_LINE),
+        Arguments.of(
+            "sort without $hybrid: $lexical, collection without a lexical index",
+            """
+            {"$lexical": "cows"}
             """,
             Collection.VECTORIZE_NO_LEXICAL,
             SchemaException.class,
@@ -523,6 +701,64 @@ class FindAndRerankPlannerTest {
             ProjectionException.Code.UNSUPPORTED_PROJECTION_PARAM));
   }
 
+  /**
+   * A $vector sort and a field sort have no text to rerank with and no field to rerank on, so the
+   * command must set rerankQuery and rerankOn. The options are checked before the field sort is
+   * rejected.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("sortWithoutRerankDefaultsCases")
+  void rejectsSortWithoutRerankDefaultsWhenOptionIsMissing(
+      String description, String sort, String options, RequestException.Code code)
+      throws Exception {
+    assertPlanFails(
+        description,
+        command(sort, options),
+        Collection.VECTORIZE_LEXICAL,
+        RequestException.class,
+        code);
+  }
+
+  static Stream<Arguments> sortWithoutRerankDefaultsCases() {
+    var vectorSort =
+        """
+        {"$vector": [0.1, 0.2, 0.3]}
+        """;
+    var fieldSort =
+        """
+        {"age": -1}
+        """;
+    var noRerankQuery =
+        """
+        {"rerankOn": "body"}
+        """;
+    var noRerankOn =
+        """
+        {"rerankQuery": "q"}
+        """;
+    return Stream.of(
+        Arguments.of(
+            "$vector sort, no rerankQuery",
+            vectorSort,
+            noRerankQuery,
+            RequestException.Code.MISSING_RERANK_QUERY_TEXT),
+        Arguments.of(
+            "$vector sort, no rerankOn",
+            vectorSort,
+            noRerankOn,
+            RequestException.Code.MISSING_RERANK_ON),
+        Arguments.of(
+            "field sort, no rerankQuery",
+            fieldSort,
+            noRerankQuery,
+            RequestException.Code.MISSING_RERANK_QUERY_TEXT),
+        Arguments.of(
+            "field sort, no rerankOn",
+            fieldSort,
+            noRerankOn,
+            RequestException.Code.MISSING_RERANK_ON));
+  }
+
   /** hybridLimits outside the bounds in the config, the error names the field and the value. */
   @ParameterizedTest(name = "{0}")
   @MethodSource("hybridLimitsErrorCases")
@@ -566,6 +802,191 @@ class FindAndRerankPlannerTest {
             "Command field 'hybridLimits.$vector' value 0 not valid"));
   }
 
+  /** hybridLimits can only be used with a $hybrid sort, whatever its value is. */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("hybridLimitsWithoutHybridSortCases")
+  void rejectsHybridLimitsWithoutHybridSort(String description, String sort, String options)
+      throws Exception {
+    assertPlanFails(
+        description,
+        command(sort, options),
+        Collection.VECTORIZE_LEXICAL,
+        RequestException.class,
+        RequestException.Code.UNSUPPORTED_HYBRID_LIMITS_WITHOUT_HYBRID_SORT);
+  }
+
+  static Stream<Arguments> hybridLimitsWithoutHybridSortCases() {
+    var hybridLimits =
+        """
+        {"rerankQuery": "q", "rerankOn": "body", "hybridLimits": 30}
+        """;
+    return Stream.of(
+        Arguments.of("$vectorize sort", SINGLE_LEG_SORT, hybridLimits),
+        Arguments.of(
+            "$vector sort",
+            """
+            {"$vector": [0.1, 0.2, 0.3]}
+            """,
+            hybridLimits),
+        Arguments.of(
+            "$lexical sort",
+            """
+            {"$lexical": "cows"}
+            """,
+            hybridLimits),
+        Arguments.of(
+            "field sort",
+            """
+            {"age": -1}
+            """,
+            hybridLimits),
+        Arguments.of("no sort", null, hybridLimits),
+        Arguments.of(
+            "sort empty",
+            """
+            {}
+            """,
+            hybridLimits),
+        Arguments.of(
+            "sort null",
+            """
+            null
+            """,
+            hybridLimits),
+        Arguments.of(
+            "hybridLimits for each leg",
+            SINGLE_LEG_SORT,
+            """
+            {"rerankQuery": "q", "rerankOn": "body",
+             "hybridLimits": {"$vector": 30, "$lexical": 30}}
+            """),
+        Arguments.of(
+            "hybridLimits outside the bounds",
+            SINGLE_LEG_SORT,
+            """
+            {"rerankQuery": "q", "rerankOn": "body", "hybridLimits": 101}
+            """),
+        Arguments.of(
+            "hybridLimits and rerankCandidateLimit",
+            SINGLE_LEG_SORT,
+            """
+            {"rerankQuery": "q", "rerankOn": "body", "hybridLimits": 30,
+             "rerankCandidateLimit": 50}
+            """));
+  }
+
+  /** rerankCandidateLimit cannot be used with a $hybrid sort, whatever its value is. */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("rerankCandidateLimitWithHybridSortCases")
+  void rejectsRerankCandidateLimitWithHybridSort(String description, String sort, String options)
+      throws Exception {
+    assertPlanFails(
+        description,
+        command(sort, options),
+        Collection.VECTORIZE_LEXICAL,
+        RequestException.class,
+        RequestException.Code.UNSUPPORTED_RERANK_CANDIDATE_LIMIT_WITH_HYBRID_SORT);
+  }
+
+  static Stream<Arguments> rerankCandidateLimitWithHybridSortCases() {
+    var hybridText =
+        """
+        {"$hybrid": "cheese"}
+        """;
+    return Stream.of(
+        Arguments.of("$hybrid text", hybridText, rerankCandidateLimitOptions("50")),
+        Arguments.of(
+            "$hybrid object",
+            """
+            {"$hybrid": {"$vectorize": "cheese", "$lexical": "cows"}}
+            """,
+            rerankCandidateLimitOptions("50")),
+        Arguments.of(
+            "rerankCandidateLimit outside the bounds",
+            hybridText,
+            rerankCandidateLimitOptions("101")),
+        Arguments.of(
+            "rerankCandidateLimit and hybridLimits",
+            hybridText,
+            """
+            {"rerankQuery": "q", "rerankOn": "body", "hybridLimits": 30,
+             "rerankCandidateLimit": 50}
+            """));
+  }
+
+  /**
+   * rerankCandidateLimit outside the bounds in the config, the error names the field and the value.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("rerankCandidateLimitErrorCases")
+  void rejectsRerankCandidateLimitOutsideBounds(
+      String description, String limit, String fieldAndValue) throws Exception {
+    var ex =
+        assertPlanFails(
+            description,
+            command(SINGLE_LEG_SORT, rerankCandidateLimitOptions(limit)),
+            Collection.VECTORIZE_LEXICAL,
+            RequestException.class,
+            RequestException.Code.COMMAND_FIELD_VALUE_INVALID);
+
+    assertThat(ex)
+        .as(description)
+        .hasMessageContaining(fieldAndValue)
+        .hasMessageContaining("must be between 1 and 100 (inclusive)");
+  }
+
+  static Stream<Arguments> rerankCandidateLimitErrorCases() {
+    return Stream.of(
+        Arguments.of(
+            "below the min", "0", "Command field 'rerankCandidateLimit' value 0 not valid"),
+        Arguments.of("negative", "-5", "Command field 'rerankCandidateLimit' value -5 not valid"),
+        Arguments.of(
+            "above the max", "101", "Command field 'rerankCandidateLimit' value 101 not valid"));
+  }
+
+  /**
+   * A rerankCandidateLimit inside the bounds is the read limit of the one leg of a sort without
+   * $hybrid. When the option is not set the leg reads the default from the config.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("validRerankCandidateLimitCases")
+  void usesRerankCandidateLimitAsReadLimitOfSortWithoutHybrid(
+      String description, String sort, String limit, FindAndRerankPlan.RerankLeg leg)
+      throws Exception {
+    var plan =
+        FindAndRerankPlanner.plan(
+            command(sort, rerankCandidateLimitOptions(limit)),
+            commandContext(Collection.VECTORIZE_LEXICAL));
+
+    assertThat(plan.legs()).as(description).containsExactly(leg);
+  }
+
+  static Stream<Arguments> validRerankCandidateLimitCases() {
+    return Stream.of(
+        Arguments.of("at the min of the bounds", SINGLE_LEG_SORT, "1", vectorizedLeg(1)),
+        Arguments.of("inside the bounds", SINGLE_LEG_SORT, "50", vectorizedLeg(50)),
+        Arguments.of("at the max of the bounds", SINGLE_LEG_SORT, "100", vectorizedLeg(100)),
+        Arguments.of(
+            "null, the option is not set",
+            SINGLE_LEG_SORT,
+            "null",
+            vectorizedLeg(DEFAULT_CANDIDATE_LIMIT)),
+        Arguments.of(
+            "$vector sort",
+            """
+            {"$vector": [0.1, 0.2, 0.3]}
+            """,
+            "50",
+            vectorLeg(50)),
+        Arguments.of(
+            "$lexical sort",
+            """
+            {"$lexical": "cows"}
+            """,
+            "50",
+            lexicalLeg("cows", 50)));
+  }
+
   @Test
   void usesVectorizeTextWhenRerankOptionsAreBlank() throws Exception {
     var plan =
@@ -583,6 +1004,107 @@ class FindAndRerankPlannerTest {
     assertThat(plan.rerankStep().rerankingQuery().source())
         .isEqualTo(RerankingQuery.Source.VECTORIZE);
     assertThat(plan.rerankStep().passageLocator().path()).isEqualTo(VECTOR_EMBEDDING_TEXT_FIELD);
+  }
+
+  /**
+   * The rerank query and the field to rerank on for a sort without $hybrid: the rerankQuery and
+   * rerankOn options when they are not blank, otherwise the text and the field of the sort.
+   */
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("sortWithoutHybridRerankCases")
+  void usesRerankOptionsOrSortTextForSortWithoutHybrid(
+      String description,
+      String sort,
+      String options,
+      Collection collection,
+      String query,
+      RerankingQuery.Source source,
+      String rerankField)
+      throws Exception {
+    var rerankStep =
+        FindAndRerankPlanner.plan(command(sort, options), commandContext(collection)).rerankStep();
+
+    assertThat(rerankStep.rerankingQuery().query()).as("%s: query", description).isEqualTo(query);
+    assertThat(rerankStep.rerankingQuery().source())
+        .as("%s: source of the query", description)
+        .isEqualTo(source);
+    assertThat(rerankStep.passageLocator().path())
+        .as("%s: field to rerank on", description)
+        .isEqualTo(rerankField);
+  }
+
+  static Stream<Arguments> sortWithoutHybridRerankCases() {
+    var vectorizeSort =
+        """
+        {"$vectorize": "cheese"}
+        """;
+    var lexicalSort =
+        """
+        {"$lexical": "cows"}
+        """;
+    var blankOptions =
+        """
+        {"rerankQuery": "   ", "rerankOn": "  "}
+        """;
+    return Stream.of(
+        Arguments.of(
+            "$vectorize, no options",
+            vectorizeSort,
+            null,
+            Collection.VECTORIZE_NO_LEXICAL,
+            "cheese",
+            RerankingQuery.Source.VECTORIZE,
+            VECTOR_EMBEDDING_TEXT_FIELD),
+        Arguments.of(
+            "$vectorize, blank options",
+            vectorizeSort,
+            blankOptions,
+            Collection.VECTORIZE_NO_LEXICAL,
+            "cheese",
+            RerankingQuery.Source.VECTORIZE,
+            VECTOR_EMBEDDING_TEXT_FIELD),
+        Arguments.of(
+            "$vectorize, options",
+            vectorizeSort,
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_NO_LEXICAL,
+            "q",
+            RerankingQuery.Source.OPTIONS,
+            "body"),
+        Arguments.of(
+            "$lexical, no options",
+            lexicalSort,
+            null,
+            Collection.VECTORIZE_LEXICAL,
+            "cows",
+            RerankingQuery.Source.LEXICAL,
+            LEXICAL_CONTENT_FIELD),
+        Arguments.of(
+            "$lexical, blank options",
+            lexicalSort,
+            blankOptions,
+            Collection.VECTORIZE_LEXICAL,
+            "cows",
+            RerankingQuery.Source.LEXICAL,
+            LEXICAL_CONTENT_FIELD),
+        Arguments.of(
+            "$lexical, options",
+            lexicalSort,
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_LEXICAL,
+            "q",
+            RerankingQuery.Source.OPTIONS,
+            "body"),
+        Arguments.of(
+            "$vector, options",
+            """
+            {"$vector": [0.1, 0.2, 0.3]}
+            """,
+            RERANK_OPTIONS,
+            Collection.VECTOR_LEXICAL,
+            "q",
+            RerankingQuery.Source.OPTIONS,
+            "body"));
   }
 
   // ===========================================================================================
@@ -606,6 +1128,21 @@ class FindAndRerankPlannerTest {
             {"rerankOn": "body"}
             """),
         Collection.VECTOR_LEXICAL,
+        RequestException.class,
+        RequestException.Code.MISSING_RERANK_QUERY_TEXT);
+  }
+
+  /**
+   * The same error order for a command with no sort and no options, see GH #2057: no sort needs the
+   * filter leg, which is rejected after the options are checked. The command fails for the rerank
+   * query.
+   */
+  @Test
+  void reportsMissingRerankQueryBeforeNoSort() throws Exception {
+    assertPlanFails(
+        "no sort and no options",
+        command(null, null),
+        Collection.VECTORIZE_LEXICAL,
         RequestException.class,
         RequestException.Code.MISSING_RERANK_QUERY_TEXT);
   }
@@ -679,6 +1216,34 @@ class FindAndRerankPlannerTest {
     assertThat(plan.includeSortVector()).isTrue();
   }
 
+  /** A $lexical sort runs on a collection without vector and has nothing to vectorize. */
+  @Test
+  void plansLexicalWithDefaults() throws Exception {
+    var plan =
+        FindAndRerankPlanner.plan(
+            command(
+                """
+                {"$lexical": " cows "}
+                """,
+                null),
+            commandContext(Collection.LEXICAL_NO_VECTOR));
+
+    assertThat(plan.vectorizeStep()).isNull();
+    assertThat(plan.legs()).containsExactly(lexicalLeg("cows", DEFAULT_CANDIDATE_LIMIT));
+
+    var rerankStep = plan.rerankStep();
+    assertThat(rerankStep.rerankServiceDef())
+        .isEqualTo(
+            new CollectionRerankDef.RerankServiceDef(
+                "nvidia", TestConstants.RERANK_MODEL, null, null));
+    assertThat(rerankStep.rerankingQuery().query()).isEqualTo("cows");
+    assertThat(rerankStep.rerankingQuery().source()).isEqualTo(RerankingQuery.Source.LEXICAL);
+    assertThat(rerankStep.passageLocator().path()).isEqualTo(LEXICAL_CONTENT_FIELD);
+    assertThat(rerankStep.limit()).isEqualTo(OperationsConfig.DEFAULT_FIND_AND_RERANK_LIMIT);
+    assertThat(plan.includeScores()).isFalse();
+    assertThat(plan.includeSortVector()).isFalse();
+  }
+
   // ===========================================================================================
   // Helpers / no more tests below
   // ===========================================================================================
@@ -701,6 +1266,15 @@ class FindAndRerankPlannerTest {
 
   private FindAndRerankCommand command(String sort, String options) throws Exception {
     return command(sort, options, null);
+  }
+
+  /** Options with a rerank query, a field to rerank on and the rerankCandidateLimit. */
+  private static String rerankCandidateLimitOptions(String limit) {
+    return
+        """
+        {"rerankQuery": "q", "rerankOn": "body", "rerankCandidateLimit": %s}
+        """
+        .formatted(limit);
   }
 
   /** A findAndRerank command, a <code>null</code> sort, options or projection is left out. */
@@ -737,7 +1311,11 @@ class FindAndRerankPlannerTest {
     return commandContext;
   }
 
-  /** The config the planner reads, with the default hybridLimits bounds and limit. */
+  /**
+   * The config the planner reads: the default bounds of hybridLimits, the default bounds of
+   * rerankCandidateLimit with {@link #DEFAULT_CANDIDATE_LIMIT} as the default, and the default
+   * limit.
+   */
   private static CommandConfig commandConfig() {
     var hybridLimitBounds =
         new IntConfigWithBounds(
@@ -747,6 +1325,12 @@ class FindAndRerankPlannerTest {
     var operationsConfig = mock(OperationsConfig.class);
     when(operationsConfig.hybridSearchVectorLimit()).thenReturn(hybridLimitBounds);
     when(operationsConfig.hybridSearchLexicalLimit()).thenReturn(hybridLimitBounds);
+    when(operationsConfig.rerankCandidateLimit())
+        .thenReturn(
+            new IntConfigWithBounds(
+                RerankingConstants.RerankCandidateLimits.MIN,
+                DEFAULT_CANDIDATE_LIMIT,
+                RerankingConstants.RerankCandidateLimits.MAX));
     when(operationsConfig.defaultFindAndRerankLimit())
         .thenReturn(OperationsConfig.DEFAULT_FIND_AND_RERANK_LIMIT);
 
