@@ -18,7 +18,7 @@
 package io.stargate.sgv2.jsonapi.api.request.token;
 
 import io.vertx.ext.web.RoutingContext;
-import jakarta.ws.rs.core.SecurityContext;
+import java.security.Principal;
 
 /** The {@link RequestAuthTokenResolver} that resolves a token from the HTTP header. */
 public class HeaderTokenResolver implements RequestAuthTokenResolver {
@@ -32,7 +32,7 @@ public class HeaderTokenResolver implements RequestAuthTokenResolver {
 
   /** {@inheritDoc} */
   @Override
-  public String resolve(RoutingContext context, SecurityContext securityContext) {
+  public String resolve(RoutingContext context, Principal principal) {
     return context.request().getHeader(headerName);
   }
 }

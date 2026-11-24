@@ -137,8 +137,10 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
     var contextBuilder =
         EmbeddingGateway.ProviderEmbedRequest.ProviderContext.newBuilder()
             .setProviderName(modelProvider().apiName())
-            .setTenantId(tenant.toString())
-            .putAuthTokens(DATA_API_TOKEN, authToken);
+            .setTenantId(tenant.toString());
+    if (authToken != null) {
+      contextBuilder.putAuthTokens(DATA_API_TOKEN, authToken);
+    }
 
     embeddingCredentials
         .apiKey()

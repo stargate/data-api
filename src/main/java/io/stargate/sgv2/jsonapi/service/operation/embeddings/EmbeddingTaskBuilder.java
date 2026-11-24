@@ -83,7 +83,7 @@ public class EmbeddingTaskBuilder<SchemaT extends TableBasedSchemaObject>
             .embeddingProviderFactory()
             .create(
                 commandContext.requestContext().tenant(),
-                commandContext.requestContext().authToken(),
+                commandContext.requestContext().providerAuthToken(),
                 vectorizeDefinition.provider(),
                 vectorizeDefinition.modelName(),
                 dimension,

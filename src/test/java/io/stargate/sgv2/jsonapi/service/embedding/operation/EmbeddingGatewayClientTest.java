@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
@@ -151,7 +153,7 @@ public class EmbeddingGatewayClientTest {
             1536,
             Map.of(),
             tenant,
-            "default",
+            null,
             embeddingService,
             Map.of(),
             TESTING_COMMAND_NAME);
@@ -162,12 +164,21 @@ public class EmbeddingGatewayClientTest {
                 1,
                 List.of("data 1", "data 2"),
                 new EmbeddingCredentials(
-                    tenant, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty()),
+                    tenant,
+                    Optional.of("embedding-key"),
+                    Optional.empty(),
+                    Optional.empty(),
+                    Optional.empty()),
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .awaitItem()
             .getItem();
+
+    var request = ArgumentCaptor.forClass(EmbeddingGateway.ProviderEmbedRequest.class);
+    verify(embeddingService).embed(request.capture());
+    assertThat(request.getValue().getProviderContext().getAuthTokensMap())
+        .isEqualTo(Map.of("EMBEDDING_API_KEY", "embedding-key"));
 
     assertThat(response).isNotNull();
     assertThat(response.batchId()).isEqualTo(1);

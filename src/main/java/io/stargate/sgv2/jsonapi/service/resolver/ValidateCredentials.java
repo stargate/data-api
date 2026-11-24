@@ -25,7 +25,16 @@ public class ValidateCredentials {
 
   @Inject RequestContext dataApiRequestInfo;
 
+  public static String requireCredentialServiceToken(String token) {
+    if (token == null) {
+      throw SchemaException.Code.VECTORIZE_CREDENTIAL_INVALID.get(
+          Map.of("errorMessage", "Stored provider credentials require a separate service token."));
+    }
+    return token;
+  }
+
   public boolean validate(String provider, String value) {
+    String token = requireCredentialServiceToken(dataApiRequestInfo.providerAuthToken());
     if (channel == null) {
       channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build();
     }
@@ -34,7 +43,7 @@ public class ValidateCredentials {
     validateCredentialRequest.setCredential(value);
     validateCredentialRequest.setTenantId(dataApiRequestInfo.tenant().toString());
     validateCredentialRequest.setProviderName(provider);
-    validateCredentialRequest.setToken(dataApiRequestInfo.authToken());
+    validateCredentialRequest.setToken(token);
     EmbeddingServiceGrpc.EmbeddingServiceBlockingStub embeddingService =
         EmbeddingServiceGrpc.newBlockingStub(channel);
     final EmbeddingGateway.ValidateCredentialResponse validateCredentialResponse =

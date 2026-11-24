@@ -252,7 +252,7 @@ public class CollectionResource {
                   embeddingProvider =
                       embeddingProviderFactory.create(
                           requestContext.tenant(),
-                          requestContext.authToken(),
+                          requestContext.providerAuthToken(),
                           vectorColDef.vectorizeDefinition().provider(),
                           vectorColDef.vectorizeDefinition().modelName(),
                           vectorColDef.vectorSize(),
