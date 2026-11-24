@@ -237,6 +237,14 @@ class FindAndRerankOperationBuilder {
     return new TaskGroupAndDeferrables<>(taskGroup, null, deferrables);
   }
 
+  private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> buildBm25Read(
+      int position, String lexicalText, int readLimit, DeferredCommandResultAction deferredAction) {
+
+    var bm25SortClause = new SortClause(List.of(SortExpression.collectionLexicalSort(lexicalText)));
+    return new TaskAndDeferrables<>(
+        buildReadTask(position, bm25SortClause, null, readLimit, deferredAction));
+  }
+
   /** Builds a read that sorts with the vector from the command. */
   private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject>
       buildVectorRead(
@@ -265,15 +273,6 @@ class FindAndRerankOperationBuilder {
     return new TaskAndDeferrables<>(
         buildReadTask(position, vectorSortClause, deferredVectorize, readLimit, deferredAction),
         deferredVectorize);
-  }
-
-  /** Builds a read that sorts with the lexical text. */
-  private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> buildBm25Read(
-      int position, String lexicalText, int readLimit, DeferredCommandResultAction deferredAction) {
-
-    var bm25SortClause = new SortClause(List.of(SortExpression.collectionLexicalSort(lexicalText)));
-    return new TaskAndDeferrables<>(
-        buildReadTask(position, bm25SortClause, null, readLimit, deferredAction));
   }
 
   /**
