@@ -9,6 +9,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
@@ -222,12 +224,12 @@ class FindAndRerankOperationBuilder {
 
       var taskAndDeferrables =
           switch (readAndResult.readPlan()) {
-            case FindAndRerankPlan.VectorReadPlan(var vector, var readLimit) ->
-                buildVectorRead(position, vector, readLimit, deferredCommandResultAction);
+            case FindAndRerankPlan.VectorReadPlan(var sort, var readLimit) ->
+                buildVectorRead(position, sort, readLimit, deferredCommandResultAction);
             case FindAndRerankPlan.VectorizeReadPlan(var readLimit) ->
                 buildVectorizeRead(position, readLimit, deferredCommandResultAction);
-            case FindAndRerankPlan.LexicalReadPlan(var lexicalText, var readLimit) ->
-                buildBm25Read(position, lexicalText, readLimit, deferredCommandResultAction);
+            case FindAndRerankPlan.LexicalReadPlan(var sort, var readLimit) ->
+                buildBm25Read(position, sort, readLimit, deferredCommandResultAction);
           };
       taskGroup.add(taskAndDeferrables.task());
       deferrables.addAll(taskAndDeferrables.deferrables());
@@ -238,9 +240,12 @@ class FindAndRerankOperationBuilder {
   }
 
   private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> buildBm25Read(
-      int position, String lexicalText, int readLimit, DeferredCommandResultAction deferredAction) {
+      int position,
+      LexicalSortExpression sort,
+      int readLimit,
+      DeferredCommandResultAction deferredAction) {
 
-    var bm25SortClause = new SortClause(List.of(SortExpression.collectionLexicalSort(lexicalText)));
+    var bm25SortClause = new SortClause(List.of(SortExpression.from(sort)));
     return new TaskAndDeferrables<>(
         buildReadTask(position, bm25SortClause, null, readLimit, deferredAction));
   }
@@ -248,9 +253,12 @@ class FindAndRerankOperationBuilder {
   /** Builds a read that sorts with the vector from the command. */
   private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject>
       buildVectorRead(
-          int position, float[] vector, int readLimit, DeferredCommandResultAction deferredAction) {
+          int position,
+          VectorSortExpression sort,
+          int readLimit,
+          DeferredCommandResultAction deferredAction) {
 
-    var vectorSortClause = new SortClause(List.of(SortExpression.collectionVectorSort(vector)));
+    var vectorSortClause = new SortClause(List.of(SortExpression.from(sort)));
     return new TaskAndDeferrables<>(
         buildReadTask(position, vectorSortClause, null, readLimit, deferredAction));
   }
@@ -259,8 +267,9 @@ class FindAndRerankOperationBuilder {
   private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject>
       buildVectorizeRead(int position, int readLimit, DeferredCommandResultAction deferredAction) {
 
-    // the sort clause is empty, the deferred vectorize adds the vector sort to it when it gets the
-    // vector, so the sort clause must be mutable
+    // NOTE: there is no sort to convert with SortExpression.from() yet, the vector comes from the
+    // vectorize step. The sort clause starts empty. The deferred vectorize adds the vector sort to
+    // it when it gets the vector, so the sort clause must be mutable.
     var vectorSortClause = new SortClause(new ArrayList<>());
     var vectorizeStep = plan.vectorizeStep();
     var deferredVectorize =

@@ -229,7 +229,8 @@ class FindAndRerankPlanner {
     reads.add(
         isVectorizeSort(multiLeg)
             ? new FindAndRerankPlan.VectorizeReadPlan(hybridLimits.vectorLimit())
-            : new FindAndRerankPlan.VectorReadPlan(vector(multiLeg), hybridLimits.vectorLimit()));
+            : new FindAndRerankPlan.VectorReadPlan(
+                new VectorSortExpression(vector(multiLeg)), hybridLimits.vectorLimit()));
 
     // the lexical leg is optional: if there is a lexical sort, but the user did not ask explicitly
     // for it then it is OK to skip when there is no lexical index.
@@ -237,7 +238,7 @@ class FindAndRerankPlanner {
       if (schemaObject.lexicalDef().enabled()) {
         reads.add(
             new FindAndRerankPlan.LexicalReadPlan(
-                lexicalText(multiLeg), hybridLimits.lexicalLimit()));
+                new LexicalSortExpression(lexicalText(multiLeg)), hybridLimits.lexicalLimit()));
       } else if (isExplicitLexicalSort(multiLeg)) {
         // error should have been caught in validateSortSupported() safety here
         throwIfNoLexicalIndex(schemaObject);
@@ -259,10 +260,10 @@ class FindAndRerankPlanner {
     return switch (singleLeg) {
       case FindAndRerankSort.VectorLegSort(VectorizeSortExpression ignored) ->
           new FindAndRerankPlan.VectorizeReadPlan(readLimit);
-      case FindAndRerankSort.VectorLegSort(VectorSortExpression(var vector)) ->
-          new FindAndRerankPlan.VectorReadPlan(vector, readLimit);
-      case FindAndRerankSort.LexicalLegSort(LexicalSortExpression(var lexicalText)) ->
-          new FindAndRerankPlan.LexicalReadPlan(lexicalText, readLimit);
+      case FindAndRerankSort.VectorLegSort(VectorSortExpression sort) ->
+          new FindAndRerankPlan.VectorReadPlan(sort, readLimit);
+      case FindAndRerankSort.LexicalLegSort(var sort) ->
+          new FindAndRerankPlan.LexicalReadPlan(sort, readLimit);
         // TODO: GH #2603 - plan the filter leg. Until then a field sort, an empty sort and no sort
         // are rejected here, after the checks in plan()
       case FindAndRerankSort.FilterLegSort ignored ->

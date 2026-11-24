@@ -27,6 +27,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
@@ -496,7 +498,7 @@ class FindAndRerankOperationBuilderTest {
 
   /** A read with {@link #VECTOR}. */
   private static FindAndRerankPlan.ReadPlan vectorReadPlan(int readLimit) {
-    return new FindAndRerankPlan.VectorReadPlan(VECTOR, readLimit);
+    return new FindAndRerankPlan.VectorReadPlan(new VectorSortExpression(VECTOR), readLimit);
   }
 
   /** A read with the vector from the vectorize step. */
@@ -506,7 +508,8 @@ class FindAndRerankOperationBuilderTest {
 
   /** A read with {@link #LEXICAL_TEXT}. */
   private static FindAndRerankPlan.ReadPlan lexicalReadPlan(int readLimit) {
-    return new FindAndRerankPlan.LexicalReadPlan(LEXICAL_TEXT, readLimit);
+    return new FindAndRerankPlan.LexicalReadPlan(
+        new LexicalSortExpression(LEXICAL_TEXT), readLimit);
   }
 
   /**

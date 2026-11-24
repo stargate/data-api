@@ -1,12 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.Rank;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.RerankingQuery;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -99,34 +100,22 @@ record FindAndRerankPlan(
   /**
    * A read with a vector sort, the vector is from the command.
    *
-   * @param vector The vector to sort with.
+   * <p>NOTE: equals() compares the vector by value, because {@link VectorSortExpression} does.
+   *
+   * @param sort The vector sort.
    * @param readLimit The maximum number of documents to read.
    */
-  record VectorReadPlan(float[] vector, int readLimit) implements ReadPlan {
+  record VectorReadPlan(VectorSortExpression sort, int readLimit) implements ReadPlan {
 
     VectorReadPlan {
       // sanity checks, the planner never makes a read that fails these
-      Objects.requireNonNull(vector, "vector must not be null");
+      Objects.requireNonNull(sort, "sort must not be null");
       checkReadLimit(readLimit);
     }
 
     @Override
     public Rank.RankSource rankSource() {
       return Rank.RankSource.VECTOR;
-    }
-
-    /** Override to do a value equality check on the vector */
-    @Override
-    public boolean equals(Object obj) {
-      return (obj instanceof VectorReadPlan other)
-          && Arrays.equals(vector, other.vector)
-          && readLimit == other.readLimit;
-    }
-
-    /** Override to do a value equality hash on the vector */
-    @Override
-    public int hashCode() {
-      return Objects.hash(Arrays.hashCode(vector), readLimit);
     }
   }
 
@@ -151,14 +140,14 @@ record FindAndRerankPlan(
   /**
    * A read with a lexical (BM25) sort.
    *
-   * @param lexicalText The text to sort with.
+   * @param sort The lexical sort.
    * @param readLimit The maximum number of documents to read.
    */
-  record LexicalReadPlan(String lexicalText, int readLimit) implements ReadPlan {
+  record LexicalReadPlan(LexicalSortExpression sort, int readLimit) implements ReadPlan {
 
     LexicalReadPlan {
       // sanity checks, the planner never makes a read that fails these
-      Objects.requireNonNull(lexicalText, "lexicalText must not be null");
+      Objects.requireNonNull(sort, "sort must not be null");
       checkReadLimit(readLimit);
     }
 

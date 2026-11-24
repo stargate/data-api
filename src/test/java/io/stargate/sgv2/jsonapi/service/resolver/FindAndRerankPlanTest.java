@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.Rank;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.RerankingQuery;
@@ -31,13 +33,13 @@ class FindAndRerankPlanTest {
   private static final float[] VECTOR = {0.1f, 0.2f};
 
   private static final FindAndRerankPlan.VectorReadPlan VECTOR_READ =
-      new FindAndRerankPlan.VectorReadPlan(VECTOR, 50);
+      new FindAndRerankPlan.VectorReadPlan(new VectorSortExpression(VECTOR), 50);
 
   private static final FindAndRerankPlan.VectorizeReadPlan VECTORIZE_READ =
       new FindAndRerankPlan.VectorizeReadPlan(50);
 
   private static final FindAndRerankPlan.LexicalReadPlan LEXICAL_READ =
-      new FindAndRerankPlan.LexicalReadPlan("cows", 50);
+      new FindAndRerankPlan.LexicalReadPlan(new LexicalSortExpression("cows"), 50);
 
   private static final FindAndRerankPlan.VectorizeStep VECTORIZE_STEP =
       new FindAndRerankPlan.VectorizeStep(
@@ -138,17 +140,17 @@ class FindAndRerankPlanTest {
   // ===========================================================================================
 
   @Test
-  void rejectsVectorReadWithoutVector() {
+  void rejectsVectorReadWithoutSort() {
     assertThatThrownBy(() -> new FindAndRerankPlan.VectorReadPlan(null, 50))
         .isExactlyInstanceOf(NullPointerException.class)
-        .hasMessage("vector must not be null");
+        .hasMessage("sort must not be null");
   }
 
   @Test
-  void rejectsLexicalReadWithoutLexicalText() {
+  void rejectsLexicalReadWithoutSort() {
     assertThatThrownBy(() -> new FindAndRerankPlan.LexicalReadPlan(null, 50))
         .isExactlyInstanceOf(NullPointerException.class)
-        .hasMessage("lexicalText must not be null");
+        .hasMessage("sort must not be null");
   }
 
   @ParameterizedTest(name = "{0}")
@@ -172,14 +174,18 @@ class FindAndRerankPlanTest {
         Arguments.of(
             "vector read",
             (IntFunction<FindAndRerankPlan.ReadPlan>)
-                readLimit -> new FindAndRerankPlan.VectorReadPlan(VECTOR, readLimit)),
+                readLimit ->
+                    new FindAndRerankPlan.VectorReadPlan(
+                        new VectorSortExpression(VECTOR), readLimit)),
         Arguments.of(
             "vectorize read",
             (IntFunction<FindAndRerankPlan.ReadPlan>) FindAndRerankPlan.VectorizeReadPlan::new),
         Arguments.of(
             "lexical read",
             (IntFunction<FindAndRerankPlan.ReadPlan>)
-                readLimit -> new FindAndRerankPlan.LexicalReadPlan("cows", readLimit)));
+                readLimit ->
+                    new FindAndRerankPlan.LexicalReadPlan(
+                        new LexicalSortExpression("cows"), readLimit)));
   }
 
   @ParameterizedTest(name = "{0}")
@@ -198,8 +204,12 @@ class FindAndRerankPlanTest {
 
   @Test
   void vectorReadsWithTheSameValuesAreEqual() {
-    var read = new FindAndRerankPlan.VectorReadPlan(new float[] {0.1f, 0.2f}, 50);
-    var equalRead = new FindAndRerankPlan.VectorReadPlan(new float[] {0.1f, 0.2f}, 50);
+    var read =
+        new FindAndRerankPlan.VectorReadPlan(
+            new VectorSortExpression(new float[] {0.1f, 0.2f}), 50);
+    var equalRead =
+        new FindAndRerankPlan.VectorReadPlan(
+            new VectorSortExpression(new float[] {0.1f, 0.2f}), 50);
 
     assertThat(read).isEqualTo(equalRead).hasSameHashCodeAs(equalRead);
     assertThat(equalRead).isEqualTo(read);
@@ -219,12 +229,14 @@ class FindAndRerankPlanTest {
     return Stream.of(
         Arguments.of(
             "different vector values",
-            new FindAndRerankPlan.VectorReadPlan(new float[] {0.1f, 0.2f}, 50),
-            new FindAndRerankPlan.VectorReadPlan(new float[] {0.1f, 0.3f}, 50)),
+            new FindAndRerankPlan.VectorReadPlan(
+                new VectorSortExpression(new float[] {0.1f, 0.2f}), 50),
+            new FindAndRerankPlan.VectorReadPlan(
+                new VectorSortExpression(new float[] {0.1f, 0.3f}), 50)),
         Arguments.of(
             "different readLimit",
-            new FindAndRerankPlan.VectorReadPlan(VECTOR, 50),
-            new FindAndRerankPlan.VectorReadPlan(VECTOR, 20)));
+            new FindAndRerankPlan.VectorReadPlan(new VectorSortExpression(VECTOR), 50),
+            new FindAndRerankPlan.VectorReadPlan(new VectorSortExpression(VECTOR), 20)));
   }
 
   // ===========================================================================================

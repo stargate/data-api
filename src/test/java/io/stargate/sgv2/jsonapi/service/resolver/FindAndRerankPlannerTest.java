@@ -14,6 +14,8 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.config.IntConfigWithBounds;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -1357,11 +1359,11 @@ class FindAndRerankPlannerTest {
 
   /** A read with {@link #VECTOR}. */
   private static FindAndRerankPlan.ReadPlan vectorRead(int readLimit) {
-    return new FindAndRerankPlan.VectorReadPlan(VECTOR, readLimit);
+    return new FindAndRerankPlan.VectorReadPlan(new VectorSortExpression(VECTOR), readLimit);
   }
 
   private static FindAndRerankPlan.ReadPlan lexicalRead(String lexicalText, int readLimit) {
-    return new FindAndRerankPlan.LexicalReadPlan(lexicalText, readLimit);
+    return new FindAndRerankPlan.LexicalReadPlan(new LexicalSortExpression(lexicalText), readLimit);
   }
 
   /** The collection configs the cases run against. */

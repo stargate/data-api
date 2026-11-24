@@ -74,6 +74,29 @@ public class SortExpression {
     return new SortExpression(LEXICAL_CONTENT_FIELD, false, null, null, bm25Query);
   }
 
+  /**
+   * Converts a {@link SortExpression2} to the collection sort expression with the same path and
+   * values.
+   *
+   * <p>NOTE: this is the bridge from the new sort model to this class, while code still reads this
+   * class. Use it only where a {@link SortExpression2} is passed to such code, e.g. an inner find.
+   *
+   * <p>TODO: delete this method with this class, when no code reads this class. Then {@link
+   * SortExpression2} takes the name of this class.
+   *
+   * @param expression The sort expression to convert.
+   * @return A new sort expression.
+   */
+  public static SortExpression from(SortExpression2 expression) {
+    Objects.requireNonNull(expression, "expression must not be null");
+    return switch (expression) {
+      case SortExpression2.VectorizeSortExpression(var text) -> collecetionVectorizeSort(text);
+      case SortExpression2.VectorSortExpression(var vector) -> collectionVectorSort(vector);
+      case SortExpression2.LexicalSortExpression(var text) -> collectionLexicalSort(text);
+      case SortExpression2.FieldSortExpression(var path, var ascending) -> sort(path, ascending);
+    };
+  }
+
   public static SortExpression tableLexicalSort(String path, String bm25Query) {
     Objects.requireNonNull(path, "Path cannot be null");
     Objects.requireNonNull(bm25Query, "Lexical query cannot be null");
