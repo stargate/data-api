@@ -78,8 +78,10 @@ public class SortExpression {
    * Converts a {@link SortExpression2} to the collection sort expression with the same path and
    * values.
    *
-   * <p>NOTE: this is the bridge from the new sort model to this class, while code still reads this
-   * class. Use it only where a {@link SortExpression2} is passed to such code, e.g. an inner find.
+   * <p>NOTE: this is the bridge from the new sort model to this class. The find command reads its
+   * sort as a {@link SortClause}. A {@link SortClause} only holds this class. Call this method only
+   * when you build a {@link SortClause} from a {@link SortExpression2}, for example for an inner
+   * find.
    *
    * <p>TODO: delete this method with this class, when no code reads this class. Then {@link
    * SortExpression2} takes the name of this class.
