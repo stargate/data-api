@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.FieldSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
@@ -301,7 +302,75 @@ class FindAndRerankPlannerTest {
             RERANK_OPTIONS,
             Collection.LEXICAL_NO_VECTOR,
             null,
-            List.of(lexicalRead("cows", DEFAULT_CANDIDATE_LIMIT))));
+            List.of(lexicalRead("cows", DEFAULT_CANDIDATE_LIMIT))),
+        new ReadCase(
+            "sort without $hybrid: two field sorts, in order",
+            """
+            {"age": -1, "name": 1}
+            """,
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_LEXICAL,
+            null,
+            List.of(
+                filterRead(
+                    List.of(
+                        new FieldSortExpression("age", false),
+                        new FieldSortExpression("name", true)),
+                    DEFAULT_CANDIDATE_LIMIT))),
+        new ReadCase(
+            "sort without $hybrid: field sort, collection without vector",
+            """
+            {"age": -1}
+            """,
+            RERANK_OPTIONS,
+            Collection.LEXICAL_NO_VECTOR,
+            null,
+            List.of(
+                filterRead(
+                    List.of(new FieldSortExpression("age", false)), DEFAULT_CANDIDATE_LIMIT))),
+        new ReadCase(
+            "sort without $hybrid: field sort on the one indexed field",
+            """
+            {"age": 1}
+            """,
+            RERANK_OPTIONS,
+            Collection.AGE_INDEXED,
+            null,
+            List.of(
+                filterRead(
+                    List.of(new FieldSortExpression("age", true)), DEFAULT_CANDIDATE_LIMIT))),
+        new ReadCase(
+            "no sort",
+            null,
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_LEXICAL,
+            null,
+            List.of(filterRead(List.of(), DEFAULT_CANDIDATE_LIMIT))),
+        new ReadCase(
+            "sort empty",
+            """
+            {}
+            """,
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_LEXICAL,
+            null,
+            List.of(filterRead(List.of(), DEFAULT_CANDIDATE_LIMIT))),
+        new ReadCase(
+            "sort null",
+            """
+            null
+            """,
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_LEXICAL,
+            null,
+            List.of(filterRead(List.of(), DEFAULT_CANDIDATE_LIMIT))),
+        new ReadCase(
+            "no sort, collection that indexes only one field",
+            null,
+            RERANK_OPTIONS,
+            Collection.AGE_INDEXED,
+            null,
+            List.of(filterRead(List.of(), DEFAULT_CANDIDATE_LIMIT))));
   }
 
   // ===========================================================================================
@@ -387,80 +456,39 @@ class FindAndRerankPlannerTest {
             """
             {"$hybrid": {"$lexical": "cows", "$vector": null}}
             """,
-            SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT),
-        Arguments.of("no sort", null, SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
-        Arguments.of(
-            "sort empty",
-            """
-            {}
-            """,
-            SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT),
-        Arguments.of(
-            "sort null",
-            """
-            null
-            """,
-            SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT));
+            SortException.Code.MISSING_VECTOR_OR_VECTORIZE_IN_HYBRID_SORT));
   }
 
   /**
-   * Until GH #2603, a sort that needs the filter leg parses but cannot be planned. The error must
-   * not tell the user they sent no sort. A valid rerankCandidateLimit passes its checks, then the
-   * command fails for the sort.
+   * A field sort can only use the paths the collection indexes. The planner checks the paths, so
+   * the command fails before the read runs. The error names the first path that is not indexed.
    */
   @ParameterizedTest(name = "{0}")
-  @MethodSource("filterLegSorts")
-  void rejectsFilterLegSort(String description, String sort, String options, Collection collection)
-      throws Exception {
+  @MethodSource("unindexedFieldSortCases")
+  void rejectsFieldSortOnPathNotIndexed(String description, String sort) throws Exception {
     var ex =
         assertPlanFails(
             description,
-            command(sort, options),
-            collection,
+            command(sort, RERANK_OPTIONS),
+            Collection.AGE_INDEXED,
             SortException.class,
-            SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT);
+            SortException.Code.SORT_CLAUSE_PATH_UNINDEXED);
 
-    assertThat(ex)
-        .hasMessageContaining(
-            "The command attempted to run findAndRerank with a sort by document fields, or without a sort.");
+    assertThat(ex).as(description).hasMessageContaining("Collection field 'name' is not indexed");
   }
 
-  static Stream<Arguments> filterLegSorts() {
-    var fieldSort =
-        """
-        {"age": -1}
-        """;
+  static Stream<Arguments> unindexedFieldSortCases() {
     return Stream.of(
-        Arguments.of("field sort", fieldSort, RERANK_OPTIONS, Collection.VECTORIZE_LEXICAL),
         Arguments.of(
-            "two field sorts",
+            "one field sort",
+            """
+            {"name": 1}
+            """),
+        Arguments.of(
+            "the second field sort",
             """
             {"age": -1, "name": 1}
-            """,
-            RERANK_OPTIONS,
-            Collection.VECTORIZE_LEXICAL),
-        Arguments.of(
-            "field sort, collection without vector",
-            fieldSort,
-            RERANK_OPTIONS,
-            Collection.LEXICAL_NO_VECTOR),
-        Arguments.of(
-            "field sort and a valid rerankCandidateLimit",
-            fieldSort,
-            rerankCandidateLimitOptions("50"),
-            Collection.VECTORIZE_LEXICAL),
-        Arguments.of(
-            "no sort and a valid rerankCandidateLimit",
-            null,
-            rerankCandidateLimitOptions("50"),
-            Collection.VECTORIZE_LEXICAL),
-        Arguments.of(
-            "sort empty and a valid rerankCandidateLimit",
-            """
-            {}
-            """,
-            rerankCandidateLimitOptions("50"),
-            Collection.VECTORIZE_LEXICAL));
+            """));
   }
 
   // ===========================================================================================
@@ -704,9 +732,8 @@ class FindAndRerankPlannerTest {
   }
 
   /**
-   * A $vector sort and a field sort have no text to rerank with and no field to rerank on, so the
-   * command must set rerankQuery and rerankOn. The options are checked before the field sort is
-   * rejected.
+   * A $vector sort, a field sort and no sort have no text to rerank with and no field to rerank on,
+   * so the command must set rerankQuery and rerankOn.
    */
   @ParameterizedTest(name = "{0}")
   @MethodSource("sortWithoutRerankDefaultsCases")
@@ -758,7 +785,14 @@ class FindAndRerankPlannerTest {
             "field sort, no rerankOn",
             fieldSort,
             noRerankOn,
-            RequestException.Code.MISSING_RERANK_ON));
+            RequestException.Code.MISSING_RERANK_ON),
+        Arguments.of(
+            "no sort, no rerankQuery",
+            null,
+            noRerankQuery,
+            RequestException.Code.MISSING_RERANK_QUERY_TEXT),
+        Arguments.of(
+            "no sort, no rerankOn", null, noRerankOn, RequestException.Code.MISSING_RERANK_ON));
   }
 
   /** hybridLimits outside the bounds in the config, the error names the field and the value. */
@@ -986,7 +1020,20 @@ class FindAndRerankPlannerTest {
             {"$lexical": "cows"}
             """,
             "50",
-            lexicalRead("cows", 50)));
+            lexicalRead("cows", 50)),
+        Arguments.of(
+            "field sort",
+            """
+            {"age": -1}
+            """,
+            "50",
+            filterRead(List.of(new FieldSortExpression("age", false)), 50)),
+        Arguments.of("no sort", null, "100", filterRead(List.of(), 100)),
+        Arguments.of(
+            "no sort, null, the option is not set",
+            null,
+            "null",
+            filterRead(List.of(), DEFAULT_CANDIDATE_LIMIT)));
   }
 
   @Test
@@ -1106,6 +1153,24 @@ class FindAndRerankPlannerTest {
             Collection.VECTOR_LEXICAL,
             "q",
             RerankingQuery.Source.OPTIONS,
+            "body"),
+        Arguments.of(
+            "field sort, options",
+            """
+            {"age": -1}
+            """,
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_LEXICAL,
+            "q",
+            RerankingQuery.Source.OPTIONS,
+            "body"),
+        Arguments.of(
+            "no sort, options",
+            null,
+            RERANK_OPTIONS,
+            Collection.VECTORIZE_LEXICAL,
+            "q",
+            RerankingQuery.Source.OPTIONS,
             "body"));
   }
 
@@ -1135,12 +1200,11 @@ class FindAndRerankPlannerTest {
   }
 
   /**
-   * The same error order for a command with no sort and no options, see GH #2057: no sort needs the
-   * filter leg, which is rejected after the options are checked. The command fails for the rerank
-   * query.
+   * A command with no sort and no options, see GH #2057. No sort reads with the filter leg, which
+   * has no default rerank query, so the command fails for the rerank query.
    */
   @Test
-  void reportsMissingRerankQueryBeforeNoSort() throws Exception {
+  void reportsMissingRerankQueryForNoSortAndNoOptions() throws Exception {
     assertPlanFails(
         "no sort and no options",
         command(null, null),
@@ -1246,6 +1310,38 @@ class FindAndRerankPlannerTest {
     assertThat(plan.includeSortVector()).isFalse();
   }
 
+  /** A field sort runs on a collection without vector and has nothing to vectorize. */
+  @Test
+  void plansFieldSortWithOptions() throws Exception {
+    var plan =
+        FindAndRerankPlanner.plan(
+            command(
+                """
+                {"age": -1}
+                """,
+                """
+                {"rerankQuery": "who loves cheese?", "rerankOn": "food", "limit": 5,
+                 "rerankCandidateLimit": 70, "includeScores": true, "includeSortVector": true}
+                """),
+            commandContext(Collection.LEXICAL_NO_VECTOR));
+
+    assertThat(plan.vectorizeStep()).isNull();
+    assertThat(plan.reads())
+        .containsExactly(filterRead(List.of(new FieldSortExpression("age", false)), 70));
+
+    var rerankStep = plan.rerankStep();
+    assertThat(rerankStep.rerankServiceDef())
+        .isEqualTo(
+            new CollectionRerankDef.RerankServiceDef(
+                "nvidia", TestConstants.RERANK_MODEL, null, null));
+    assertThat(rerankStep.rerankingQuery().query()).isEqualTo("who loves cheese?");
+    assertThat(rerankStep.rerankingQuery().source()).isEqualTo(RerankingQuery.Source.OPTIONS);
+    assertThat(rerankStep.passageLocator().path()).isEqualTo("food");
+    assertThat(rerankStep.limit()).isEqualTo(5);
+    assertThat(plan.includeScores()).isTrue();
+    assertThat(plan.includeSortVector()).isTrue();
+  }
+
   // ===========================================================================================
   // Helpers / no more tests below
   // ===========================================================================================
@@ -1349,6 +1445,7 @@ class FindAndRerankPlannerTest {
           TEST_CONSTANTS.VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
       case LEXICAL_NO_VECTOR -> TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT;
       case VECTOR_NO_RERANK -> TEST_CONSTANTS.VECTOR_COLLECTION_SCHEMA_OBJECT;
+      case AGE_INDEXED -> TEST_CONSTANTS.AGE_INDEXED_RERANK_COLLECTION_SCHEMA_OBJECT;
     };
   }
 
@@ -1366,6 +1463,11 @@ class FindAndRerankPlannerTest {
     return new FindAndRerankPlan.LexicalReadPlan(new LexicalSortExpression(lexicalText), readLimit);
   }
 
+  private static FindAndRerankPlan.ReadPlan filterRead(
+      List<FieldSortExpression> sorts, int readLimit) {
+    return new FindAndRerankPlan.FilterReadPlan(sorts, readLimit);
+  }
+
   /** The collection configs the cases run against. */
   private enum Collection {
     /** vector, vectorize, lexical and rerank */
@@ -1379,6 +1481,8 @@ class FindAndRerankPlannerTest {
     /** lexical and rerank, no vector */
     LEXICAL_NO_VECTOR,
     /** vector without vectorize, no lexical index, rerank disabled */
-    VECTOR_NO_RERANK
+    VECTOR_NO_RERANK,
+    /** lexical and rerank, no vector, only the age field is indexed */
+    AGE_INDEXED
   }
 }

@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.FieldSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -88,7 +89,8 @@ record FindAndRerankPlan(
    * One read that finds documents to rerank, with the filter of the command and the sort of the
    * read. There is one record for each kind of read.
    */
-  sealed interface ReadPlan permits VectorReadPlan, VectorizeReadPlan, LexicalReadPlan {
+  sealed interface ReadPlan
+      permits VectorReadPlan, VectorizeReadPlan, LexicalReadPlan, FilterReadPlan {
 
     /** The maximum number of documents to read. */
     int readLimit();
@@ -154,6 +156,26 @@ record FindAndRerankPlan(
     @Override
     public Rank.RankSource rankSource() {
       return Rank.RankSource.BM25;
+    }
+  }
+
+  /**
+   * A read with field sorts, or a read with no sort.
+   *
+   * @param sorts The field sorts, in order. Empty when the read does not sort.
+   * @param readLimit The maximum number of documents to read.
+   */
+  record FilterReadPlan(List<FieldSortExpression> sorts, int readLimit) implements ReadPlan {
+
+    FilterReadPlan {
+      // sanity checks, the planner never makes a read that fails these
+      sorts = List.copyOf(Objects.requireNonNull(sorts, "sorts must not be null"));
+      checkReadLimit(readLimit);
+    }
+
+    @Override
+    public Rank.RankSource rankSource() {
+      return Rank.RankSource.FILTER;
     }
   }
 

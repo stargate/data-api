@@ -60,6 +60,19 @@ public class DocumentScores implements Comparable<DocumentScores> {
         Score.RRFScore.create(rank));
   }
 
+  /**
+   * When we did a read with only a filter and optional field sorts. The document gets an RRF score
+   * for its rank. The scores have no filter rank.
+   */
+  static DocumentScores fromFilterRead(int rank) {
+    return new DocumentScores(
+        Score.EMPTY_RERANK_SCORE,
+        Score.EMPTY_VECTOR_SCORE,
+        Rank.EMPTY_VECTOR_RANK,
+        Rank.EMPTY_BM25_RANK,
+        Score.RRFScore.create(rank));
+  }
+
   static DocumentScores fromReranking(float rerank) {
     return new DocumentScores(
         Score.rerankScore(rerank),

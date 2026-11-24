@@ -28,15 +28,18 @@ import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvide
 import io.stargate.sgv2.jsonapi.service.reranking.configuration.RerankingProvidersConfigImpl;
 import io.stargate.sgv2.jsonapi.service.reranking.operation.RerankingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.schema.*;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIndexingConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionLexicalDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDefSchemaFactory;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.schema.tables.TableSchemaObject;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.text.StringSubstitutor;
 
@@ -131,6 +134,10 @@ public class TestConstants {
   public final CollectionSchemaObject VECTORIZE_RERANK_COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject VECTORIZE_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
   public final CollectionSchemaObject VECTOR_LEXICAL_RERANK_COLLECTION_SCHEMA_OBJECT;
+
+  /** Rerank and lexical, no vector, indexes only the <code>age</code> field. */
+  public final CollectionSchemaObject AGE_INDEXED_RERANK_COLLECTION_SCHEMA_OBJECT;
+
   public final TableSchemaObject TABLE_SCHEMA_OBJECT;
   public final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT;
   public final DatabaseSchemaObject DATABASE_SCHEMA_OBJECT;
@@ -288,6 +295,20 @@ public class TestConstants {
                         EmbeddingSourceModel.OTHER,
                         null))),
             null,
+            CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
+            CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
+                new CollectionRerankDef(
+                    true,
+                    new CollectionRerankDef.RerankServiceDef("nvidia", RERANK_MODEL, null, null))));
+
+    // Same as COLLECTION_SCHEMA_OBJECT, but only the age field is indexed
+    // NOTE: the allowed set must be mutable, the indexing projector adds _id to it
+    AGE_INDEXED_RERANK_COLLECTION_SCHEMA_OBJECT =
+        new CollectionSchemaObject(
+            COLLECTION_IDENTIFIER,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.NOT_ENABLED_CONFIG,
+            new CollectionIndexingConfig(new HashSet<>(Set.of("age")), null),
             CollectionLexicalDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(null),
             CollectionRerankDefSchemaFactory.FOR_TESTING_ENABLED.currentVersion(
                 new CollectionRerankDef(

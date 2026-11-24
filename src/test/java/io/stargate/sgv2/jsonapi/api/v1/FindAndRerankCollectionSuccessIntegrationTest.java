@@ -7,12 +7,14 @@ import static org.hamcrest.Matchers.*;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.common.Json;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import com.google.common.collect.Lists;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiResponseValidator;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import io.stargate.sgv2.jsonapi.testresource.RerankingTestResource;
 import java.util.ArrayList;
@@ -35,6 +37,10 @@ public class FindAndRerankCollectionSuccessIntegrationTest
     extends AbstractCollectionIntegrationTestBase {
 
   private static final List<Double> VECTOR = List.of(0.25, 0.25, 0.25, 0.25, 0.25);
+
+  /** The most documents insertDocuments() sends in one insertMany. */
+  private static final int INSERT_BATCH_SIZE = 20;
+
   private WireMockServer reranker;
 
   @Override
@@ -436,6 +442,230 @@ public class FindAndRerankCollectionSuccessIntegrationTest
             documents.stream().map(doc -> (String) doc.get("content")).toList());
   }
 
+  /**
+   * A field sort, an empty sort and no sort read with the filter leg: the documents the filter
+   * matches. The filter leg runs on a collection without vector. It uses the rerankQuery and
+   * rerankOn options, and the scores have no vector or BM25 rank.
+   */
+  @Test
+  void filterLegReranksDocumentsTheFilterMatches() {
+    var filterCollection = collectionName + "_filter";
+    createComplexCollection(
+        Json.write(
+            Map.of(
+                "name", filterCollection, "options", Map.of("rerank", Map.of("enabled", true)))));
+    try {
+      insertDocuments(
+          filterCollection,
+          List.of(
+              Map.of("_id", "nz-20", "country", "nz", "age", 20, "food", "score:3 cheese toast"),
+              Map.of("_id", "nz-60", "country", "nz", "age", 60, "food", "score:1 blue cheese"),
+              Map.of("_id", "nz-40", "country", "nz", "age", 40, "food", "score:5 cheese board"),
+              Map.of("_id", "au-30", "country", "au", "age", 30, "food", "score:9 cheese pie")));
+      var nzPassages =
+          List.of("score:3 cheese toast", "score:1 blue cheese", "score:5 cheese board");
+      var options =
+          Map.of("rerankQuery", "who loves cheese?", "rerankOn", "food", "includeScores", true);
+
+      findAndRerank(
+              filterCollection,
+              Map.of(
+                  "filter", Map.of("country", "nz"), "sort", Map.of("age", -1), "options", options))
+          .body("data.documents._id", contains("nz-40", "nz-20", "nz-60"))
+          .body("status.documentResponses.scores.'$rerank'", contains(5.0f, 3.0f, 1.0f))
+          .body("status.documentResponses.scores.'$vectorRank'", everyItem(nullValue()))
+          .body("status.documentResponses.scores.'$bm25Rank'", everyItem(nullValue()))
+          .hasNoField("data.nextPageState");
+      assertThat(requestedPassages()).containsExactlyInAnyOrderElementsOf(nzPassages);
+      assertRequestsUseQuery("who loves cheese?");
+
+      reranker.resetRequests();
+      findAndRerank(
+              filterCollection,
+              Map.of("filter", Map.of("country", "nz"), "sort", Map.of(), "options", options))
+          .body("data.documents._id", contains("nz-40", "nz-20", "nz-60"));
+      assertThat(requestedPassages()).containsExactlyInAnyOrderElementsOf(nzPassages);
+
+      reranker.resetRequests();
+      findAndRerank(filterCollection, Map.of("filter", Map.of("country", "nz"), "options", options))
+          .body("data.documents._id", contains("nz-40", "nz-20", "nz-60"));
+      assertThat(requestedPassages()).containsExactlyInAnyOrderElementsOf(nzPassages);
+    } finally {
+      deleteCollection(filterCollection);
+    }
+  }
+
+  /**
+   * Documents with the same passage get the same rerank score. The filter leg gives each document
+   * an RRF score from the order of the read, so ties are in the order of the field sort. The _ids
+   * sort in a different order, so the test fails if ties are in _id order.
+   */
+  @Test
+  void filterLegOrdersEqualRerankScoresByFieldSort() {
+    insertDocuments(
+        collectionName,
+        List.of(
+            Map.of("_id", "a", "age", 20, "food", "score:2 cheese"),
+            Map.of("_id", "b", "age", 60, "food", "score:2 cheese"),
+            Map.of("_id", "c", "age", 40, "food", "score:2 cheese")));
+
+    findAndRerank(
+            collectionName,
+            Map.of(
+                "sort",
+                Map.of("age", -1),
+                "options",
+                Map.of("rerankQuery", "cheese", "rerankOn", "food", "includeScores", true)))
+        .body("data.documents._id", contains("b", "c", "a"))
+        .body("status.documentResponses.scores.'$rerank'", everyItem(is(2.0f)));
+  }
+
+  /**
+   * The filter leg reads the default of 50 documents, or rerankCandidateLimit documents, with or
+   * without a field sort. A read of more than the default page size of 50 is not cut to one page.
+   */
+  @Test
+  void filterLegReadsRerankCandidateLimitDocuments() {
+    var documents =
+        IntStream.range(0, 60)
+            .mapToObj(
+                index ->
+                    Map.<String, Object>of(
+                        "_id", "candidate" + index,
+                        "rank", index,
+                        "content", "score:" + index + " unique passage " + index))
+            .toList();
+    insertDocuments(collectionName, documents);
+    var allPassages = documents.stream().map(doc -> (String) doc.get("content")).toList();
+    var sort = Map.of("rank", 1);
+
+    // the field sort reads the 50 documents with the lowest rank by default
+    findAndRerank(
+            collectionName,
+            Map.of(
+                "sort",
+                sort,
+                "options",
+                Map.of("rerankQuery", "query", "rerankOn", "content", "limit", 1)))
+        .body("data.documents._id", contains("candidate49"));
+    assertThat(requestedPassages()).containsExactlyInAnyOrderElementsOf(allPassages.subList(0, 50));
+
+    var candidateLimitOptions =
+        Map.of(
+            "rerankCandidateLimit", 60, "rerankQuery", "query", "rerankOn", "content", "limit", 1);
+
+    reranker.resetRequests();
+    findAndRerank(collectionName, Map.of("sort", sort, "options", candidateLimitOptions))
+        .body("data.documents._id", contains("candidate59"));
+    assertThat(requestedPassages()).containsExactlyInAnyOrderElementsOf(allPassages);
+
+    // without a sort the read order is the database order, so only the count is known by default
+    reranker.resetRequests();
+    findAndRerank(
+            collectionName,
+            Map.of("options", Map.of("rerankQuery", "query", "rerankOn", "content", "limit", 1)))
+        .body("data.documents", hasSize(1));
+    assertThat(requestedPassages()).hasSize(50);
+
+    reranker.resetRequests();
+    findAndRerank(collectionName, Map.of("options", candidateLimitOptions))
+        .body("data.documents._id", contains("candidate59"));
+    assertThat(requestedPassages()).containsExactlyInAnyOrderElementsOf(allPassages);
+  }
+
+  /**
+   * The filter leg reads rerankCandidateLimit documents, then drops the documents without the
+   * rerankOn field. So the command returns fewer documents than its limit, even though the
+   * collection has more documents that match.
+   */
+  @Test
+  void filterLegDropsDocumentsWithoutRerankOnAfterTheRead() {
+    insertDocuments(
+        collectionName,
+        List.of(
+            Map.of("_id", "rank0", "rank", 0, "content", "score:1 first passage"),
+            Map.of("_id", "rank1", "rank", 1),
+            Map.of("_id", "rank2", "rank", 2, "content", "score:3 third passage"),
+            Map.of("_id", "rank3", "rank", 3, "content", "score:4 fourth passage")));
+
+    findAndRerank(
+            collectionName,
+            Map.of(
+                "sort",
+                Map.of("rank", 1),
+                "options",
+                Map.of(
+                    "rerankCandidateLimit",
+                    3,
+                    "rerankQuery",
+                    "query",
+                    "rerankOn",
+                    "content",
+                    "limit",
+                    10)))
+        .body("data.documents._id", contains("rank2", "rank0"));
+    assertThat(requestedPassages())
+        .containsExactlyInAnyOrder("score:1 first passage", "score:3 third passage");
+  }
+
+  /** The filter leg reranks on the rerankOn field, even when the projection excludes it. */
+  @Test
+  void filterLegReranksOnFieldTheProjectionExcludes() {
+    insertDocuments(
+        collectionName,
+        List.of(
+            Map.of("_id", "low", "name", "low", "content", "score:1 low passage"),
+            Map.of("_id", "high", "name", "high", "content", "score:5 high passage")));
+
+    findAndRerank(
+            collectionName,
+            Map.of(
+                "projection",
+                Map.of("content", 0),
+                "options",
+                Map.of("rerankQuery", "query", "rerankOn", "content")))
+        .body(
+            "data.documents",
+            contains(Map.of("_id", "high", "name", "high"), Map.of("_id", "low", "name", "low")));
+    assertThat(requestedPassages())
+        .containsExactlyInAnyOrder("score:1 low passage", "score:5 high passage");
+  }
+
+  /**
+   * A field sort is an in-memory sort, the same as find. The command fails when the filter matches
+   * more documents than the sort can read. The ITs set that limit to 100 documents.
+   */
+  @Test
+  void filterLegFieldSortFailsWhenFilterMatchesTooManyDocuments() {
+    insertDocuments(
+        collectionName,
+        IntStream.range(0, 100)
+            .mapToObj(
+                index ->
+                    Map.<String, Object>of(
+                        "_id", "doc" + index, "rank", index, "content", "score:1 passage"))
+            .toList());
+
+    new DataApiResponseValidator(
+            CommandName.FIND_AND_RERANK,
+            givenHeadersPostJsonThenOk(
+                keyspaceName,
+                collectionName,
+                Json.write(
+                    Map.of(
+                        "findAndRerank",
+                        Map.of(
+                            "sort",
+                            Map.of("rank", 1),
+                            "options",
+                            Map.of("rerankQuery", "query", "rerankOn", "content"))))))
+        .hasSingleApiError(
+            SortException.Code.OVERLOADED_SORT_ROW_LIMIT,
+            SortException.class,
+            "in-memory sorting which has a limit of 100 documents");
+    reranker.verify(0, postRequestedFor(urlEqualTo(RerankingTestResource.PATH)));
+  }
+
   private void createRerankingCollection(
       String name, boolean rerankEnabled, boolean lexicalEnabled) {
     var options = new HashMap<String, Object>();
@@ -461,15 +691,21 @@ public class FindAndRerankCollectionSuccessIntegrationTest
     createComplexCollection(Json.write(Map.of("name", name, "options", options)));
   }
 
+  /**
+   * Inserts the documents in batches of {@link #INSERT_BATCH_SIZE}. An emulated HCD can time out
+   * when one insertMany has more documents.
+   */
   private void insertDocuments(String collection, List<? extends Map<String, Object>> documents) {
-    new DataApiResponseValidator(
-            CommandName.INSERT_MANY,
-            givenHeadersPostJsonThenOk(
-                keyspaceName,
-                collection,
-                Json.write(Map.of("insertMany", Map.of("documents", documents)))))
-        .wasSuccessful()
-        .hasInsertedIdCount(documents.size());
+    for (var batch : Lists.partition(documents, INSERT_BATCH_SIZE)) {
+      new DataApiResponseValidator(
+              CommandName.INSERT_MANY,
+              givenHeadersPostJsonThenOk(
+                  keyspaceName,
+                  collection,
+                  Json.write(Map.of("insertMany", Map.of("documents", batch)))))
+          .wasSuccessful()
+          .hasInsertedIdCount(batch.size());
+    }
   }
 
   private DataApiResponseValidator findAndRerank(String collection, Map<String, Object> command) {

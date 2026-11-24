@@ -116,12 +116,14 @@ public class ScoredDocument implements Comparable<ScoredDocument> {
       vectorScores = DocumentScores.EMPTY;
     }
 
-    // if we dont have a vector score, then use the rank as the bm25 rank (it is one or the other)
-    // if we have a vector score, then the BM25 is Empty
-    var bm25Scores =
-        rankSource == Rank.RankSource.BM25
-            ? DocumentScores.fromBm25Read(rank)
-            : DocumentScores.EMPTY;
+    // the scores for the rank of a BM25 or a filter read, the vector scores above have the rank of
+    // a vector read
+    var rankScores =
+        switch (rankSource) {
+          case VECTOR -> DocumentScores.EMPTY;
+          case BM25 -> DocumentScores.fromBm25Read(rank);
+          case FILTER -> DocumentScores.fromFilterRead(rank);
+        };
 
     var passageNode = passageLocator.findValueIn(document);
     var passage =
@@ -144,14 +146,14 @@ public class ScoredDocument implements Comparable<ScoredDocument> {
                       .formatted(passageLocator.path(), documentId, passageNode));
         };
 
-    // we will have one or the other of the vector or bm25 scores, merging handles this.
+    // we will have one or the other of the vector or rank scores, merging handles this.
     // normalise passage to null, to make it easier to use optional.
     // cannot rerank on a blank passage
     return new ScoredDocument(
         documentId,
         document,
         passage == null || passage.isBlank() ? null : passage,
-        vectorScores.merge(bm25Scores));
+        vectorScores.merge(rankScores));
   }
 
   public JsonNode id() {

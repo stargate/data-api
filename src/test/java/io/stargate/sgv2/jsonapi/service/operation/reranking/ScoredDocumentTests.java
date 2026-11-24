@@ -231,6 +231,31 @@ public class ScoredDocumentTests {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "rankSource is BM25 but the document has similarity score id=\"id1\" has $similarity=0.75");
+
+    assertThatThrownBy(
+            () -> ScoredDocument.create(4, Rank.RankSource.FILTER, DOCUMENT, VECTORIZE_LOCATOR))
+        .as("vector score present when a filter ranking")
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "rankSource is FILTER but the document has similarity score id=\"id1\" has $similarity=0.75");
+  }
+
+  /** A document from a filter read gets an RRF score for its rank, and no vector or BM25 rank. */
+  @Test
+  public void testCreateFilterRead() {
+    var document = baseDocument();
+    document.remove(VECTOR_FUNCTION_SIMILARITY_FIELD);
+
+    var scoredDocument =
+        ScoredDocument.create(3, Rank.RankSource.FILTER, document, VECTORIZE_LOCATOR);
+
+    assertThat(scoredDocument.scores().rrf())
+        .as("rrf score from the rank")
+        .isEqualTo(Score.RRFScore.create(3));
+    assertThat(scoredDocument.scores().vectorRank().exists()).as("no vector rank").isFalse();
+    assertThat(scoredDocument.scores().bm25Rank().exists()).as("no bm25 rank").isFalse();
+    assertThat(scoredDocument.scores().vector().exists()).as("no vector score").isFalse();
+    assertThat(scoredDocument.passage()).as("passage").contains(PASSAGE);
   }
 
   /** Testing the various ways the passage is extracted */

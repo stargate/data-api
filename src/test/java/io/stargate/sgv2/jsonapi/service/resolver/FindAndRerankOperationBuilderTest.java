@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -23,10 +24,13 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandError;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandName;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.ResponseData;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.FieldSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
@@ -35,6 +39,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.tracing.RequestTracing;
 import io.stargate.sgv2.jsonapi.config.constants.RerankingConstants;
 import io.stargate.sgv2.jsonapi.exception.RequestException;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.SortException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
@@ -82,6 +87,10 @@ class FindAndRerankOperationBuilderTest {
 
   /** The text the lexical reads sort with. */
   private static final String LEXICAL_TEXT = "cows";
+
+  /** The field sorts of the filter reads that sort. */
+  private static final List<FieldSortExpression> FIELD_SORTS =
+      List.of(new FieldSortExpression("age", false), new FieldSortExpression("name", true));
 
   /** The vectorize step of the plans that vectorize. */
   private static final FindAndRerankPlan.VectorizeStep VECTORIZE_STEP =
@@ -148,7 +157,8 @@ class FindAndRerankOperationBuilderTest {
     return Stream.of(
         Arguments.of("vector read", plan(null, vectorReadPlan(50))),
         Arguments.of(
-            "vector and lexical reads", plan(null, vectorReadPlan(50), lexicalReadPlan(25))));
+            "vector and lexical reads", plan(null, vectorReadPlan(50), lexicalReadPlan(25))),
+        Arguments.of("filter read", plan(null, filterReadPlan(FIELD_SORTS, 50))));
   }
 
   /** The embedding provider for the vectorize step uses the service and dimension of the step. */
@@ -219,7 +229,72 @@ class FindAndRerankOperationBuilderTest {
             plan(VECTORIZE_STEP, vectorizeReadPlan(50), lexicalReadPlan(25)),
             List.of(vectorRead(VECTORIZED, 50), lexicalRead(25))),
         // the plan of a $lexical sort without $hybrid
-        Arguments.of("lexical read", plan(null, lexicalReadPlan(25)), List.of(lexicalRead(25))));
+        Arguments.of("lexical read", plan(null, lexicalReadPlan(25)), List.of(lexicalRead(25))),
+        // the plans of a field sort and of no sort
+        Arguments.of(
+            "filter read with field sorts, in order",
+            plan(null, filterReadPlan(FIELD_SORTS, 70)),
+            List.of(new InnerRead("age=descending, name=ascending", 70, false, false))),
+        Arguments.of(
+            "filter read without field sorts",
+            plan(null, filterReadPlan(List.of(), 50)),
+            List.of(new InnerRead("", 50, false, false))));
+  }
+
+  /** The filter read uses the filter of the command, the same as the other reads. */
+  @Test
+  void filterReadUsesFilterOfCommand() throws Exception {
+    var commandContext = commandContext();
+    var command =
+        command(
+            """
+            {"findAndRerank": {"filter": {"country": "nz"}, "sort": {"age": -1}}}
+            """);
+    var emptyRead = readFinding(commandContext);
+    when(findCommandResolver.resolveCommand(eq(commandContext), any())).thenReturn(emptyRead);
+
+    var result =
+        build(commandContext, command, plan(null, filterReadPlan(FIELD_SORTS, 50)))
+            .execute(commandContext)
+            .await()
+            .indefinitely()
+            .get();
+
+    assertThat(result.errors()).isEmpty();
+    var findCommand = ArgumentCaptor.forClass(FindCommand.class);
+    verify(findCommandResolver).resolveCommand(eq(commandContext), findCommand.capture());
+    assertThat(findCommand.getValue().filterDefinition()).isSameAs(command.filterDefinition());
+  }
+
+  /**
+   * A field sort is an in-memory sort, so the read fails when the filter matches too many
+   * documents. The command returns the error of the read and does not rerank.
+   */
+  @Test
+  void returnsErrorOfFailedFilterRead() throws Exception {
+    var commandContext = commandContext();
+    var rerankingProvider = mock(RerankingProvider.class);
+    when(commandContext.rerankingProviderFactory().create(any(), any(), any(), any(), any(), any()))
+        .thenReturn(rerankingProvider);
+    var sortError =
+        SortException.Code.OVERLOADED_SORT_ROW_LIMIT.get(
+            Map.of("maxLimit", "100", "unit", "document"));
+    Operation<CollectionSchemaObject> failedRead = mock();
+    when(failedRead.execute(commandContext)).thenReturn(Uni.createFrom().failure(sortError));
+    when(findCommandResolver.resolveCommand(eq(commandContext), any())).thenReturn(failedRead);
+
+    var result =
+        build(commandContext, plan(null, filterReadPlan(FIELD_SORTS, 50)))
+            .execute(commandContext)
+            .await()
+            .indefinitely()
+            .get();
+
+    assertThat(result.errors())
+        .singleElement()
+        .extracting(CommandError::errorCode)
+        .isEqualTo(SortException.Code.OVERLOADED_SORT_ROW_LIMIT.name());
+    verify(rerankingProvider, never()).rerank(any(), anyList(), any());
   }
 
   /**
@@ -295,6 +370,50 @@ class FindAndRerankOperationBuilderTest {
         .isEqualTo(Map.of("from-vector", new Ranks(1, null), "from-lexical", new Ranks(null, 1)));
   }
 
+  /**
+   * The documents of a filter read get an RRF score from the order of the read, and no vector or
+   * BM25 rank. The reranking scores are the same, so the RRF scores decide the order. The _ids sort
+   * the other way, so the test fails if the order falls back to the _id.
+   */
+  @Test
+  void ordersDocumentsOfFilterReadByReadOrderWhenRerankScoresAreEqual() throws Exception {
+    var commandContext =
+        TEST_CONSTANTS.collectionContext(
+            CommandName.FIND_AND_RERANK,
+            TEST_CONSTANTS.COLLECTION_SCHEMA_OBJECT,
+            new SimpleMeterRegistry());
+    var rerankingProvider = sameScoreRerankingProvider();
+    when(commandContext.rerankingProviderFactory().create(any(), any(), any(), any(), any(), any()))
+        .thenReturn(rerankingProvider);
+    var filterRead =
+        readFinding(
+            commandContext,
+            """
+            {"_id": "b-first", "body": "first passage"}
+            """,
+            """
+            {"_id": "a-second", "body": "second passage"}
+            """);
+    when(findCommandResolver.resolveCommand(eq(commandContext), any())).thenReturn(filterRead);
+
+    // includeScores, so the response has the scores of each document
+    var plan =
+        new FindAndRerankPlan(
+            null, List.of(filterReadPlan(FIELD_SORTS, 50)), RERANK_STEP, true, false);
+    var result = build(commandContext, plan).execute(commandContext).await().indefinitely().get();
+
+    assertThat(result.errors()).isEmpty();
+    var documentIds =
+        ((ResponseData.MultiResponseData) result.data())
+            .documents().stream().map(document -> document.get(DOC_ID).asText()).toList();
+    assertThat(documentIds).containsExactly("b-first", "a-second");
+    assertThat(ranksById(result))
+        .isEqualTo(Map.of("b-first", new Ranks(null, null), "a-second", new Ranks(null, null)));
+    // RRF is 1 / (60 + rank)
+    var rrfScores = scores(result).stream().map(scores -> scores.scores().rrf()).toList();
+    assertThat(rrfScores).containsExactly((float) (1.0 / 61), (float) (1.0 / 62));
+  }
+
   // ===========================================================================================
   // Command context
   // ===========================================================================================
@@ -357,7 +476,15 @@ class FindAndRerankOperationBuilderTest {
             {"$lexical": "cows"}
             """,
             plan(null, lexicalReadPlan(30)),
-            30));
+            30),
+        Arguments.of(
+            "field sort",
+            """
+            {"age": -1, "name": 1}
+            """,
+            plan(null, filterReadPlan(FIELD_SORTS, 70)),
+            70),
+        Arguments.of("no sort", "null", plan(null, filterReadPlan(List.of(), 60)), 60));
   }
 
   // ===========================================================================================
@@ -458,11 +585,16 @@ class FindAndRerankOperationBuilderTest {
    */
   private record Ranks(Integer vectorRank, Integer bm25Rank) {}
 
-  /** The ranks in the response, by the _id of their document. */
+  /** The scores in the response, in the same order as the documents. */
   @SuppressWarnings("unchecked")
+  private static List<DocumentScoresDesc> scores(CommandResult result) {
+    return (List<DocumentScoresDesc>) result.status().get(CommandStatus.DOCUMENT_RESPONSES);
+  }
+
+  /** The ranks in the response, by the _id of their document. */
   private static Map<String, Ranks> ranksById(CommandResult result) {
     var documents = ((ResponseData.MultiResponseData) result.data()).documents();
-    var scores = (List<DocumentScoresDesc>) result.status().get(CommandStatus.DOCUMENT_RESPONSES);
+    var scores = scores(result);
     // the response lists the scores in the same order as the documents
     assertThat(scores).hasSameSizeAs(documents);
     return IntStream.range(0, documents.size())
@@ -512,11 +644,18 @@ class FindAndRerankOperationBuilderTest {
         new LexicalSortExpression(LEXICAL_TEXT), readLimit);
   }
 
+  /** A read with the field sorts. It does not sort when the list is empty. */
+  private static FindAndRerankPlan.ReadPlan filterReadPlan(
+      List<FieldSortExpression> sorts, int readLimit) {
+    return new FindAndRerankPlan.FilterReadPlan(sorts, readLimit);
+  }
+
   /**
    * An inner find the operation ran.
    *
    * @param sort The sort expressions of the find as <code>path=value</code> text, so that a vector
-   *     compares by value.
+   *     compares by value. The value of a field sort is <code>ascending</code> or <code>descending
+   *     </code>.
    * @param limit The limit of the find.
    * @param includeSimilarity The <code>includeSimilarity</code> option of the find.
    * @param includeSortVector The <code>includeSortVector</code> option of the find.
@@ -528,17 +667,21 @@ class FindAndRerankOperationBuilderTest {
         CommandContext<CollectionSchemaObject> commandContext, FindCommand findCommand) {
       var sort =
           findCommand.sortClause(commandContext).sortExpressions().stream()
-              .map(
-                  expression ->
-                      expression.getPath()
-                          + "="
-                          + (expression.hasVector()
-                              ? Arrays.toString(expression.getVector())
-                              : expression.getLexicalQuery()))
+              .map(expression -> expression.getPath() + "=" + sortValue(expression))
               .collect(Collectors.joining(", "));
       var options = findCommand.options();
       return new InnerRead(
           sort, options.limit(), options.includeSimilarity(), options.includeSortVector());
+    }
+
+    private static String sortValue(SortExpression expression) {
+      if (expression.hasVector()) {
+        return Arrays.toString(expression.getVector());
+      }
+      if (expression.isLexicalSort()) {
+        return expression.getLexicalQuery();
+      }
+      return expression.isAscending() ? "ascending" : "descending";
     }
   }
 
