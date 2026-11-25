@@ -24,6 +24,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Successful collection reranking through the production Nvidia HTTP client and task pipeline. */
 @QuarkusIntegrationTest
@@ -281,6 +283,157 @@ public class FindAndRerankCollectionSuccessIntegrationTest
             request ->
                 assertThat(Json.node(request.getBodyAsString()).get("passages").size())
                     .isEqualTo(10));
+  }
+
+  @Test
+  void vectorizeSortWithoutHybridSuppliesDefaultQueryAndPassages() {
+    insertDocuments(
+        collectionName,
+        List.of(
+            Map.of("_id", "low", "$vectorize", "score:1 low passage"),
+            Map.of("_id", "high", "$vectorize", "score:5 high passage"),
+            Map.of("_id", "middle", "$vectorize", "score:3 middle passage")));
+
+    findAndRerank(
+            collectionName,
+            Map.of(
+                "sort", Map.of("$vectorize", "default search query"),
+                "options", Map.of("includeScores", true, "includeSortVector", true)))
+        .body("data.documents._id", contains("high", "middle", "low"))
+        .body("status.documentResponses.scores.'$rerank'", contains(5.0f, 3.0f, 1.0f))
+        .body("status.documentResponses.scores.'$vectorRank'", everyItem(notNullValue()))
+        .body("status.documentResponses.scores.'$bm25Rank'", everyItem(nullValue()))
+        .body("status.sortVector", contains(0.25f, 0.25f, 0.25f, 0.25f, 0.25f))
+        .hasNoField("data.nextPageState");
+
+    assertThat(requestedPassages())
+        .containsExactlyInAnyOrder(
+            "score:1 low passage", "score:5 high passage", "score:3 middle passage");
+    assertRequestsUseQuery("default search query");
+    reranker.verify(1, postRequestedFor(urlEqualTo(RerankingTestResource.PATH)));
+  }
+
+  /** The $vector sort is an array of numbers, or the same vector as a $binary vector. */
+  @ParameterizedTest(name = "binary={0}")
+  @ValueSource(booleans = {false, true})
+  void vectorSortWithoutHybridUsesRerankOptions(boolean binary) {
+    insertDocuments(
+        collectionName,
+        List.of(
+            Map.of("_id", "low", "$vector", VECTOR, "content", "score:1 low passage"),
+            Map.of("_id", "high", "$vector", VECTOR, "content", "score:5 high passage")));
+    Object vector =
+        binary
+            ? Map.of(
+                "$binary",
+                generateBase64EncodedBinaryVector(new float[] {0.25f, 0.25f, 0.25f, 0.25f, 0.25f}))
+            : VECTOR;
+
+    findAndRerank(
+            collectionName,
+            Map.of(
+                "sort", Map.of("$vector", vector),
+                "options",
+                    Map.of(
+                        "rerankQuery",
+                        "explicit reranking query",
+                        "rerankOn",
+                        "content",
+                        "includeSortVector",
+                        true)))
+        .body("data.documents._id", contains("high", "low"))
+        .body("status.sortVector", contains(0.25f, 0.25f, 0.25f, 0.25f, 0.25f));
+
+    assertThat(requestedPassages())
+        .containsExactlyInAnyOrder("score:1 low passage", "score:5 high passage");
+    assertRequestsUseQuery("explicit reranking query");
+  }
+
+  @Test
+  @DisabledIfSystemProperty(named = TEST_PROP_LEXICAL_DISABLED, matches = "true")
+  void lexicalSortWithoutHybridSuppliesDefaultQueryAndPassages() {
+    var lexicalCollection = collectionName + "_lexical";
+    createRerankingCollection(lexicalCollection, true, true);
+    try {
+      insertDocuments(
+          lexicalCollection,
+          List.of(
+              Map.of("_id", "low", "$lexical", "score:1 cheese low"),
+              Map.of("_id", "high", "$lexical", "score:5 cheese high"),
+              Map.of("_id", "middle", "$lexical", "score:3 cheese middle"),
+              // the lexical read does not find it, so it is not reranked
+              Map.of("_id", "other", "$lexical", "score:9 butter")));
+
+      findAndRerank(
+              lexicalCollection,
+              Map.of(
+                  "sort", Map.of("$lexical", "cheese"),
+                  "options", Map.of("includeScores", true, "includeSortVector", true)))
+          .body("data.documents._id", contains("high", "middle", "low"))
+          .body("status.documentResponses.scores.'$rerank'", contains(5.0f, 3.0f, 1.0f))
+          .body("status.documentResponses.scores.'$vectorRank'", everyItem(nullValue()))
+          .body("status.documentResponses.scores.'$bm25Rank'", everyItem(notNullValue()))
+          .body("status.sortVector", nullValue());
+
+      assertThat(requestedPassages())
+          .containsExactlyInAnyOrder(
+              "score:1 cheese low", "score:5 cheese high", "score:3 cheese middle");
+      assertRequestsUseQuery("cheese");
+    } finally {
+      deleteCollection(lexicalCollection);
+    }
+  }
+
+  /**
+   * A sort without $hybrid reads the default of 50 documents, or rerankCandidateLimit documents.
+   * The best reranking candidate is beyond the first 50 documents in vector order.
+   */
+  @Test
+  void sortWithoutHybridReadsRerankCandidateLimitDocuments() {
+    var documents =
+        IntStream.range(0, 60)
+            .mapToObj(
+                index ->
+                    Map.<String, Object>of(
+                        "_id", "candidate" + index,
+                        "$vector", List.of((double) index + 1, 0.0, 0.0, 0.0, 0.0),
+                        "content", "score:" + index + " unique passage " + index))
+            .toList();
+    insertDocuments(collectionName, documents);
+    var sort = Map.of("$vector", List.of(1.0, 0.0, 0.0, 0.0, 0.0));
+
+    findAndRerank(
+            collectionName,
+            Map.of(
+                "sort",
+                sort,
+                "options",
+                Map.of("rerankQuery", "query", "rerankOn", "content", "limit", 1)))
+        .body("data.documents._id", contains("candidate49"));
+    assertThat(requestedPassages())
+        .containsExactlyInAnyOrderElementsOf(
+            documents.subList(0, 50).stream().map(doc -> (String) doc.get("content")).toList());
+
+    reranker.resetRequests();
+    findAndRerank(
+            collectionName,
+            Map.of(
+                "sort",
+                sort,
+                "options",
+                Map.of(
+                    "rerankCandidateLimit",
+                    60,
+                    "rerankQuery",
+                    "query",
+                    "rerankOn",
+                    "content",
+                    "limit",
+                    1)))
+        .body("data.documents._id", contains("candidate59"));
+    assertThat(requestedPassages())
+        .containsExactlyInAnyOrderElementsOf(
+            documents.stream().map(doc -> (String) doc.get("content")).toList());
   }
 
   private void createRerankingCollection(

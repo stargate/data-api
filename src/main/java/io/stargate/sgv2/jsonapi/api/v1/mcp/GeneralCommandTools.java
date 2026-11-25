@@ -22,8 +22,8 @@ public class GeneralCommandTools {
 
   @Tool(description = "Command that creates a keyspace.")
   public Uni<ToolResponse> createKeyspace(
-      @ToolArg(description = "Required name of the new Keyspace") String name,
-      @ToolArg(description = "Options for creating a new keyspace.", required = false)
+      @ToolArg(description = "Name of the new keyspace") String name,
+      @ToolArg(description = "Options for the command.", required = false)
           CreateKeyspaceCommand.Options options) {
 
     var command = new CreateKeyspaceCommand(name, options);
@@ -32,7 +32,7 @@ public class GeneralCommandTools {
 
   @Tool(description = "Command that deletes a Keyspace.")
   public Uni<ToolResponse> dropKeyspace(
-      @ToolArg(description = "Required name of the Keyspace to remove") @NotEmpty String name) {
+      @ToolArg(description = "Name of the keyspace to drop") @NotEmpty String name) {
 
     var command = new DropKeyspaceCommand(name);
     return mcpResource.processCommand(mcpResource.buildDatabaseContext(command), command);
@@ -47,10 +47,7 @@ public class GeneralCommandTools {
 
   @Tool(description = "Lists the available Embedding Providers for this database.")
   public Uni<ToolResponse> findEmbeddingProviders(
-      @ToolArg(
-              description =
-                  "Optional model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           FindEmbeddingProvidersCommand.Options options) {
 
     var command = new FindEmbeddingProvidersCommand(options);
@@ -59,10 +56,7 @@ public class GeneralCommandTools {
 
   @Tool(description = "Lists the available Reranking Providers for this database.")
   public Uni<ToolResponse> findRerankingProviders(
-      @ToolArg(
-              description =
-                  "Optional model status filter: SUPPORTED, DEPRECATED, or END_OF_LIFE. If omitted, only SUPPORTED models are returned.",
-              required = false)
+      @ToolArg(description = "Options for the command.", required = false)
           FindRerankingProvidersCommand.Options options) {
 
     var command = new FindRerankingProvidersCommand(options);
