@@ -60,6 +60,43 @@ public class DocumentScoresTests {
   }
 
   @Test
+  public void testComparisonSameRerankingWithFilterOnly() {
+    // testing what happens with duplicates and only a filter read, the read order decides
+    var score1 = DocumentScores.fromReranking(-18.765f).merge(DocumentScores.fromFilterRead(1));
+    var score2 = DocumentScores.fromReranking(-18.765f).merge(DocumentScores.fromFilterRead(5));
+    var score3 = DocumentScores.fromReranking(-18.765f).merge(DocumentScores.fromFilterRead(10));
+
+    ScoreTests.threewayScoreComparison(score1, score2, score3);
+  }
+
+  /** A filter read gives an RRF score for the rank, and no vector or BM25 rank. */
+  @Test
+  public void testFilterReadFactory() {
+    var filterRead = DocumentScores.fromFilterRead(3);
+
+    assertThat(filterRead.rrf()).as("filter score has rrf").isEqualTo(Score.RRFScore.create(3));
+    assertThat(filterRead.vector())
+        .as("filter score has empty vector score")
+        .isEqualTo(Score.EMPTY_VECTOR_SCORE);
+    assertThat(filterRead.vectorRank())
+        .as("filter score has empty vector rank")
+        .isEqualTo(Rank.EMPTY_VECTOR_RANK);
+    assertThat(filterRead.bm25Rank())
+        .as("filter score has empty bm25 rank")
+        .isEqualTo(Rank.EMPTY_BM25_RANK);
+    assertThat(filterRead.rerank())
+        .as("filter score has empty rerank")
+        .isEqualTo(Score.EMPTY_RERANK_SCORE);
+
+    var desc = filterRead.scoresDesc();
+    assertThat(desc.scores().rrf())
+        .as("description has rrf")
+        .isEqualTo(Score.RRFScore.create(3).score());
+    assertThat(desc.scores().vectorRank()).as("description has null vector rank").isNull();
+    assertThat(desc.scores().bm25Rank()).as("description has null bm25 rank").isNull();
+  }
+
+  @Test
   public void testComparisonSameRerankingWithBoth() {
     // duplicate scores tend to be negative
     // testing what happens with duplicates reads from both

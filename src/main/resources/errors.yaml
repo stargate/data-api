@@ -303,6 +303,8 @@ request-errors:
       * `$lexical` field as the only field in the sort clause, in which case documents are ranked using the value of `$lexical`, e.g. `{"$lexical": "query text"}`.
       * `rerankOn` field in the options clause, e.g. `{"rerankOn": "my_passage_field"}`.
 
+      A sort that uses `$vector`, a sort by document fields, or no sort, must use the `rerankOn` option.
+
       When specified the `rerankOn` option takes priority. In all cases the passage text must be a non blank text value. 
       
       Resend the command including the name of the field on which reranking should be done.
@@ -323,6 +325,8 @@ request-errors:
       * `$lexical` field as the only field in the sort clause, e.g. `{"$lexical": "query text"}`.
       * `rerankQuery` field in the options clause, e.g. `{"rerankQuery": "query text"}`.
       
+      A sort that uses `$vector`, a sort by document fields, or no sort, must use the `rerankQuery` option.
+
       When specified the `rerankQuery` option takes priority. In all cases the query text must be a non blank text value. 
       
       Resend the command including the query text for reranking.
@@ -2365,16 +2369,6 @@ request-errors:
       Value used for sort expression on path '${path}' not valid: ${problem}.
       
       Resend the command with valid sort expression value.
-
-  - scope: SORT
-    code: UNSUPPORTED_FIND_AND_RERANK_SORT
-    title: Hybrid, vector or lexical sort required by findAndRerank
-    body: |-
-      The command attempted to run findAndRerank with a sort by document fields, or without a sort.
-
-      The findAndRerank command finds the documents to rerank with a `$hybrid` sort, e.g. `{"$hybrid": "query text"}`, or with a sort by only one of `$vectorize`, `$vector` or `$lexical`, e.g. `{"$vectorize": "query text"}`. Sorting by document fields, and reranking the documents matched by the filter alone are not supported.
-
-      Resend the command with a `$hybrid`, `$vectorize`, `$vector` or `$lexical` sort.
 
   - scope: SORT
     code: UNSUPPORTED_SORT_FOR_TABLE_DELETE_COMMAND

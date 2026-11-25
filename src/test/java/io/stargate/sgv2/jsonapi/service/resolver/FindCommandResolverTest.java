@@ -9,9 +9,11 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
@@ -1571,6 +1573,101 @@ public class FindCommandResolverTest {
                 assertThat(find.orderBy()).isNull();
                 assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
               });
+    }
+  }
+
+  /**
+   * findAndRerank sets the hybrid limits on the command context for its reads, see GH #1961. Then a
+   * read without a vector or lexical sort returns up to its limit, not up to the default page size.
+   * The limit in the tests is above the default page size, so a test fails if the page size caps
+   * it.
+   */
+  @Nested
+  class FindCommandResolveForFindAndRerank {
+
+    private static final String SORT = "{\"username\": 1}";
+
+    @Test
+    public void readWithoutSortReadsLimitInOnePageWhenHybridLimitsAreSet() throws Exception {
+      int limit = operationsConfig.defaultPageSize() + 20;
+      setHybridLimits(limit);
+
+      var operation = resolver.resolveCommand(commandContext, findCommand(null, limit));
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindCollectionOperation.class,
+              find -> {
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                assertThat(find.limit()).isEqualTo(limit);
+                assertThat(find.pageSize()).isEqualTo(limit);
+              });
+    }
+
+    @Test
+    public void readWithoutSortUsesDefaultPageSizeWhenHybridLimitsAreNotSet() throws Exception {
+      int limit = operationsConfig.defaultPageSize() + 20;
+
+      var operation = resolver.resolveCommand(commandContext, findCommand(null, limit));
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindCollectionOperation.class,
+              find -> {
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
+                assertThat(find.limit()).isEqualTo(limit);
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+              });
+    }
+
+    @Test
+    public void readWithFieldSortReturnsLimitWhenHybridLimitsAreSet() throws Exception {
+      int limit = operationsConfig.defaultPageSize() + 20;
+      setHybridLimits(limit);
+
+      var operation = resolver.resolveCommand(commandContext, findCommand(SORT, limit));
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindCollectionOperation.class,
+              find -> {
+                assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
+                assertThat(find.limit()).isEqualTo(limit);
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
+                assertThat(find.maxSortReadLimit())
+                    .isEqualTo(operationsConfig.maxDocumentSortCount());
+              });
+    }
+
+    @Test
+    public void readWithFieldSortReturnsDefaultPageSizeWhenHybridLimitsAreNotSet()
+        throws Exception {
+      int limit = operationsConfig.defaultPageSize() + 20;
+
+      var operation = resolver.resolveCommand(commandContext, findCommand(SORT, limit));
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindCollectionOperation.class,
+              find -> {
+                assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
+                assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
+              });
+    }
+
+    /** Sets the hybrid limits the way findAndRerank does for a sort without $hybrid. */
+    private void setHybridLimits(int readLimit) {
+      commandContext.setHybridLimits(
+          new FindAndRerankCommand.HybridLimits(readLimit, readLimit, CommandFeatures.EMPTY));
+    }
+
+    /** A find with the limit, and with the sort when it is not <code>null</code>. */
+    private FindCommand findCommand(String sort, int limit) throws Exception {
+      var sortField = sort == null ? "" : "\"sort\": %s, ".formatted(sort);
+      return objectMapper.readValue(
+          "{\"find\": {%s\"options\": {\"limit\": %d}}}".formatted(sortField, limit),
+          FindCommand.class);
     }
   }
 }

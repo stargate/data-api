@@ -313,34 +313,6 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
             """)
         .body("$", responseIsError())
         .body("errors[0].errorCode", is(SortException.Code.MISSING_HYBRID_SORT_VALUE.name()));
-
-    // no sort
-    findAndRerankWithSort(collectionName, null)
-        .body("$", responseIsError())
-        .body(
-            "errors[0].errorCode", is(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.name()));
-
-    // empty sort
-    findAndRerankWithSort(collectionName, "{}")
-        .body("$", responseIsError())
-        .body(
-            "errors[0].errorCode", is(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.name()));
-
-    // null sort
-    findAndRerankWithSort(collectionName, "null")
-        .body("$", responseIsError())
-        .body(
-            "errors[0].errorCode", is(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.name()));
-
-    // field sort
-    findAndRerankWithSort(
-            collectionName,
-            """
-            {"age": -1}
-            """)
-        .body("$", responseIsError())
-        .body(
-            "errors[0].errorCode", is(SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.name()));
   }
 
   /** Each limit option is for one kind of sort, it is rejected with the other kind. */
@@ -553,6 +525,82 @@ public class FindAndRerankCollectionIntegrationTest extends AbstractCollectionIn
         .body("$", responseIsError())
         .body("errors[0].errorCode", is(RequestException.Code.MISSING_RERANK_ON.name()));
   }
+
+  /**
+   * A field sort and no sort read with the filter leg. The filter leg has no text to rerank with
+   * and no field to rerank on, so the command must have the rerankQuery and rerankOn options.
+   */
+  @Test
+  void failOnFilterLegWithoutRerankOptions() {
+    var collectionName = "find_rerank_filter_leg_no_options";
+    createCollectionWithCleanup(collectionName, RERANK_NO_VECTOR_SPEC);
+
+    // no sort, no rerankQuery
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            """
+            {"findAndRerank": {"options": {"rerankOn": "content"}}}
+            """)
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.MISSING_RERANK_QUERY_TEXT.name()));
+
+    // field sort, no rerankOn
+    givenHeadersPostJsonThen(
+            keyspaceName,
+            collectionName,
+            """
+            {"findAndRerank": {"sort": {"age": -1}, "options": {"rerankQuery": "hello"}}}
+            """)
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(RequestException.Code.MISSING_RERANK_ON.name()));
+  }
+
+  /**
+   * A field sort can only use the paths the collection indexes. The command fails before it reads,
+   * and the error names the path.
+   */
+  @Test
+  void failOnFieldSortByPathNotIndexed() {
+    var collectionName = "find_rerank_field_sort_not_indexed";
+    createCollectionWithCleanup(
+        collectionName,
+        """
+        {
+          "name" : "%s",
+          "options": {
+            "indexing": {
+              "allow": ["age"]
+            },
+            "rerank": {
+              "enabled": true
+            }
+          }
+        }
+        """);
+
+    findAndRerankWithSort(
+            collectionName,
+            """
+            {"age": -1, "name": 1}
+            """)
+        .body("$", responseIsError())
+        .body("errors[0].errorCode", is(SortException.Code.SORT_CLAUSE_PATH_UNINDEXED.name()))
+        .body("errors[0].message", containsString("Collection field 'name' is not indexed"));
+  }
+
+  /** A collection with reranking and without vector, for the filter leg. */
+  private static final String RERANK_NO_VECTOR_SPEC =
+      """
+      {
+        "name" : "%s",
+        "options": {
+          "rerank": {
+            "enabled": true
+          }
+        }
+      }
+      """;
 
   /**
    * Sends a findAndRerank command with the sort. The command has the rerankQuery and rerankOn

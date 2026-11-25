@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.FieldSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -26,7 +27,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 /**
  * Tests for {@link FindAndRerankPlan} and its records: the rules their constructors check, the rank
  * source of each read, how a {@link FindAndRerankPlan.VectorReadPlan} compares, and that the reads
- * of a plan cannot change.
+ * of a plan and the sorts of a {@link FindAndRerankPlan.FilterReadPlan} cannot change.
  */
 class FindAndRerankPlanTest {
 
@@ -40,6 +41,12 @@ class FindAndRerankPlanTest {
 
   private static final FindAndRerankPlan.LexicalReadPlan LEXICAL_READ =
       new FindAndRerankPlan.LexicalReadPlan(new LexicalSortExpression("cows"), 50);
+
+  private static final List<FieldSortExpression> FIELD_SORTS =
+      List.of(new FieldSortExpression("age", false), new FieldSortExpression("name", true));
+
+  private static final FindAndRerankPlan.FilterReadPlan FILTER_READ =
+      new FindAndRerankPlan.FilterReadPlan(FIELD_SORTS, 50);
 
   private static final FindAndRerankPlan.VectorizeStep VECTORIZE_STEP =
       new FindAndRerankPlan.VectorizeStep(
@@ -86,6 +93,11 @@ class FindAndRerankPlanTest {
             "vectorize step, no vectorize read",
             VECTORIZE_STEP,
             List.of(VECTOR_READ),
+            "vectorizeStep must be null when there is no VectorizeReadPlan"),
+        Arguments.of(
+            "vectorize step, only a filter read",
+            VECTORIZE_STEP,
+            List.of(FILTER_READ),
             "vectorizeStep must be null when there is no VectorizeReadPlan"));
   }
 
@@ -103,6 +115,7 @@ class FindAndRerankPlanTest {
   static Stream<Arguments> validPlans() {
     return Stream.of(
         Arguments.of("one lexical read, no vector read needed", null, List.of(LEXICAL_READ)),
+        Arguments.of("one filter read, no vector read needed", null, List.of(FILTER_READ)),
         Arguments.of("vector read, no vectorize step", null, List.of(VECTOR_READ)),
         Arguments.of(
             "vectorize read with the vectorize step, lexical read",
@@ -153,6 +166,19 @@ class FindAndRerankPlanTest {
         .hasMessage("sort must not be null");
   }
 
+  @Test
+  void rejectsFilterReadWithNullSorts() {
+    assertThatThrownBy(() -> new FindAndRerankPlan.FilterReadPlan(null, 50))
+        .isExactlyInstanceOf(NullPointerException.class)
+        .hasMessage("sorts must not be null");
+  }
+
+  /** A command with no sort reads with a filter read that has no sorts. */
+  @Test
+  void acceptsFilterReadWithNoSorts() {
+    assertThat(new FindAndRerankPlan.FilterReadPlan(List.of(), 50).sorts()).isEmpty();
+  }
+
   @ParameterizedTest(name = "{0}")
   @MethodSource("readsWithReadLimit")
   void rejectsReadLimitBelowOne(String description, IntFunction<FindAndRerankPlan.ReadPlan> read) {
@@ -185,7 +211,11 @@ class FindAndRerankPlanTest {
             (IntFunction<FindAndRerankPlan.ReadPlan>)
                 readLimit ->
                     new FindAndRerankPlan.LexicalReadPlan(
-                        new LexicalSortExpression("cows"), readLimit)));
+                        new LexicalSortExpression("cows"), readLimit)),
+        Arguments.of(
+            "filter read",
+            (IntFunction<FindAndRerankPlan.ReadPlan>)
+                readLimit -> new FindAndRerankPlan.FilterReadPlan(FIELD_SORTS, readLimit)));
   }
 
   @ParameterizedTest(name = "{0}")
@@ -199,7 +229,8 @@ class FindAndRerankPlanTest {
     return Stream.of(
         Arguments.of("vector read", VECTOR_READ, Rank.RankSource.VECTOR),
         Arguments.of("vectorize read", VECTORIZE_READ, Rank.RankSource.VECTOR),
-        Arguments.of("lexical read", LEXICAL_READ, Rank.RankSource.BM25));
+        Arguments.of("lexical read", LEXICAL_READ, Rank.RankSource.BM25),
+        Arguments.of("filter read", FILTER_READ, Rank.RankSource.FILTER));
   }
 
   @Test
@@ -237,6 +268,25 @@ class FindAndRerankPlanTest {
             "different readLimit",
             new FindAndRerankPlan.VectorReadPlan(new VectorSortExpression(VECTOR), 50),
             new FindAndRerankPlan.VectorReadPlan(new VectorSortExpression(VECTOR), 20)));
+  }
+
+  @Test
+  void filterReadCopiesTheSorts() {
+    var sorts = new ArrayList<>(FIELD_SORTS);
+    var read = new FindAndRerankPlan.FilterReadPlan(sorts, 50);
+
+    sorts.add(new FieldSortExpression("city", true));
+
+    assertThat(read.sorts()).isEqualTo(FIELD_SORTS);
+  }
+
+  @Test
+  void filterReadSortsCannotBeChanged() {
+    // a list that can be changed, so only the read's own copy makes the sorts unmodifiable
+    var read = new FindAndRerankPlan.FilterReadPlan(new ArrayList<>(FIELD_SORTS), 50);
+
+    assertThatThrownBy(() -> read.sorts().add(new FieldSortExpression("city", true)))
+        .isInstanceOf(UnsupportedOperationException.class);
   }
 
   // ===========================================================================================

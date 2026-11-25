@@ -170,15 +170,20 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     // if orderBy present
     if (orderBy != null) {
       // Hack: See https://github.com/stargate/data-api/issues/1961
-      // not commandContext.getHybridLimits() becuase there is no limit for a non ANN or BM25 query
+      // findAndRerank sets the hybrid limits for its reads. Its read with a field sort returns up
+      // to the limit of the read, not up to the default page size.
+      int sortedLimit =
+          commandContext.getHybridLimits() == null
+              // For in-memory sorting if no limit provided in the request will use
+              // documentConfig.defaultPageSize() as limit
+              ? Math.min(limit, operationsConfig.defaultPageSize())
+              : limit;
       return FindCollectionOperation.sorted(
           commandContext,
           resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,
-          // For in-memory sorting if no limit provided in the request will use
-          // documentConfig.defaultPageSize() as limit
-          Math.min(limit, operationsConfig.defaultPageSize()),
+          sortedLimit,
           // For in-memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           CollectionReadType.SORTED_DOCUMENT,
@@ -189,14 +194,17 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
           includeSortVector);
     }
     // Hack: See https://github.com/stargate/data-api/issues/1961
-    // not commandContext.getHybridLimits() becuase there is no limit for a non ANN or BM25 query
+    // findAndRerank sets the hybrid limits for its reads. Its read without a sort returns up to the
+    // limit of the read in one page, not up to the default page size.
+    int pageSize =
+        commandContext.getHybridLimits() == null ? operationsConfig.defaultPageSize() : limit;
     return FindCollectionOperation.unsorted(
         commandContext,
         resolvedDbLogicalExpression,
         command.buildProjector(),
         pageState,
         limit,
-        operationsConfig.defaultPageSize(),
+        pageSize,
         CollectionReadType.DOCUMENT,
         objectMapper,
         includeSortVector);

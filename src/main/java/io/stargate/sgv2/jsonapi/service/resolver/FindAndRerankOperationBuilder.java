@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.FieldSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
@@ -142,7 +143,7 @@ class FindAndRerankOperationBuilder {
                 rerankServiceDef.authentication(),
                 commandContext.commandName());
 
-    // the reranking task needs to know if each result is from a vector or a BM25 read
+    // the reranking task needs to know if each result is from a vector, a BM25 or a filter read
     var resultsWithSource =
         readsAndResults.stream()
             .map(
@@ -195,6 +196,8 @@ class FindAndRerankOperationBuilder {
     // copying the hybrid limits on the command context so the find command resolver can pick it up
     // when the command runs later, so we can set the page size to be the same as the limit
     // A sort without $hybrid has no hybridLimits, so we copy the read limit of its one read
+    // For a filter read the resolver only checks that the hybrid limits are set, then it reads up
+    // to the limit of the read
     commandContext.setHybridLimits(
         switch (command.sortClause()) {
           case FindAndRerankSort.MultiLeg ignored ->
@@ -230,6 +233,8 @@ class FindAndRerankOperationBuilder {
                 buildVectorizeRead(position, readLimit, deferredCommandResultAction);
             case FindAndRerankPlan.LexicalReadPlan(var sort, var readLimit) ->
                 buildBm25Read(position, sort, readLimit, deferredCommandResultAction);
+            case FindAndRerankPlan.FilterReadPlan(var sorts, var readLimit) ->
+                buildFilterRead(position, sorts, readLimit, deferredCommandResultAction);
           };
       taskGroup.add(taskAndDeferrables.task());
       deferrables.addAll(taskAndDeferrables.deferrables());
@@ -248,6 +253,19 @@ class FindAndRerankOperationBuilder {
     var bm25SortClause = new SortClause(List.of(SortExpression.from(sort)));
     return new TaskAndDeferrables<>(
         buildReadTask(position, bm25SortClause, null, readLimit, deferredAction));
+  }
+
+  /** Builds a read that sorts by the field sorts. The read does not sort when there are none. */
+  private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject>
+      buildFilterRead(
+          int position,
+          List<FieldSortExpression> sorts,
+          int readLimit,
+          DeferredCommandResultAction deferredAction) {
+
+    var fieldSortClause = new SortClause(sorts.stream().map(SortExpression::from).toList());
+    return new TaskAndDeferrables<>(
+        buildReadTask(position, fieldSortClause, null, readLimit, deferredAction));
   }
 
   /** Builds a read that sorts with the vector from the command. */

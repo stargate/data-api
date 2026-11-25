@@ -24,7 +24,9 @@ public class Rank {
     /** Rank came from a vector similarity sort */
     VECTOR,
     /** Rank came from a BM25 sort */
-    BM25;
+    BM25,
+    /** Rank came from the order of a read with only a filter and optional field sorts */
+    FILTER;
   }
 
   private final RankSource source;

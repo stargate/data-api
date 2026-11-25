@@ -7,6 +7,8 @@ import static io.stargate.sgv2.jsonapi.util.ApiOptionUtils.getOrDefault;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorizeSortExpression;
@@ -65,8 +67,7 @@ class FindAndRerankPlanner {
 
     // NOTE: the reads are planned after the options and the projection are checked, to keep the
     // error order of the command: e.g. {"$hybrid": ""} with no rerankQuery fails with
-    // MISSING_RERANK_QUERY_TEXT, not MISSING_HYBRID_SORT_VALUE. And a command with no sort and no
-    // options fails with MISSING_RERANK_QUERY_TEXT, not UNSUPPORTED_FIND_AND_RERANK_SORT.
+    // MISSING_RERANK_QUERY_TEXT, not MISSING_HYBRID_SORT_VALUE.
 
     // NOTE: a sort with no $vector or $vectorize fails here with a SORT error, not later with an
     // UNEXPECTED_SERVER_ERROR, see GH #2577
@@ -75,7 +76,7 @@ class FindAndRerankPlanner {
           case FindAndRerankSort.MultiLeg multiLeg ->
               buildMultiLegReads(command, multiLeg, schemaObject);
           case FindAndRerankSort.SingleLeg singleLeg ->
-              List.of(buildSingleLegRead(singleLeg, rerankCandidateLimit));
+              List.of(buildSingleLegRead(singleLeg, rerankCandidateLimit, schemaObject));
         };
     var vectorizeStep = isVectorizeSort(sort) ? buildVectorizeStep(sort, schemaObject) : null;
 
@@ -256,11 +257,12 @@ class FindAndRerankPlanner {
    *
    * @param singleLeg The sort of the command.
    * @param readLimit The maximum number of documents to read.
-   * @return A vectorize read for a $vectorize sort, a vector read for a $vector sort, or a lexical
-   *     read for a $lexical sort.
+   * @param schemaObject The collection. A sort by fields can only use the paths it indexes.
+   * @return A vectorize read for a $vectorize sort, a vector read for a $vector sort, a lexical
+   *     read for a $lexical sort, or a filter read for a sort by fields or no sort.
    */
   private static FindAndRerankPlan.ReadPlan buildSingleLegRead(
-      FindAndRerankSort.SingleLeg singleLeg, int readLimit) {
+      FindAndRerankSort.SingleLeg singleLeg, int readLimit, CollectionSchemaObject schemaObject) {
     return switch (singleLeg) {
       case FindAndRerankSort.VectorLegSort(VectorizeSortExpression ignored) ->
           new FindAndRerankPlan.VectorizeReadPlan(readLimit);
@@ -268,10 +270,12 @@ class FindAndRerankPlanner {
           new FindAndRerankPlan.VectorReadPlan(sort, readLimit);
       case FindAndRerankSort.LexicalLegSort(var sort) ->
           new FindAndRerankPlan.LexicalReadPlan(sort, readLimit);
-        // TODO: GH #2603 - plan the filter leg. Until then a field sort, an empty sort and no sort
-        // are rejected here, after the checks in plan()
-      case FindAndRerankSort.FilterLegSort ignored ->
-          throw SortException.Code.UNSUPPORTED_FIND_AND_RERANK_SORT.get();
+      case FindAndRerankSort.FilterLegSort(var sorts) -> {
+        // check the sort paths when planning, not when the read runs. SortClause.validate() has
+        // the check, so make a SortClause from the sorts.
+        new SortClause(sorts.stream().map(SortExpression::from).toList()).validate(schemaObject);
+        yield new FindAndRerankPlan.FilterReadPlan(sorts, readLimit);
+      }
     };
   }
 
@@ -381,9 +385,6 @@ class FindAndRerankPlanner {
       throw SchemaException.Code.LEXICAL_NOT_ENABLED_FOR_COLLECTION.get(errVars(schemaObject));
     }
   }
-
-  // NOTE: the helpers below return null or false for a SingleLeg sort, because plan() rejects
-  // single leg sorts until GH #2602 and GH #2603
 
   /** The text to vectorize: the $hybrid text, or the $vectorize value, or <code>null</code>. */
   private static String vectorizeText(FindAndRerankSort sort) {
