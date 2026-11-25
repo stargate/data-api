@@ -97,6 +97,12 @@ public class DocumentScores implements Comparable<DocumentScores> {
    * Returns the {@link DocumentScoresDesc} to describe the scores in the response of an API call
    */
   public DocumentScoresDesc scoresDesc() {
+    // TODO: when no vector read found a document, the document has no vector score. Today its
+    // $vector score is -2.14748365E9, the Integer.MIN_VALUE of Score.EMPTY_VECTOR_SCORE, and its
+    // $vectorRank is null. For example, a document from a $lexical sort with includeScores gets:
+    //   {"scores": {"$rerank": 3.5, "$vector": -2.14748365E9, "$vectorRank": null,
+    //               "$bm25Rank": 1, "$rrf": 0.016393442}}
+    // Write null as the $vector score instead, the same as the ranks below.
     return new DocumentScoresDesc(
         rerankScore.score(),
         vectorScore.score(),
