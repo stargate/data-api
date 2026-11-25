@@ -1592,7 +1592,7 @@ public class FindCommandResolverTest {
       int limit = operationsConfig.defaultPageSize() + 20;
       setHybridLimits(limit);
 
-      Operation operation = resolver.resolveCommand(commandContext, findCommand(null, limit));
+      var operation = resolver.resolveCommand(commandContext, findCommand(null, limit));
 
       assertThat(operation)
           .isInstanceOfSatisfying(
@@ -1608,7 +1608,7 @@ public class FindCommandResolverTest {
     public void readWithoutSortUsesDefaultPageSizeWhenHybridLimitsAreNotSet() throws Exception {
       int limit = operationsConfig.defaultPageSize() + 20;
 
-      Operation operation = resolver.resolveCommand(commandContext, findCommand(null, limit));
+      var operation = resolver.resolveCommand(commandContext, findCommand(null, limit));
 
       assertThat(operation)
           .isInstanceOfSatisfying(
@@ -1625,7 +1625,7 @@ public class FindCommandResolverTest {
       int limit = operationsConfig.defaultPageSize() + 20;
       setHybridLimits(limit);
 
-      Operation operation = resolver.resolveCommand(commandContext, findCommand(SORT, limit));
+      var operation = resolver.resolveCommand(commandContext, findCommand(SORT, limit));
 
       assertThat(operation)
           .isInstanceOfSatisfying(
@@ -1644,7 +1644,7 @@ public class FindCommandResolverTest {
         throws Exception {
       int limit = operationsConfig.defaultPageSize() + 20;
 
-      Operation operation = resolver.resolveCommand(commandContext, findCommand(SORT, limit));
+      var operation = resolver.resolveCommand(commandContext, findCommand(SORT, limit));
 
       assertThat(operation)
           .isInstanceOfSatisfying(
