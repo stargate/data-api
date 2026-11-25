@@ -136,12 +136,42 @@ public abstract class DynamicTTLCache<KeyT extends DynamicTTLCache.CacheKey, Val
           .map(ValueHolder::value);
     }
 
+    // IMPORTANT: we make a copy of the Future returned from cache.get() because the cache
+    // is a cache of the Future returned from the loader function, not the value in the future.
+    // Which means requests for the same key use the same future instance. So if a request is
+    // canceled
+    // by the client, when Quarkus tries to cancel the Uni chain it will cancel the shared Future.
+    // In the Driver DefaultSession.SingleThreaded.init() calls complete() on the Future it has
+    // created and does not check the result, if it has been canceled because of above the session
+    // is not added to the Future, which means it is never added to the Cache which means it is
+    // never removed, which means it is NEVER CLOSED. We have seen this in production system.
+
+    // NOTE: use CompletableFuture.copy() here, NOT CompletableFuture.minimalCompletionStage().
+    // SchemaObjectFactory.apply() uses Uni.subscribeAsCompletionStage(), which makes
+    // AsyncLoadingCache.get() return a ContextualCompletableFuture.
+    // ContextualCompletableFuture.minimalCompletionStage() returns a stage which never completes,
+    // so DynamicTTLCache.get() would hang.
+
+    final CompletableFuture<ValueHolder<KeyT, ValueT>> thisRequestFuture;
+    {
+      // in the final block so that sharedFuture scope is limited, cannot be used outside of here.
+      var sharedFuture = cache.get(key);
+      thisRequestFuture = sharedFuture.copy();
+
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace(
+            "get() - Cloned cache future for this request. sharedFuture={}, thisRequestFuture={}",
+            sharedFuture,
+            thisRequestFuture);
+      }
+    }
+
     // Calling get() on the cache will return a CompletionStage
     // which will not be null however it is
     // technically possible for the value loader to return a completed stage that has a null value
     // so extra check just in case.
     return Uni.createFrom()
-        .completionStage(cache.get(key))
+        .completionStage(thisRequestFuture)
         .map(valueHolder -> valueHolder != null ? valueHolder.value() : null);
   }
 

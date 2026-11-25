@@ -84,6 +84,12 @@ public class SchemaObjectFactory implements SchemaObjectCache.SchemaObjectFactor
               throw new IllegalArgumentException(
                   "Unsupported schema object type: " + identifier.type());
         };
+
+    // Uni.subscribeAsCompletionStage() will return a ContextualCompletableFuture when running
+    // as the quarkus app or as a @QuarkusTest
+    // In a plain unit test it may return a regular CompletableFuture, it depends on whether
+    // SmallRye context propagation has already been initialized in the JVM.
+    // see the comment in DynamicTTLCache.get() for how this is important
     return uni.map(obj -> (SchemaObject) obj).subscribeAsCompletionStage();
   }
 

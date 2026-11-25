@@ -8,6 +8,8 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.Ticker;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -280,6 +282,50 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
         .isNotPresent();
   }
 
+  /**
+   * Overlapping get() to the cache, if the first is canceled the second should complete
+   *
+   * <p>Two requests wait for the same value while it loads, then one is canceled. If the cancel
+   * reached the load they share, the other request would fail with a CancellationException.
+   */
+  @Test
+  public void canceledGetDoesNotFailConcurrentGets() {
+
+    var fixture = newFixture();
+    var valueFactoryFuture = new CompletableFuture<String>();
+    when(fixture.valueFactory.apply(CACHE_KEY)).thenReturn(valueFactoryFuture);
+
+    var canceledGet =
+        fixture.cache.get(CACHE_KEY).subscribe().withSubscriber(UniAssertSubscriber.create());
+    var uncanceledGet =
+        fixture.cache.get(CACHE_KEY).subscribe().withSubscriber(UniAssertSubscriber.create());
+
+    // redundant, here to be explicit about what is happening.
+    assertThat(valueFactoryFuture.isCancelled())
+        .as("before canceledGet.cancel() - valueFactoryFuture has not been cancelled")
+        .isFalse();
+    canceledGet.cancel();
+    assertThat(valueFactoryFuture.isCancelled())
+        .as("after canceledGet.cancel() - valueFactoryFuture has not been cancelled")
+        .isFalse();
+
+    // mocking the async value creation completing async later
+    // returns TRUE if complete() changed the state of the future.
+    var completeResult = valueFactoryFuture.complete(fixture.expectedValue);
+    assertThat(completeResult)
+        .as("after canceledGet.cancel() - valueFactoryFuture.complete() returned true")
+        .isTrue();
+
+    // we now expect the value to be in the cache
+    var optPeekSession = fixture.cache.peekValue(CACHE_KEY);
+    assertThat(optPeekSession)
+        .as("after sessionFactoryFuture.complete() - session is in cache")
+        .isPresent();
+
+    // check that the uncanceled get() has the expected value.
+    uncanceledGet.assertItem(fixture.expectedValue);
+  }
+  
   // =======================================================
   // Metrics related tests
   // =======================================================
