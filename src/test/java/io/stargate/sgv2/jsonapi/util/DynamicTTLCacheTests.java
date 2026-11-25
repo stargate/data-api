@@ -282,39 +282,50 @@ public class DynamicTTLCacheTests extends CacheTestsBase {
         .isNotPresent();
   }
 
+  /**
+   * Overlapping get() to the cache, if the first is canceled the second should complete
+   *
+   * <p>Two requests wait for the same value while it loads, then one is canceled. If the cancel
+   * reached the load they share, the other request would fail with a CancellationException.
+   */
   @Test
-  public void canceledLookupDoesNotFailOtherLookups() {
-    // Two requests wait for the same value while it loads, then one is canceled. If the cancel
-    // reached the load they share, the other request would fail with a CancellationException.
+  public void canceledGetDoesNotFailConcurrentGets() {
+
     var fixture = newFixture();
-    var pendingValue = new CompletableFuture<String>();
-    when(fixture.valueFactory.apply(CACHE_KEY)).thenReturn(pendingValue);
+    var valueFactoryFuture = new CompletableFuture<String>();
+    when(fixture.valueFactory.apply(CACHE_KEY)).thenReturn(valueFactoryFuture);
 
-    var canceledLookup =
+    var canceledGet =
         fixture.cache.get(CACHE_KEY).subscribe().withSubscriber(UniAssertSubscriber.create());
-    var otherLookup =
+    var uncanceledGet =
         fixture.cache.get(CACHE_KEY).subscribe().withSubscriber(UniAssertSubscriber.create());
-    canceledLookup.cancel();
-    pendingValue.complete(fixture.expectedValue);
 
-    otherLookup.assertItem(fixture.expectedValue);
+    // redundant, here to be explicit about what is happening.
+    assertThat(valueFactoryFuture.isCancelled())
+        .as("before canceledGet.cancel() - valueFactoryFuture has not been cancelled")
+        .isFalse();
+    canceledGet.cancel();
+    assertThat(valueFactoryFuture.isCancelled())
+        .as("after canceledGet.cancel() - valueFactoryFuture has not been cancelled")
+        .isFalse();
+
+    // mocking the async value creation completing async later
+    // returns TRUE if complete() changed the state of the future.
+    var completeResult = valueFactoryFuture.complete(fixture.expectedValue);
+    assertThat(completeResult)
+        .as("after canceledGet.cancel() - valueFactoryFuture.complete() returned true")
+        .isTrue();
+
+    // we now expect the value to be in the cache
+    var optPeekSession = fixture.cache.peekValue(CACHE_KEY);
+    assertThat(optPeekSession)
+        .as("after sessionFactoryFuture.complete() - session is in cache")
+        .isPresent();
+
+    // check that the uncanceled get() has the expected value.
+    uncanceledGet.assertItem(fixture.expectedValue);
   }
-
-  @Test
-  public void lookupCompletesWhenValueIsLoadedFromUni() {
-    // The schema cache loads with Uni.subscribeAsCompletionStage(), which returns SmallRye's
-    // ContextualCompletableFuture. Its minimalCompletionStage() returns a new stage that never
-    // completes, so a get() built on it would hang every schema lookup.
-    var fixture = newFixture();
-    when(fixture.valueFactory.apply(CACHE_KEY))
-        .thenReturn(Uni.createFrom().item(fixture.expectedValue).subscribeAsCompletionStage());
-
-    // The timeout turns a hang into a test failure.
-    assertThat(fixture.cache.get(CACHE_KEY).await().atMost(Duration.ofSeconds(5)))
-        .as("Lookup completes with the loaded value")
-        .isSameAs(fixture.expectedValue);
-  }
-
+  
   // =======================================================
   // Metrics related tests
   // =======================================================

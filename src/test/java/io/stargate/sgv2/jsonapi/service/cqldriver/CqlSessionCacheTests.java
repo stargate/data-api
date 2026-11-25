@@ -405,28 +405,96 @@ public class CqlSessionCacheTests extends CacheTestsBase {
     verifyNoInteractions(fixture.sessionFactory);
   }
 
+  /**
+   * When async loading a session, if the future is cancelled the session is properly closed.
+   *
+   * <p>A request is canceled, for example by a client disconnect, while its session is still being
+   * created. If the cancel reached the shared load, the finished session would never enter the
+   * cache, so nothing would close it and its connections would stay open.
+   */
   @Test
-  public void sessionForCanceledRequestIsClosedWhenItExpires() {
-    // A request is canceled, for example by a client disconnect, while its session is still being
-    // created. If the cancel reached the shared load, the finished session would never enter the
-    // cache, so nothing would close it and its connections would stay open.
-    var fixture = newFixture();
-    var pendingSession = new CompletableFuture<CqlSession>();
-    when(fixture.sessionFactory.apply(TEST_CONSTANTS.TENANT, fixture.expectedCredentials))
-        .thenReturn(pendingSession);
+  public void closeCancelledSessionLoad() {
 
-    var request =
+    var fixture = newFixture();
+    // newFixture() sets up fixture.expectedSession to be returned from sessionFactory.apply()
+    // BUT it puts it immediately into a CompletableFuture, which completes the future, and sets
+    // the completableFuture as the return from sessionFactory.apply() for this test we
+    // want the sessionFactory to return a future that *has not* been completed.
+    var sessionFactoryFuture = new CompletableFuture<CqlSession>();
+    when(fixture.sessionFactory.apply(TEST_CONSTANTS.TENANT, fixture.expectedCredentials))
+        .thenReturn(sessionFactoryFuture);
+
+    // we now run get() on the cache, that will end up with a call through to the
+    // sessionFactory we mocked above
+    var cacheUni =
         fixture
             .cache
             .getSession(TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create());
-    request.cancel();
-    pendingSession.complete(fixture.expectedSession);
 
-    fixture.ticker.advance(LONG_TTL.plusSeconds(1));
+    // the core if the PR that added this test is that the uni/future returned from
+    // cache.get() MUST NOT cancel the future the cache is waiting, in this case from
+    // sessionFactory.
+    // we *want to* the loaded session to go into the cache so it can be properly removed from it
+    // The async cache DOES NOT cache the session from sessionFactory, it caches the FUTURE from it.
+
+    // redundant, here to be explicit about what is happening.
+    assertThat(sessionFactoryFuture.isCancelled())
+        .as("before cacheUni.cancel() - sessionFactoryFuture has not been cancelled")
+        .isFalse();
+    assertThat(sessionFactoryFuture.isDone())
+        .as("before cacheUni.cancel() - sessionFactoryFuture has not been completed")
+        .isFalse();
+
+    cacheUni.cancel();
+
+    assertThat(sessionFactoryFuture.isCancelled())
+        .as("after cacheUni.cancel() - sessionFactoryFuture has not been cancelled")
+        .isFalse();
+    assertThat(sessionFactoryFuture.isDone())
+        .as("after cacheUni.cancel() - sessionFactoryFuture has not been completed")
+        .isFalse();
+
+    var completeResult = sessionFactoryFuture.complete(fixture.expectedSession);
+
+    assertThat(sessionFactoryFuture.isCancelled())
+        .as("after sessionFactoryFuture.complete() - sessionFactoryFuture has not been cancelled")
+        .isFalse();
+    assertThat(sessionFactoryFuture.isDone())
+        .as("after sessionFactoryFuture.complete() - sessionFactoryFuture has been completed")
+        .isTrue();
+    // belt and braces to confirm that when we called complete() that is what caused the future to
+    // transition to a complete state, IF the future was canceled (or otherwise completed) then
+    // complete() returns false
+    assertThat(completeResult)
+        .as("after sessionFactoryFuture.complete() - complete() returned true")
+        .isTrue();
+
+    // we now expect the session to be in the cache
+    var optPeekSession =
+        fixture.cache.peekSession(
+            TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT);
+    assertThat(optPeekSession)
+        .as("after sessionFactoryFuture.complete() - session is in cache")
+        .isPresent();
+    assertThat(optPeekSession.get())
+        .as("after sessionFactoryFuture.complete() - session is expectedSession")
+        .isSameAs(fixture.expectedSession);
+
+    // the session should be untouched, time is frozen for the cache
+    verifyNoInteractions(fixture.expectedSession);
+
+    fixture.ticker.advance(LONG_TTL.plusNanos(10));
     fixture.cache.cleanUp();
     verify(fixture.expectedSession).close();
+
+    // no longer in the cache
+    assertThat(
+            fixture.cache.peekSession(
+                TEST_CONSTANTS.TENANT, TEST_CONSTANTS.AUTH_TOKEN, TEST_CONSTANTS.USER_AGENT))
+        .as("after cache.cleanup() - session not in cache.")
+        .isEmpty();
   }
 
   // =======================================================
