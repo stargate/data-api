@@ -222,6 +222,10 @@ class FindAndRerankPlanner {
             FindAndRerankCommand.HybridLimits.DEFAULT);
     var reads = new ArrayList<FindAndRerankPlan.ReadPlan>(2);
 
+    // TODO: HybridText and HybridObject hold the raw text and vector, not a SortExpression2, so
+    // this method makes the sort expressions for the reads. When they hold a SortExpression2,
+    // pass it to the reads like buildSingleLegRead() does.
+
     // the vector read uses the vector from the vectorize step when there is text to vectorize,
     // otherwise the vector from the command
     // NOTE: when the sort has both, $vectorize wins and $vector is ignored
