@@ -6,13 +6,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
+import io.stargate.sgv2.jsonapi.service.operation.reranking.Rank;
 import io.stargate.sgv2.jsonapi.service.operation.reranking.RerankingQuery;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionRerankDef;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -20,22 +24,22 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Tests for {@link FindAndRerankPlan} and its records: the rules their constructors check, how a
- * {@link FindAndRerankPlan.RerankLeg} compares, and that the legs of a plan cannot change.
+ * Tests for {@link FindAndRerankPlan} and its records: the rules their constructors check, the rank
+ * source of each read, how a {@link FindAndRerankPlan.VectorReadPlan} compares, and that the reads
+ * of a plan cannot change.
  */
 class FindAndRerankPlanTest {
 
   private static final float[] VECTOR = {0.1f, 0.2f};
 
-  private static final FindAndRerankPlan.RerankLeg VECTOR_LEG =
-      new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, VECTOR, null, 50);
+  private static final FindAndRerankPlan.VectorReadPlan VECTOR_READ =
+      new FindAndRerankPlan.VectorReadPlan(new VectorSortExpression(VECTOR), 50);
 
-  /** A VECTOR_LEG that reads with the vector from the vectorize step. */
-  private static final FindAndRerankPlan.RerankLeg VECTORIZED_LEG =
-      new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, null, null, 50);
+  private static final FindAndRerankPlan.VectorizeReadPlan VECTORIZE_READ =
+      new FindAndRerankPlan.VectorizeReadPlan(50);
 
-  private static final FindAndRerankPlan.RerankLeg LEXICAL_LEG =
-      new FindAndRerankPlan.RerankLeg(RerankLegType.LEXICAL_LEG, null, "cows", 50);
+  private static final FindAndRerankPlan.LexicalReadPlan LEXICAL_READ =
+      new FindAndRerankPlan.LexicalReadPlan(new LexicalSortExpression("cows"), 50);
 
   private static final FindAndRerankPlan.VectorizeStep VECTORIZE_STEP =
       new FindAndRerankPlan.VectorizeStep(
@@ -52,9 +56,9 @@ class FindAndRerankPlanTest {
   void rejectsInvalidPlan(
       String description,
       FindAndRerankPlan.VectorizeStep vectorizeStep,
-      List<FindAndRerankPlan.RerankLeg> legs,
+      List<FindAndRerankPlan.ReadPlan> reads,
       String message) {
-    assertThatThrownBy(() -> new FindAndRerankPlan(vectorizeStep, legs, RERANK_STEP, false, false))
+    assertThatThrownBy(() -> new FindAndRerankPlan(vectorizeStep, reads, RERANK_STEP, false, false))
         .as(description)
         .isExactlyInstanceOf(IllegalArgumentException.class)
         .hasMessage(message);
@@ -62,22 +66,27 @@ class FindAndRerankPlanTest {
 
   static Stream<Arguments> invalidPlans() {
     return Stream.of(
-        Arguments.of("legs empty", null, List.of(), "legs must not be empty"),
+        Arguments.of("reads empty", null, List.of(), "reads must not be empty"),
         Arguments.of(
-            "two legs of one type",
+            "two lexical reads",
             null,
-            List.of(VECTOR_LEG, LEXICAL_LEG, LEXICAL_LEG),
-            "legs must have at most one of each type, legs=[VECTOR_LEG, LEXICAL_LEG, LEXICAL_LEG]"),
+            List.of(VECTOR_READ, LEXICAL_READ, LEXICAL_READ),
+            "reads must have at most one read for each rank source, rankSources=[VECTOR, BM25, BM25]"),
         Arguments.of(
-            "VECTOR_LEG without a vector, no vectorize step",
-            null,
-            List.of(VECTORIZED_LEG),
-            "vectorizeStep must not be null when the VECTOR_LEG has no vector"),
-        Arguments.of(
-            "vectorize step, the VECTOR_LEG has a vector",
+            "a vector read and a vectorize read, both have the VECTOR rank source",
             VECTORIZE_STEP,
-            List.of(VECTOR_LEG),
-            "vectorizeStep must be null when there is no VECTOR_LEG without a vector"));
+            List.of(VECTOR_READ, VECTORIZE_READ),
+            "reads must have at most one read for each rank source, rankSources=[VECTOR, VECTOR]"),
+        Arguments.of(
+            "vectorize read, no vectorize step",
+            null,
+            List.of(VECTORIZE_READ),
+            "vectorizeStep must not be null when there is a VectorizeReadPlan"),
+        Arguments.of(
+            "vectorize step, no vectorize read",
+            VECTORIZE_STEP,
+            List.of(VECTOR_READ),
+            "vectorizeStep must be null when there is no VectorizeReadPlan"));
   }
 
   @ParameterizedTest(name = "{0}")
@@ -85,186 +94,149 @@ class FindAndRerankPlanTest {
   void acceptsValidPlan(
       String description,
       FindAndRerankPlan.VectorizeStep vectorizeStep,
-      List<FindAndRerankPlan.RerankLeg> legs) {
-    assertThatCode(() -> new FindAndRerankPlan(vectorizeStep, legs, RERANK_STEP, false, false))
+      List<FindAndRerankPlan.ReadPlan> reads) {
+    assertThatCode(() -> new FindAndRerankPlan(vectorizeStep, reads, RERANK_STEP, false, false))
         .as(description)
         .doesNotThrowAnyException();
   }
 
   static Stream<Arguments> validPlans() {
     return Stream.of(
-        Arguments.of("one LEXICAL_LEG, no VECTOR_LEG needed", null, List.of(LEXICAL_LEG)),
-        Arguments.of("VECTOR_LEG with a vector, no vectorize step", null, List.of(VECTOR_LEG)),
+        Arguments.of("one lexical read, no vector read needed", null, List.of(LEXICAL_READ)),
+        Arguments.of("vector read, no vectorize step", null, List.of(VECTOR_READ)),
         Arguments.of(
-            "VECTOR_LEG without a vector, vectorize step, LEXICAL_LEG",
+            "vectorize read with the vectorize step, lexical read",
             VECTORIZE_STEP,
-            List.of(VECTORIZED_LEG, LEXICAL_LEG)));
+            List.of(VECTORIZE_READ, LEXICAL_READ)));
   }
 
   @Test
-  void copiesTheLegs() {
-    var legs = new ArrayList<>(List.of(VECTOR_LEG));
-    var plan = new FindAndRerankPlan(null, legs, RERANK_STEP, false, false);
+  void copiesTheReads() {
+    var reads = new ArrayList<FindAndRerankPlan.ReadPlan>(List.of(VECTOR_READ));
+    var plan = new FindAndRerankPlan(null, reads, RERANK_STEP, false, false);
 
-    legs.add(LEXICAL_LEG);
+    reads.add(LEXICAL_READ);
 
-    assertThat(plan.legs()).containsExactly(VECTOR_LEG);
+    assertThat(plan.reads()).containsExactly(VECTOR_READ);
   }
 
   @Test
-  void legsCannotBeChanged() {
-    // a list that can be changed, so only the plan's own copy makes the legs unmodifiable
+  void readsCannotBeChanged() {
+    // a list that can be changed, so only the plan's own copy makes the reads unmodifiable
     var plan =
         new FindAndRerankPlan(
-            null, new ArrayList<>(List.of(VECTOR_LEG)), RERANK_STEP, false, false);
+            null,
+            new ArrayList<FindAndRerankPlan.ReadPlan>(List.of(VECTOR_READ)),
+            RERANK_STEP,
+            false,
+            false);
 
-    assertThatThrownBy(() -> plan.legs().add(LEXICAL_LEG))
+    assertThatThrownBy(() -> plan.reads().add(LEXICAL_READ))
         .isInstanceOf(UnsupportedOperationException.class);
   }
 
   // ===========================================================================================
-  // RerankLeg
+  // ReadPlan records
   // ===========================================================================================
 
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("invalidLegs")
-  void rejectsInvalidLeg(
-      String description,
-      RerankLegType legType,
-      float[] vector,
-      String lexicalText,
-      Class<? extends Throwable> exceptionClass,
-      String message) {
-    assertThatThrownBy(() -> new FindAndRerankPlan.RerankLeg(legType, vector, lexicalText, 50))
-        .as(description)
-        .isExactlyInstanceOf(exceptionClass)
-        .hasMessage(message);
-  }
-
-  static Stream<Arguments> invalidLegs() {
-    return Stream.of(
-        Arguments.of(
-            "VECTOR_LEG with lexicalText",
-            RerankLegType.VECTOR_LEG,
-            null,
-            "cows",
-            IllegalArgumentException.class,
-            "lexicalText must be null for a VECTOR_LEG"),
-        Arguments.of(
-            "LEXICAL_LEG without lexicalText",
-            RerankLegType.LEXICAL_LEG,
-            null,
-            null,
-            NullPointerException.class,
-            "lexicalText must not be null for a LEXICAL_LEG"),
-        Arguments.of(
-            "LEXICAL_LEG with a vector",
-            RerankLegType.LEXICAL_LEG,
-            VECTOR,
-            "cows",
-            IllegalArgumentException.class,
-            "vector must be null for a LEXICAL_LEG"),
-        Arguments.of(
-            "FILTER_LEG with a vector",
-            RerankLegType.FILTER_LEG,
-            VECTOR,
-            null,
-            IllegalArgumentException.class,
-            "vector must be null for a FILTER_LEG"),
-        Arguments.of(
-            "FILTER_LEG with lexicalText",
-            RerankLegType.FILTER_LEG,
-            null,
-            "cows",
-            IllegalArgumentException.class,
-            "lexicalText must be null for a FILTER_LEG"));
-  }
-
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("validLegs")
-  void acceptsValidLeg(
-      String description, RerankLegType legType, float[] vector, String lexicalText) {
-    assertThatCode(() -> new FindAndRerankPlan.RerankLeg(legType, vector, lexicalText, 50))
-        .as(description)
-        .doesNotThrowAnyException();
-  }
-
-  static Stream<Arguments> validLegs() {
-    return Stream.of(
-        Arguments.of("VECTOR_LEG with a vector", RerankLegType.VECTOR_LEG, VECTOR, null),
-        Arguments.of("VECTOR_LEG without a vector", RerankLegType.VECTOR_LEG, null, null),
-        Arguments.of("LEXICAL_LEG with lexicalText", RerankLegType.LEXICAL_LEG, null, "cows"),
-        Arguments.of("FILTER_LEG with neither", RerankLegType.FILTER_LEG, null, null));
-  }
-
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("equalLegs")
-  void legsWithTheSameValuesAreEqual(
-      String description, FindAndRerankPlan.RerankLeg leg, FindAndRerankPlan.RerankLeg equalLeg) {
-    assertThat(leg).as(description).isEqualTo(equalLeg).hasSameHashCodeAs(equalLeg);
-    assertThat(equalLeg).as(description).isEqualTo(leg);
-  }
-
-  static Stream<Arguments> equalLegs() {
-    return Stream.of(
-        Arguments.of(
-            "the same vector values in two arrays",
-            new FindAndRerankPlan.RerankLeg(
-                RerankLegType.VECTOR_LEG, new float[] {0.1f, 0.2f}, null, 50),
-            new FindAndRerankPlan.RerankLeg(
-                RerankLegType.VECTOR_LEG, new float[] {0.1f, 0.2f}, null, 50)),
-        Arguments.of(
-            "no vector",
-            new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, null, null, 50),
-            new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, null, null, 50)));
-  }
-
-  @ParameterizedTest(name = "{0}")
-  @MethodSource("differentLegs")
-  void legsThatDifferInOneFieldAreNotEqual(
-      String description, FindAndRerankPlan.RerankLeg leg, FindAndRerankPlan.RerankLeg otherLeg) {
-    assertThat(leg).as(description).isNotEqualTo(otherLeg);
-    assertThat(otherLeg).as(description).isNotEqualTo(leg);
-  }
-
-  static Stream<Arguments> differentLegs() {
-    return Stream.of(
-        Arguments.of(
-            "different legType",
-            new FindAndRerankPlan.RerankLeg(RerankLegType.FILTER_LEG, null, null, 50),
-            new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, null, null, 50)),
-        Arguments.of(
-            "different vector values",
-            new FindAndRerankPlan.RerankLeg(
-                RerankLegType.VECTOR_LEG, new float[] {0.1f, 0.2f}, null, 50),
-            new FindAndRerankPlan.RerankLeg(
-                RerankLegType.VECTOR_LEG, new float[] {0.1f, 0.3f}, null, 50)),
-        Arguments.of(
-            "a vector and no vector",
-            new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, VECTOR, null, 50),
-            new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, null, null, 50)),
-        Arguments.of(
-            "different lexicalText",
-            new FindAndRerankPlan.RerankLeg(RerankLegType.LEXICAL_LEG, null, "cows", 50),
-            new FindAndRerankPlan.RerankLeg(RerankLegType.LEXICAL_LEG, null, "cheese", 50)),
-        Arguments.of(
-            "different readLimit",
-            new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, VECTOR, null, 50),
-            new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, VECTOR, null, 20)));
+  @Test
+  void rejectsVectorReadWithoutSort() {
+    assertThatThrownBy(() -> new FindAndRerankPlan.VectorReadPlan(null, 50))
+        .isExactlyInstanceOf(NullPointerException.class)
+        .hasMessage("sort must not be null");
   }
 
   @Test
-  void rejectsReadLimitBelowOne() {
-    assertThatThrownBy(
-            () -> new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, VECTOR, null, 0))
+  void rejectsLexicalReadWithoutSort() {
+    assertThatThrownBy(() -> new FindAndRerankPlan.LexicalReadPlan(null, 50))
+        .isExactlyInstanceOf(NullPointerException.class)
+        .hasMessage("sort must not be null");
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("readsWithReadLimit")
+  void rejectsReadLimitBelowOne(String description, IntFunction<FindAndRerankPlan.ReadPlan> read) {
+    assertThatThrownBy(() -> read.apply(0))
+        .as(description)
         .isExactlyInstanceOf(IllegalArgumentException.class)
         .hasMessage("readLimit must be at least 1, readLimit=0");
   }
 
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("readsWithReadLimit")
+  void acceptsReadLimitOfOne(String description, IntFunction<FindAndRerankPlan.ReadPlan> read) {
+    assertThat(read.apply(1).readLimit()).as(description).isEqualTo(1);
+  }
+
+  /** Makes a read of each kind with the read limit. */
+  static Stream<Arguments> readsWithReadLimit() {
+    return Stream.of(
+        Arguments.of(
+            "vector read",
+            (IntFunction<FindAndRerankPlan.ReadPlan>)
+                readLimit ->
+                    new FindAndRerankPlan.VectorReadPlan(
+                        new VectorSortExpression(VECTOR), readLimit)),
+        Arguments.of(
+            "vectorize read",
+            (IntFunction<FindAndRerankPlan.ReadPlan>) FindAndRerankPlan.VectorizeReadPlan::new),
+        Arguments.of(
+            "lexical read",
+            (IntFunction<FindAndRerankPlan.ReadPlan>)
+                readLimit ->
+                    new FindAndRerankPlan.LexicalReadPlan(
+                        new LexicalSortExpression("cows"), readLimit)));
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("readRankSources")
+  void readHasRankSourceOfItsSort(
+      String description, FindAndRerankPlan.ReadPlan read, Rank.RankSource rankSource) {
+    assertThat(read.rankSource()).as(description).isEqualTo(rankSource);
+  }
+
+  static Stream<Arguments> readRankSources() {
+    return Stream.of(
+        Arguments.of("vector read", VECTOR_READ, Rank.RankSource.VECTOR),
+        Arguments.of("vectorize read", VECTORIZE_READ, Rank.RankSource.VECTOR),
+        Arguments.of("lexical read", LEXICAL_READ, Rank.RankSource.BM25));
+  }
+
   @Test
-  void acceptsReadLimitOfOne() {
-    assertThatCode(() -> new FindAndRerankPlan.RerankLeg(RerankLegType.VECTOR_LEG, VECTOR, null, 1))
-        .doesNotThrowAnyException();
+  void vectorReadsWithTheSameValuesAreEqual() {
+    var read =
+        new FindAndRerankPlan.VectorReadPlan(
+            new VectorSortExpression(new float[] {0.1f, 0.2f}), 50);
+    var equalRead =
+        new FindAndRerankPlan.VectorReadPlan(
+            new VectorSortExpression(new float[] {0.1f, 0.2f}), 50);
+
+    assertThat(read).isEqualTo(equalRead).hasSameHashCodeAs(equalRead);
+    assertThat(equalRead).isEqualTo(read);
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("differentVectorReads")
+  void vectorReadsThatDifferInOneFieldAreNotEqual(
+      String description,
+      FindAndRerankPlan.VectorReadPlan read,
+      FindAndRerankPlan.VectorReadPlan otherRead) {
+    assertThat(read).as(description).isNotEqualTo(otherRead);
+    assertThat(otherRead).as(description).isNotEqualTo(read);
+  }
+
+  static Stream<Arguments> differentVectorReads() {
+    return Stream.of(
+        Arguments.of(
+            "different vector values",
+            new FindAndRerankPlan.VectorReadPlan(
+                new VectorSortExpression(new float[] {0.1f, 0.2f}), 50),
+            new FindAndRerankPlan.VectorReadPlan(
+                new VectorSortExpression(new float[] {0.1f, 0.3f}), 50)),
+        Arguments.of(
+            "different readLimit",
+            new FindAndRerankPlan.VectorReadPlan(new VectorSortExpression(VECTOR), 50),
+            new FindAndRerankPlan.VectorReadPlan(new VectorSortExpression(VECTOR), 20)));
   }
 
   // ===========================================================================================

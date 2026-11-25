@@ -9,6 +9,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.SortDefinition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.FindAndRerankSort;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.LexicalSortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression2.VectorSortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindAndRerankCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.metrics.CommandFeatures;
@@ -31,8 +33,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Builds the operation for a {@link FindAndRerankCommand} from the {@link FindAndRerankPlan} made
  * by {@link FindAndRerankPlanner}, and from the command for the filter and for the hybridLimits
- * hack in readTasks() (GH #1961). The operation runs one read for each leg of the plan, then
- * reranks the documents from all the reads.
+ * hack in readTasks() (GH #1961). The operation runs one read for each {@link
+ * FindAndRerankPlan.ReadPlan} of the plan, then reranks the documents from all the reads.
  *
  * <p>The builder trusts the plan is valid, so it does not check the plan as it reads from it.
  *
@@ -81,18 +83,18 @@ class FindAndRerankOperationBuilder {
     Objects.requireNonNull(plan, "plan cannot be null");
 
     // Step 1 - we need a reranking task and the deferrable actions to do the intermediate reads
-    // Each leg of the plan gets a deferred result, the read for the leg fills it and the reranking
-    // task waits for it
-    var legsAndResults =
-        plan.legs().stream()
-            .map(leg -> new LegAndResult(leg, new DeferredCommandResult()))
+    // Each read of the plan gets a deferred result, the read fills it and the reranking task waits
+    // for it
+    var readsAndResults =
+        plan.reads().stream()
+            .map(read -> new ReadAndResult(read, new DeferredCommandResult()))
             .toList();
 
-    var rerankTasksAndDeferrables = rerankTasks(legsAndResults);
+    var rerankTasksAndDeferrables = rerankTasks(readsAndResults);
 
     // Step 2 - we need to read the data from the collections, we are wrapping the old collections
     // in the new tasks so we do not change the collection code
-    var readTasksAndDeferrables = readTasks(legsAndResults);
+    var readTasksAndDeferrables = readTasks(readsAndResults);
 
     // Step 3 - we may need an embedding task, lets get one of those :)
     var embeddingActions =
@@ -125,7 +127,7 @@ class FindAndRerankOperationBuilder {
   }
 
   private TaskGroupAndDeferrables<RerankingTask<CollectionSchemaObject>, CollectionSchemaObject>
-      rerankTasks(List<LegAndResult> legsAndResults) {
+      rerankTasks(List<ReadAndResult> readsAndResults) {
 
     var rerankStep = plan.rerankStep();
     var rerankServiceDef = rerankStep.rerankServiceDef();
@@ -142,11 +144,12 @@ class FindAndRerankOperationBuilder {
 
     // the reranking task needs to know if each result is from a vector or a BM25 read
     var resultsWithSource =
-        legsAndResults.stream()
+        readsAndResults.stream()
             .map(
-                legAndResult ->
+                readAndResult ->
                     new RerankingTask.DeferredCommandWithSource(
-                        rankSource(legAndResult.rerankLeg()), legAndResult.deferredCommandResult()))
+                        readAndResult.readPlan().rankSource(),
+                        readAndResult.deferredCommandResult()))
             .toList();
 
     // todo: move to a builder pattern, mostly to make it easier to manage the task position and
@@ -182,7 +185,7 @@ class FindAndRerankOperationBuilder {
   }
 
   private TaskGroupAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> readTasks(
-      List<LegAndResult> legsAndResults) {
+      List<ReadAndResult> readsAndResults) {
 
     // we can run these tasks in parallel
     TaskGroup<IntermediateCollectionReadTask, CollectionSchemaObject> taskGroup =
@@ -191,7 +194,7 @@ class FindAndRerankOperationBuilder {
     // Hack: See https://github.com/stargate/data-api/issues/1961
     // copying the hybrid limits on the command context so the find command resolver can pick it up
     // when the command runs later, so we can set the page size to be the same as the limit
-    // A sort without $hybrid has no hybridLimits, so we copy the read limit of its one leg
+    // A sort without $hybrid has no hybridLimits, so we copy the read limit of its one read
     commandContext.setHybridLimits(
         switch (command.sortClause()) {
           case FindAndRerankSort.MultiLeg ignored ->
@@ -200,7 +203,7 @@ class FindAndRerankOperationBuilder {
                   FindAndRerankCommand.Options::hybridLimits,
                   FindAndRerankCommand.HybridLimits.DEFAULT);
           case FindAndRerankSort.SingleLeg ignored -> {
-            var readLimit = plan.legs().getFirst().readLimit();
+            var readLimit = plan.reads().getFirst().readLimit();
             yield new FindAndRerankCommand.HybridLimits(
                 readLimit, readLimit, CommandFeatures.EMPTY);
           }
@@ -208,31 +211,28 @@ class FindAndRerankOperationBuilder {
 
     var deferrables = new ArrayList<Deferrable>();
 
-    // one read for each leg, the read fills the deferred result of its leg
-    for (int position = 0; position < legsAndResults.size(); position++) {
-      var legAndResult = legsAndResults.get(position);
-      var rerankLeg = legAndResult.rerankLeg();
+    // one task for each read, the task fills the deferred result of its read
+    for (int position = 0; position < readsAndResults.size(); position++) {
+      var readAndResult = readsAndResults.get(position);
 
       // the read calls this action when it is done, to fill the deferredCommandResult
       var deferredCommandResultAction =
           DeferredAction.filtered(
                   DeferredCommandResultAction.class,
-                  Deferrable.deferred(legAndResult.deferredCommandResult()))
+                  Deferrable.deferred(readAndResult.deferredCommandResult()))
               .getFirst();
 
-      var readAndDeferrables =
-          switch (rerankLeg.legType()) {
-            case VECTOR_LEG -> buildVectorRead(position, rerankLeg, deferredCommandResultAction);
-            case LEXICAL_LEG -> buildBm25Read(position, rerankLeg, deferredCommandResultAction);
-              // the compiler needs a case for every RerankLegType, this is a sanity check because
-              // rankSource() has already thrown for a FILTER_LEG
-            case FILTER_LEG ->
-                throw new IllegalStateException(
-                    "readTasks() - the builder cannot read with a FILTER_LEG yet, leg=%s"
-                        .formatted(rerankLeg));
+      var taskAndDeferrables =
+          switch (readAndResult.readPlan()) {
+            case FindAndRerankPlan.VectorReadPlan(var sort, var readLimit) ->
+                buildVectorRead(position, sort, readLimit, deferredCommandResultAction);
+            case FindAndRerankPlan.VectorizeReadPlan(var readLimit) ->
+                buildVectorizeRead(position, readLimit, deferredCommandResultAction);
+            case FindAndRerankPlan.LexicalReadPlan(var sort, var readLimit) ->
+                buildBm25Read(position, sort, readLimit, deferredCommandResultAction);
           };
-      taskGroup.add(readAndDeferrables.task());
-      deferrables.addAll(readAndDeferrables.deferrables());
+      taskGroup.add(taskAndDeferrables.task());
+      deferrables.addAll(taskAndDeferrables.deferrables());
     }
 
     // No accumulator, this will be wrapped in an intermediate composite task
@@ -241,109 +241,98 @@ class FindAndRerankOperationBuilder {
 
   private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject> buildBm25Read(
       int position,
-      FindAndRerankPlan.RerankLeg lexicalLeg,
+      LexicalSortExpression sort,
+      int readLimit,
       DeferredCommandResultAction deferredAction) {
 
-    var bm25SortClause =
-        new SortClause(List.of(SortExpression.collectionLexicalSort(lexicalLeg.lexicalText())));
-    var bm25ReadCommand =
-        new FindCommand(
-            command.filterDefinition(),
-            INCLUDE_ALL_PROJECTION,
-            SortDefinition.wrap(bm25SortClause),
-            buildFindOptions(lexicalLeg));
-
+    var bm25SortClause = new SortClause(List.of(SortExpression.from(sort)));
     return new TaskAndDeferrables<>(
-        new IntermediateCollectionReadTask(
-            position,
-            commandContext.schemaObject(),
-            TaskRetryPolicy.NO_RETRY,
-            findCommandResolver,
-            bm25ReadCommand,
-            null,
-            deferredAction));
+        buildReadTask(position, bm25SortClause, null, readLimit, deferredAction));
   }
 
-  /** Builds either a vectorize or a BYO vector read. */
+  /** Builds a read that sorts with the vector from the command. */
   private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject>
       buildVectorRead(
           int position,
-          FindAndRerankPlan.RerankLeg vectorLeg,
+          VectorSortExpression sort,
+          int readLimit,
           DeferredCommandResultAction deferredAction) {
 
-    // we can sort with either vectorize OR a BYO vector
-    var sortClause = new SortClause(new ArrayList<>());
-    DeferredVectorize deferredVectorize = null;
+    var vectorSortClause = new SortClause(List.of(SortExpression.from(sort)));
+    return new TaskAndDeferrables<>(
+        buildReadTask(position, vectorSortClause, null, readLimit, deferredAction));
+  }
 
+  /** Builds a read that sorts with the vector from the vectorize step of the plan. */
+  private TaskAndDeferrables<IntermediateCollectionReadTask, CollectionSchemaObject>
+      buildVectorizeRead(int position, int readLimit, DeferredCommandResultAction deferredAction) {
+
+    // NOTE: there is no sort to convert with SortExpression.from() yet, the vector comes from the
+    // vectorize step. The sort clause starts empty. The deferred vectorize adds the vector sort to
+    // it when it gets the vector, so the sort clause must be mutable.
+    var vectorSortClause = new SortClause(new ArrayList<>());
     var vectorizeStep = plan.vectorizeStep();
-    if (vectorizeStep != null) {
-      // pass the vector sort clause through so it will be updated when we get the vector
-      deferredVectorize =
-          new DeferredVectorize(
-              vectorizeStep.text(),
-              vectorizeStep.dimension(),
-              vectorizeStep.vectorizeDefinition(),
-              sortClause);
-    } else {
-      // the plan is valid, so the VECTOR_LEG has a vector when there is no vectorize step
-      sortClause.sortExpressions().add(SortExpression.collectionVectorSort(vectorLeg.vector()));
-    }
+    var deferredVectorize =
+        new DeferredVectorize(
+            vectorizeStep.text(),
+            vectorizeStep.dimension(),
+            vectorizeStep.vectorizeDefinition(),
+            vectorSortClause);
 
-    // The intermediate task will set the sort when we give it the deferred vectorize
-    var vectorReadCommand =
+    return new TaskAndDeferrables<>(
+        buildReadTask(position, vectorSortClause, deferredVectorize, readLimit, deferredAction),
+        deferredVectorize);
+  }
+
+  /**
+   * Builds the task for one read: an inner find with the filter of the command and the sort.
+   *
+   * @param position The position of the task in its task group.
+   * @param sortClause The sort of the inner find.
+   * @param deferredVectorize The vectorize the task waits for before it reads, <code>null</code>
+   *     when the sort clause already has the sort.
+   * @param readLimit The limit of the inner find.
+   * @param deferredAction The action the task calls with the result of the inner find.
+   */
+  private IntermediateCollectionReadTask buildReadTask(
+      int position,
+      SortClause sortClause,
+      DeferredVectorize deferredVectorize,
+      int readLimit,
+      DeferredCommandResultAction deferredAction) {
+
+    var readCommand =
         new FindCommand(
             command.filterDefinition(),
             INCLUDE_ALL_PROJECTION,
             SortDefinition.wrap(sortClause),
-            buildFindOptions(vectorLeg));
-    var readTask =
-        new IntermediateCollectionReadTask(
-            position,
-            commandContext.schemaObject(),
-            TaskRetryPolicy.NO_RETRY,
-            findCommandResolver,
-            vectorReadCommand,
-            deferredVectorize,
-            deferredAction);
+            new FindCommand.Options(
+                readLimit, 0, null, plan.includeScores(), plan.includeSortVector()));
 
-    return deferredVectorize == null
-        ? new TaskAndDeferrables<>(readTask)
-        : new TaskAndDeferrables<>(readTask, deferredVectorize);
-  }
-
-  private FindCommand.Options buildFindOptions(FindAndRerankPlan.RerankLeg leg) {
-    return new FindCommand.Options(
-        leg.readLimit(), 0, null, plan.includeScores(), plan.includeSortVector());
-  }
-
-  /** The source of the ranks for the documents the read for the leg finds. */
-  private Rank.RankSource rankSource(FindAndRerankPlan.RerankLeg leg) {
-    return switch (leg.legType()) {
-      case VECTOR_LEG -> Rank.RankSource.VECTOR;
-      case LEXICAL_LEG -> Rank.RankSource.BM25;
-        // sanity check, the planner does not make a FILTER_LEG yet
-        // TODO: GH #2603 - add a rank source for the FILTER_LEG, and build its read in readTasks()
-      case FILTER_LEG ->
-          throw new IllegalStateException(
-              "rankSource() - the builder cannot read with a FILTER_LEG yet, leg=%s"
-                  .formatted(leg));
-    };
+    return new IntermediateCollectionReadTask(
+        position,
+        commandContext.schemaObject(),
+        TaskRetryPolicy.NO_RETRY,
+        findCommandResolver,
+        readCommand,
+        deferredVectorize,
+        deferredAction);
   }
 
   /**
-   * A leg of the plan and the deferred result of its read.
+   * A read of the plan and its deferred result.
    *
-   * <p>The read that readTasks() builds for the leg fills the result, and the reranking task that
+   * <p>The task that readTasks() builds for the read fills the result, and the reranking task that
    * rerankTasks() builds waits for it.
    *
-   * @param rerankLeg The leg to read with.
-   * @param deferredCommandResult The deferred result that the read for the leg fills.
+   * @param readPlan The read.
+   * @param deferredCommandResult The deferred result that the task for the read fills.
    */
-  private record LegAndResult(
-      FindAndRerankPlan.RerankLeg rerankLeg, DeferredCommandResult deferredCommandResult) {
+  private record ReadAndResult(
+      FindAndRerankPlan.ReadPlan readPlan, DeferredCommandResult deferredCommandResult) {
 
-    LegAndResult {
-      Objects.requireNonNull(rerankLeg, "rerankLeg must not be null");
+    ReadAndResult {
+      Objects.requireNonNull(readPlan, "readPlan must not be null");
       Objects.requireNonNull(deferredCommandResult, "deferredCommandResult must not be null");
     }
   }
