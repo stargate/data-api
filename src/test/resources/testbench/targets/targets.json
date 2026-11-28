@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "name": "targets",
+    "kind": "targets"
+  },
+  "targets": [
+    {
+      "name": "local",
+      "backend": "cassandra",
+      "connection": {
+        "domain": "http://localhost",
+        "port": 8181,
+        "basePath": "/v1"
+      }
+    },
+    {
+      "name": "integration",
+      "backend": "cassandra",
+      "connection": {
+        "domain": "http://localhost",
+        "port": 9080,
+        "basePath": "/v1"
+      }
+    },
+    {
+      "name": "astra-dev",
+      "backend": "astra",
+      "connection": {
+        "domain": "https://2637a6ae-d489-498a-a740-69362af254ef-us-west-2.apps.astra-dev.datastax.com",
+        "port": 443,
+        "basePath": "/api/json/v1"
+      }
+    }
+  ]
+}
