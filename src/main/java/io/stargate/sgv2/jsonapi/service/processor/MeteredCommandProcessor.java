@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.metrics.ExceptionMetrics;
 import io.stargate.sgv2.jsonapi.service.schema.SchemaObject;
 import io.stargate.sgv2.jsonapi.util.ClassUtils;
@@ -288,13 +289,31 @@ public class MeteredCommandProcessor {
     // Determine the type of sorting used (if any), primarily for FindCommand.
     // NOTE: This logic might need refinement or replacement when CommandFeatures is fully
     // integrated, especially for FindAndRerankCommand.
-    JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(commandContext, command);
+    JsonApiMetricsConfig.SortType sortType = sortTypeTag(commandContext, command);
     tags.add(Tag.of(jsonApiMetricsConfig.sortType(), sortType.name()));
 
     // --- Command Feature Usage Tags ---
     tags.addAll(commandContext.commandFeatures().getTags().stream().toList());
 
     return Tags.of(tags);
+  }
+
+  /**
+   * Returns the sort type tag, or {@link JsonApiMetricsConfig.SortType#NONE} when the command's
+   * filter or sort clause is invalid.
+   *
+   * <p>The clauses are built again here from the request. A clause that was rejected while the
+   * command ran throws the same {@link APIException} again, after the processor has already turned
+   * it into the error result. Letting it escape would replace that result with a failed Uni and
+   * skip the timer.
+   */
+  private JsonApiMetricsConfig.SortType sortTypeTag(
+      CommandContext<?> commandContext, Command command) {
+    try {
+      return getVectorTypeTag(commandContext, command);
+    } catch (APIException e) {
+      return JsonApiMetricsConfig.SortType.NONE;
+    }
   }
 
   /**
