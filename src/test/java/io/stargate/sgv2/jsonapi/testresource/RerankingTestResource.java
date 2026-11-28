@@ -4,14 +4,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.common.Json;
-import com.github.tomakehurst.wiremock.extension.ResponseTransformerV2;
-import com.github.tomakehurst.wiremock.http.Response;
-import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
+import com.github.tomakehurst.wiremock.core.Options.ChunkedEncodingPolicy;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.smallrye.config.source.yaml.YamlConfigSource;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -20,11 +16,20 @@ import java.util.Objects;
  * Local HTTP reranker for integration tests using the production Nvidia client. Passages start with
  * {@code score:<number>} so their scores do not depend on retrieval or batch arrival order. Use
  * this resource with {@code restrictToAnnotatedClass = true} to isolate provider URLs.
+ *
+ * <p>{@link #startFakeReranker} starts the same fake for {@code FakeRerankerTestResource}, with one
+ * path per model and the special replies of {@link FakeRerankTransformer}.
  */
 public class RerankingTestResource implements QuarkusTestResourceLifecycleManager {
 
   public static final String PATH = "/v1/ranking";
   public static final String API_KEY = "test-reranking-api-key";
+
+  /** Path prefix of the model paths of {@link #startFakeReranker}. */
+  public static final String RERANK_PATH = "/rerank/";
+
+  /** The path that the {@code REDIRECT} reply of {@link FakeRerankTransformer} points to. */
+  public static final String REDIRECT_TARGET = RERANK_PATH + "redirect-target";
 
   private WireMockServer server;
 
@@ -45,7 +50,7 @@ public class RerankingTestResource implements QuarkusTestResourceLifecycleManage
 
     server =
         new WireMockServer(
-            wireMockConfig().dynamicPort().extensions(new PassageScoreTransformer()));
+            wireMockConfig().dynamicPort().extensions(new FakeRerankTransformer(null, 1)));
     server.start();
     server.stubFor(
         post(urlEqualTo(PATH))
@@ -53,7 +58,7 @@ public class RerankingTestResource implements QuarkusTestResourceLifecycleManage
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
-                    .withTransformers(PassageScoreTransformer.NAME)));
+                    .withTransformers(FakeRerankTransformer.NAME)));
 
     config.put("stargate.jsonapi.operations.enable-embedding-gateway", "false");
     // All three Nvidia entries in test-reranking-providers-config.yaml use the local server.
@@ -77,42 +82,30 @@ public class RerankingTestResource implements QuarkusTestResourceLifecycleManage
     }
   }
 
-  private static class PassageScoreTransformer implements ResponseTransformerV2 {
-    private static final String NAME = "passage-scores";
-
-    @Override
-    public String getName() {
-      return NAME;
-    }
-
-    @Override
-    public boolean applyGlobally() {
-      return false;
-    }
-
-    @Override
-    public Response transform(Response response, ServeEvent event) {
-      var request = Json.node(event.getRequest().getBodyAsString());
-      var passages = request.get("passages");
-      var rankings = new ArrayList<Map<String, Object>>(passages.size());
-      for (int index = 0; index < passages.size(); index++) {
-        var passage = passages.get(index).get("text").asText();
-        if (!passage.startsWith("score:")) {
-          throw new IllegalArgumentException("Test passage must start with score:<number>");
-        }
-        float score = Float.parseFloat(passage.substring(6).split("\\s+", 2)[0]);
-        rankings.add(Map.of("index", index, "logit", score));
-      }
-      // Provider order differs from passage order, so clients must honor each local index.
-      rankings.sort(
-          (left, right) -> Float.compare((Float) right.get("logit"), (Float) left.get("logit")));
-      var body =
-          Map.of(
-              "rankings",
-              rankings,
-              "usage",
-              Map.of("prompt_tokens", passages.size(), "total_tokens", passages.size()));
-      return Response.Builder.like(response).but().body(Json.write(body)).build();
-    }
+  /**
+   * Starts a fake reranker on 127.0.0.1 and a random port, without chunked or gzip replies. Every
+   * request under {@link #RERANK_PATH} gets a reply of {@link FakeRerankTransformer}, which checks
+   * it against {@code modelsByPath}; {@link #REDIRECT_TARGET} replies {@code {"redirected":true}}
+   * to anything. Tests add stubs with a higher priority for special replies.
+   */
+  public static WireMockServer startFakeReranker(Map<String, String> modelsByPath) {
+    var server =
+        new WireMockServer(
+            wireMockConfig()
+                .dynamicPort()
+                .bindAddress("127.0.0.1")
+                .useChunkedTransferEncoding(ChunkedEncodingPolicy.NEVER)
+                .gzipDisabled(true)
+                .extensions(new FakeRerankTransformer(modelsByPath, 10)));
+    server.start();
+    server.stubFor(
+        any(urlPathMatching(RERANK_PATH + ".+"))
+            .atPriority(9)
+            .willReturn(aResponse().withTransformers(FakeRerankTransformer.NAME)));
+    server.stubFor(
+        any(urlPathEqualTo(REDIRECT_TARGET))
+            .atPriority(1)
+            .willReturn(okJson("{\"redirected\":true}")));
+    return server;
   }
 }
